@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>In-World Tablet Demo</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud" class="hud">
+    <div class="topbar">
+      <span class="pill">IN-WORLD DEVICE PROTOTYPE</span>
+      <span id="modeLabel" class="mode-label">EXPLORE</span>
+    </div>
+    <div id="crosshair" class="crosshair"></div>
+    <div id="hint" class="hint">
+      <span class="key">CLICK</span> 捕获鼠标 · <span class="key">WASD</span> 移动 · <span class="key">E</span> 打开 Pad
+    </div>
+    <div class="objective">
+      <small>OBJECTIVE</small>
+      <strong>检查桌边的陌生人</strong>
+      <span>打开 Pad → Scanner</span>
+    </div>
+  </div>
+
+  <div id="tabletLayer" class="tablet-layer" aria-hidden="true">
+    <div class="arm arm-left"></div>
+    <div class="arm arm-right"></div>
+
+    <div id="tablet" class="tablet">
+      <div class="tablet-shell">
+        <div class="camera-dot"></div>
+        <div class="screen">
+          <div class="statusbar">
+            <span id="clock">23:23</span>
+            <span class="status-right">◉ 5G&nbsp;&nbsp;▰</span>
+          </div>
+
+          <div id="home" class="view active-view">
+            <div class="hero-card">
+              <div>
+                <div class="eyebrow">NOCTURNE OS</div>
+                <h1>Good evening.</h1>
+                <p>一个存在于游戏世界里的可操作设备。</p>
+              </div>
+              <div class="orb"></div>
+            </div>
+
+            <div class="app-grid">
+              <button class="app" data-app="messages"><span>✦</span><b>Messages</b></button>
+              <button class="app" data-app="tasks"><span>✓</span><b>Tasks</b></button>
+              <button class="app" data-app="map"><span>⌖</span><b>Map</b></button>
+              <button class="app" data-app="scanner"><span>◎</span><b>Scanner</b></button>
+            </div>
+
+            <div class="activity-card">
+              <div class="avatar tiny">M</div>
+              <div>
+                <strong>Mira is nearby</strong>
+                <p>Signal detected · 4.2 m</p>
+              </div>
+              <span class="chevron">›</span>
+            </div>
+          </div>
+
+          <div id="messages" class="view app-view">
+            <header><button class="back">‹</button><div><small>MESSAGES</small><strong>Mira</strong></div><div class="avatar">M</div></header>
+            <div id="messageList" class="message-list">
+              <div class="bubble theirs">You finally came.</div>
+              <div class="bubble theirs">Check the tablet. I sent you the room access.</div>
+              <div class="bubble mine">I’m looking at it now.</div>
+            </div>
+            <form id="messageForm" class="composer">
+              <input id="messageInput" autocomplete="off" placeholder="Message Mira…" />
+              <button type="submit">↑</button>
+            </form>
+          </div>
+
+          <div id="tasks" class="view app-view">
+            <header><button class="back">‹</button><div><small>FIELD NOTES</small><strong>Tonight</strong></div><span class="header-icon">✓</span></header>
+            <div class="task-list">
+              <label><input type="checkbox" checked><span><b>Enter the apartment</b><small>Completed 22:48</small></span></label>
+              <label><input type="checkbox"><span><b>Identify the visitor</b><small>Use Scanner while she is nearby</small></span></label>
+              <label><input type="checkbox"><span><b>Read Mira's message</b><small>There may be an access code</small></span></label>
+            </div>
+          </div>
+
+          <div id="map" class="view app-view">
+            <header><button class="back">‹</button><div><small>LOCAL MAP</small><strong>Apartment 14F</strong></div><span class="header-icon">⌖</span></header>
+            <div class="map-panel">
+              <div class="room-map">
+                <div class="room r1">LIVING</div><div class="room r2">STUDY</div><div class="room r3">HALL</div><div class="room r4">BED</div>
+                <div class="you-dot"><span></span>You</div>
+                <div class="mira-dot"><span></span>Mira</div>
+              </div>
+              <div class="map-meta"><span>14F · UNIT 1407</span><b>4.2 m</b></div>
+            </div>
+          </div>
+
+          <div id="scanner" class="view app-view scanner-view">
+            <header><button class="back">‹</button><div><small>OPTICAL SCAN</small><strong>Live Analysis</strong></div><span class="header-icon live-dot"></span></header>
+            <div class="scanner-feed">
+              <div class="scan-lines"></div>
+              <div class="face-frame"><i></i><i></i><i></i><i></i></div>
+              <div class="silhouette"><div class="head"></div><div class="body"></div></div>
+              <div class="scan-card">
+                <small>SUBJECT MATCH</small>
+                <strong>MIRA // 98.4%</strong>
+                <div><span>STATUS</span><b>KNOWN CONTACT</b></div>
+                <div><span>DISTANCE</span><b>4.2 M</b></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+    </div>
+
+    <button id="closeTablet" class="close-tablet"><span>ESC / E</span> 收起 Pad</button>
+  </div>
+
+  <div id="startOverlay" class="start-overlay">
+    <div class="start-card">
+      <div class="start-kicker">WEB GAME PROTOTYPE</div>
+      <h1>Walk into the room.<br>Then pull out your Pad.</h1>
+      <p>无需 Unity。这个 Demo 使用浏览器实时 3D + HTML 设备界面。</p>
+      <button id="startBtn">进入场景</button>
+      <small>WASD 移动 · 鼠标看向 · E 举起 / 收起 Pad</small>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
