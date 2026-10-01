@@ -21,7 +21,13 @@
       actionPulse:0,
       transitionKind:null,
       transitionProgress:1,
-      transitionApp:null
+      transitionApp:null,
+      messageChoice:null,
+      messageReply:null,
+      messageReplyPending:false,
+      messageReplyTimer:0,
+      messageUnread:false,
+      mapFocus:null
     };
 
     const apps=[
@@ -33,8 +39,13 @@
 
     const appRects=[];
     const taskRects=[];
+    const messageRects=[
+      {x:70,y:505,w:420,h:56,key:'message:0',type:'message-action',index:0,label:'On my way.'},
+      {x:510,y:505,w:444,h:56,key:'message:1',type:'message-action',index:1,label:'Meet me by the window.'}
+    ];
     const backRect={x:58,y:122,w:154,h:58,key:'back',type:'back'};
     const scannerRect={x:330,y:580,w:364,h:64,key:'scanner-action',type:'scanner-action'};
+    const miraMapRect={x:470,y:332,w:138,h:72,key:'map:mira',type:'map-focus',target:'mira'};
 
     function roundedRect(x,y,w,h,r,fill){
       ctx.beginPath();
@@ -105,6 +116,16 @@
         text(app.short,x+30,y+70,20,'bold','#8fc5ff');
         text(app.label,x+125,y+70,30,'bold');
 
+        if(app.id==='messages' && state.messageUnread){
+          ctx.fillStyle='#ff9faf';
+          ctx.beginPath();
+          ctx.arc(x+362,y+28,8,0,Math.PI*2);
+          ctx.fill();
+          ctx.strokeStyle='rgba(255,255,255,.72)';
+          ctx.lineWidth=2;
+          ctx.stroke();
+        }
+
         if(isHover(rect.key)){
           text('OPEN',x+300,y+98,14,'bold','#9ed8ff');
         }
@@ -123,22 +144,43 @@
     function drawMessages(){
       if(state.actionPulse>0){
         ctx.fillStyle='rgba(143,197,255,'+(state.actionPulse*.045).toFixed(3)+')';
-        roundedRect(52,204,920,330,30,true);
+        roundedRect(52,204,920,430,30,true);
       }
       text('Messages',70,230,44,'bold');
       text('Mira · online',72,264,18,'normal','#8ca4c8');
 
       ctx.fillStyle='rgba(255,255,255,.10)';
-      roundedRect(70,300,610,78,24,true);
-      text('Welcome back. Your world is ready.',96,348,24,'normal');
+      roundedRect(70,295,610,70,24,true);
+      text('Welcome back. Your world is ready.',96,338,22,'normal');
 
       ctx.fillStyle='rgba(111,167,255,.22)';
-      roundedRect(344,405,610,78,24,true);
-      text('I am checking the room now.',372,453,24,'normal','#dceaff');
+      roundedRect(344,385,610,70,24,true);
+      text('I am checking the room now.',372,428,22,'normal','#dceaff');
 
-      ctx.fillStyle='rgba(255,255,255,.07)';
-      roundedRect(70,560,884,72,28,true);
-      text('Messages synced · Mira is nearby',98,605,20,'normal','#8ca4c8');
+      if(state.messageChoice===null){
+        text('QUICK REPLY',72,490,15,'bold','#738aa9');
+        messageRects.forEach(rect=>{
+          card(rect.x,rect.y,rect.w,rect.h,20,rect.key,'rgba(255,255,255,.075)');
+          text(rect.label,rect.x+24,rect.y+36,19,'bold',isHover(rect.key)?'#e9f5ff':'#b9d9ff');
+        });
+        text('Tap a reply to continue the conversation',72,600,16,'normal','#657a98');
+      }else{
+        const selected=messageRects[state.messageChoice];
+        ctx.fillStyle='rgba(111,167,255,.24)';
+        roundedRect(420,485,534,62,22,true);
+        text(selected.label,448,523,20,'normal','#e2ecff');
+
+        if(state.messageReplyPending){
+          ctx.fillStyle='rgba(255,255,255,.075)';
+          roundedRect(70,570,250,58,22,true);
+          const dots='.'.repeat(1+Math.floor(state.uiTime*3)%3);
+          text('Mira is typing'+dots,94,606,18,'normal','#8ca4c8');
+        }else if(state.messageReply){
+          ctx.fillStyle='rgba(255,255,255,.10)';
+          roundedRect(70,570,660,62,22,true);
+          text(state.messageReply,96,608,20,'normal');
+        }
+      }
     }
 
     function drawTasks(){
@@ -226,7 +268,14 @@
       ctx.beginPath();ctx.arc(500,365,12,0,Math.PI*2);ctx.fill();
       text('MIRA',525,373,18,'bold','#ffb1bd');
 
-      text('Signal stable · 2 entities tracked',90,624,18,'normal','#8ca4c8');
+      if(state.mapFocus==='mira'){
+        ctx.fillStyle='rgba(255,159,175,.10)';
+        roundedRect(620,590,300,62,20,true);
+        text('MIRA · 3.8 m',645,620,19,'bold','#ffc0ca');
+        text('living room',645,643,14,'normal','#8ca4c8');
+      }else{
+        text('Tap MIRA to mark her in the world',90,624,18,'normal','#8ca4c8');
+      }
     }
 
     function drawScanner(){
@@ -370,10 +419,15 @@
 
       if(state.activeApp){
         if(contains(backRect,x,y)) return backRect;
+        if(state.activeApp==='messages' && state.messageChoice===null){
+          const reply=messageRects.find(r=>contains(r,x,y));
+          if(reply) return reply;
+        }
         if(state.activeApp==='tasks'){
           const task=taskRects.find(r=>contains(r,x,y));
           if(task) return task;
         }
+        if(state.activeApp==='map' && contains(miraMapRect,x,y)) return miraMapRect;
         if(state.activeApp==='scanner' && contains(scannerRect,x,y)) return scannerRect;
         return null;
       }
@@ -423,6 +477,7 @@
 
       if(hit.type==='app'){
         state.activeApp=hit.id;
+        if(hit.id==='messages') state.messageUnread=false;
         state.transitionKind='open';
         state.transitionProgress=0;
         state.transitionApp=hit.id;
@@ -434,6 +489,24 @@
         return {type:'open',app:hit.id};
       }
 
+      if(hit.type==='message-action'){
+        if(state.messageChoice!==null) return null;
+        state.messageChoice=hit.index;
+        state.messageReplyPending=true;
+        state.messageReplyTimer=0;
+        state.completedTasks[1]=true;
+        state.actionPulse=1;
+        state.pressedKey=null;
+        draw();
+        window.dispatchEvent(new CustomEvent('tablet-message-send',{
+          detail:{text:hit.label}
+        }));
+        window.dispatchEvent(new CustomEvent('tablet-task-toggle',{
+          detail:{index:1,completed:true}
+        }));
+        return {type:'message',index:hit.index};
+      }
+
       if(hit.type==='task'){
         state.completedTasks[hit.index]=!state.completedTasks[hit.index];
         state.pressedKey=null;
@@ -442,6 +515,17 @@
           detail:{index:hit.index,completed:state.completedTasks[hit.index]}
         }));
         return {type:'task',index:hit.index,completed:state.completedTasks[hit.index]};
+      }
+
+      if(hit.type==='map-focus'){
+        state.mapFocus=hit.target;
+        state.actionPulse=1;
+        state.pressedKey=null;
+        draw();
+        window.dispatchEvent(new CustomEvent('tablet-map-focus',{
+          detail:{target:hit.target}
+        }));
+        return {type:'map-focus',target:hit.target};
       }
 
       if(hit.type==='scanner-action'){
@@ -467,6 +551,19 @@
       const dt=Math.min(.05,Math.max(0,t-lastUpdateTime));
       lastUpdateTime=t;
       state.uiTime=t;
+
+      if(state.messageReplyPending){
+        state.messageReplyTimer+=dt;
+        if(state.messageReplyTimer>=.78){
+          state.messageReplyPending=false;
+          state.messageReply='Good. I’ll wait by the window.';
+          state.messageUnread=state.activeApp!=='messages';
+          state.actionPulse=1;
+          window.dispatchEvent(new CustomEvent('tablet-message-reply',{
+            detail:{text:state.messageReply}
+          }));
+        }
+      }
 
       if(state.scanning){
         state.scannerProgress=Math.min(1,state.scannerProgress+dt/.95);
@@ -500,6 +597,7 @@
 
       const animated=open && (
         Boolean(state.transitionKind) ||
+        state.messageReplyPending ||
         !state.activeApp ||
         state.activeApp==='map' ||
         state.activeApp==='scanner' ||

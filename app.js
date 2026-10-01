@@ -171,6 +171,53 @@ mira.rotation.y=-.52;
 mira.scale.setScalar(1.02);
 scene.add(mira);
 
+const miraBeaconCanvas=document.createElement('canvas');
+miraBeaconCanvas.width=192;
+miraBeaconCanvas.height=192;
+const miraBeaconCtx=miraBeaconCanvas.getContext('2d');
+miraBeaconCtx.clearRect(0,0,192,192);
+miraBeaconCtx.strokeStyle='rgba(255,177,189,.95)';
+miraBeaconCtx.lineWidth=7;
+miraBeaconCtx.beginPath();
+miraBeaconCtx.arc(96,78,48,0,Math.PI*2);
+miraBeaconCtx.stroke();
+miraBeaconCtx.fillStyle='rgba(255,177,189,.16)';
+miraBeaconCtx.beginPath();
+miraBeaconCtx.arc(96,78,39,0,Math.PI*2);
+miraBeaconCtx.fill();
+miraBeaconCtx.fillStyle='#ffd5dc';
+miraBeaconCtx.font='bold 22px sans-serif';
+miraBeaconCtx.textAlign='center';
+miraBeaconCtx.fillText('MIRA',96,156);
+
+const miraBeaconTexture=new THREE.CanvasTexture(miraBeaconCanvas);
+miraBeaconTexture.colorSpace=THREE.SRGBColorSpace;
+const miraBeaconMaterial=new THREE.SpriteMaterial({
+  map:miraBeaconTexture,
+  transparent:true,
+  depthTest:false,
+  depthWrite:false,
+  opacity:0
+});
+const miraBeacon=new THREE.Sprite(miraBeaconMaterial);
+miraBeacon.position.set(0,2.52,0);
+miraBeacon.scale.set(.72,.72,1);
+miraBeacon.visible=false;
+mira.add(miraBeacon);
+
+let miraBeaconUntil=0;
+let miraReplyMotionUntil=0;
+
+window.addEventListener('tablet-map-focus',event=>{
+  if(event.detail?.target!=='mira') return;
+  miraBeacon.visible=true;
+  miraBeaconUntil=performance.now()+4500;
+});
+
+window.addEventListener('tablet-message-reply',()=>{
+  miraReplyMotionUntil=performance.now()+1200;
+});
+
 // Art panels
 for (let i=0;i<3;i++) {
   const art=box(.9,1.25,.06,[0x2d3f46,0x4a3437,0x3e4334][i],-6.5+i*1.25,2.55,-6.5);
@@ -320,7 +367,24 @@ function animate(){
   miraRig.position.y=Math.sin(t*.72)*.003;
   miraRig.rotation.z=Math.sin(t*.48)*.006;
   head.rotation.y=Math.sin(t*.31)*.07;
-  head.rotation.x=Math.sin(t*.43)*.018;
+  const replyRemaining=Math.max(0,miraReplyMotionUntil-performance.now());
+  const replyEnvelope=Math.min(1,replyRemaining/280, (1200-replyRemaining)/220);
+  const replyNod=replyRemaining>0 ? Math.sin((1200-replyRemaining)*.022)*.055*Math.max(0,replyEnvelope) : 0;
+  head.rotation.x=Math.sin(t*.43)*.018+replyNod;
+
+  if(miraBeacon.visible){
+    const remaining=miraBeaconUntil-performance.now();
+    if(remaining<=0){
+      miraBeacon.visible=false;
+      miraBeaconMaterial.opacity=0;
+    }else{
+      const fade=Math.min(1,remaining/550);
+      const pulse=.72+Math.sin(t*4.5)*.055;
+      miraBeacon.scale.set(pulse,pulse,1);
+      miraBeaconMaterial.opacity=.72*fade;
+    }
+  }
+
   lFore.rotation.x=-.05+Math.sin(t*.62)*.012;
   rFore.rotation.x=-.05-Math.sin(t*.62)*.012;
 
