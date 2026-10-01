@@ -18,7 +18,10 @@
       scanning:false,
       scannerProgress:0,
       uiTime:0,
-      actionPulse:0
+      actionPulse:0,
+      transitionKind:null,
+      transitionProgress:1,
+      transitionApp:null
     };
 
     const apps=[
@@ -118,6 +121,10 @@
     }
 
     function drawMessages(){
+      if(state.actionPulse>0){
+        ctx.fillStyle='rgba(143,197,255,'+(state.actionPulse*.045).toFixed(3)+')';
+        roundedRect(52,204,920,330,30,true);
+      }
       text('Messages',70,230,44,'bold');
       text('Mira · online',72,264,18,'normal','#8ca4c8');
 
@@ -135,6 +142,10 @@
     }
 
     function drawTasks(){
+      if(state.actionPulse>0){
+        ctx.fillStyle='rgba(143,197,255,'+(state.actionPulse*.045).toFixed(3)+')';
+        roundedRect(52,204,920,430,30,true);
+      }
       text('Tasks',70,230,44,'bold');
       text('Tap a task to mark it complete',72,264,18,'normal','#8ca4c8');
 
@@ -183,6 +194,10 @@
     }
 
     function drawMap(){
+      if(state.actionPulse>0){
+        ctx.fillStyle='rgba(143,197,255,'+(state.actionPulse*.04).toFixed(3)+')';
+        roundedRect(52,204,920,430,30,true);
+      }
       text('Map',70,230,44,'bold');
       text('Apartment Zone · Level 01',72,264,18,'normal','#8ca4c8');
 
@@ -215,6 +230,10 @@
     }
 
     function drawScanner(){
+      if(state.actionPulse>0){
+        ctx.fillStyle='rgba(124,255,180,'+(state.actionPulse*.045).toFixed(3)+')';
+        roundedRect(52,204,920,450,30,true);
+      }
       text('Scanner',70,230,44,'bold');
 
       const status=state.scanning
@@ -262,12 +281,30 @@
       text(buttonLabel,buttonX,622,22,'bold','#a9ffd0');
     }
 
-    function drawApp(){
+    function drawApp(appId=state.activeApp){
       drawBack();
-      if(state.activeApp==='messages') drawMessages();
-      else if(state.activeApp==='tasks') drawTasks();
-      else if(state.activeApp==='map') drawMap();
-      else if(state.activeApp==='scanner') drawScanner();
+      if(appId==='messages') drawMessages();
+      else if(appId==='tasks') drawTasks();
+      else if(appId==='map') drawMap();
+      else if(appId==='scanner') drawScanner();
+    }
+
+    function easeOutCubic(t){
+      return 1-Math.pow(1-t,3);
+    }
+
+    function easeInOut(t){
+      return t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+    }
+
+    function drawLayer(drawFn,{dx=0,dy=0,scale=1,alpha=1}={}){
+      ctx.save();
+      ctx.globalAlpha=alpha;
+      ctx.translate(width/2+dx,height/2+dy);
+      ctx.scale(scale,scale);
+      ctx.translate(-width/2,-height/2);
+      drawFn();
+      ctx.restore();
     }
 
     function reflection(){
@@ -282,8 +319,36 @@
 
     function draw(){
       base();
-      if(state.activeApp) drawApp();
-      else drawHome();
+
+      if(state.transitionKind){
+        const raw=THREE.MathUtils.clamp(state.transitionProgress,0,1);
+        const p=easeInOut(raw);
+
+        if(state.transitionKind==='open'){
+          drawLayer(
+            drawHome,
+            {dx:-54*p,dy:-3*p,scale:1-.018*p,alpha:1-p*.82}
+          );
+          drawLayer(
+            ()=>drawApp(state.transitionApp),
+            {dx:86*(1-p),dy:4*(1-p),scale:.965+.035*easeOutCubic(raw),alpha:.18+.82*p}
+          );
+        }else{
+          drawLayer(
+            ()=>drawApp(state.transitionApp),
+            {dx:62*p,dy:2*p,scale:1-.022*p,alpha:1-p*.86}
+          );
+          drawLayer(
+            drawHome,
+            {dx:-76*(1-p),dy:3*(1-p),scale:.972+.028*easeOutCubic(raw),alpha:.18+.82*p}
+          );
+        }
+      }else if(state.activeApp){
+        drawApp();
+      }else{
+        drawHome();
+      }
+
       reflection();
       texture.needsUpdate=true;
     }
@@ -298,6 +363,7 @@
     }
 
     function hitTestUv(uv){
+      if(state.transitionKind) return null;
       const point=pointFromUv(uv);
       if(!point) return null;
       const {x,y}=point;
@@ -344,9 +410,12 @@
 
       if(hit.type==='back'){
         const previous=state.activeApp;
-        state.activeApp=null;
+        state.transitionKind='close';
+        state.transitionProgress=0;
+        state.transitionApp=previous;
         state.hoverKey=null;
         state.pressedKey=null;
+        state.actionPulse=1;
         draw();
         window.dispatchEvent(new CustomEvent('tablet-app-close',{detail:{app:previous}}));
         return {type:'back',app:previous};
@@ -354,8 +423,12 @@
 
       if(hit.type==='app'){
         state.activeApp=hit.id;
+        state.transitionKind='open';
+        state.transitionProgress=0;
+        state.transitionApp=hit.id;
         state.hoverKey=null;
         state.pressedKey=null;
+        state.actionPulse=1;
         draw();
         window.dispatchEvent(new CustomEvent('tablet-app-open',{detail:{app:hit.id}}));
         return {type:'open',app:hit.id};
@@ -407,16 +480,34 @@
         }
       }
 
+      if(state.transitionKind){
+        const duration=state.transitionKind==='open'?.24:.21;
+        state.transitionProgress=Math.min(1,state.transitionProgress+dt/duration);
+
+        if(state.transitionProgress>=1){
+          if(state.transitionKind==='close'){
+            state.activeApp=null;
+          }
+          state.transitionKind=null;
+          state.transitionApp=null;
+          state.transitionProgress=1;
+          state.hoverKey=null;
+          state.pressedKey=null;
+        }
+      }
+
       state.actionPulse=Math.max(0,state.actionPulse-dt*2.4);
 
       const animated=open && (
+        Boolean(state.transitionKind) ||
         !state.activeApp ||
         state.activeApp==='map' ||
         state.activeApp==='scanner' ||
         state.actionPulse>0
       );
 
-      if(animated && t-lastAnimatedDraw>=1/30){
+      const frameStep=state.transitionKind?1/60:1/30;
+      if(animated && t-lastAnimatedDraw>=frameStep){
         lastAnimatedDraw=t;
         draw();
       }
