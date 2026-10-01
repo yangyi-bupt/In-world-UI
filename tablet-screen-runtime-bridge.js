@@ -46,14 +46,15 @@
         if(pointerCanvas && camera && screen){
           const raycaster=new THREE.Raycaster();
           const pointer=new THREE.Vector2();
+          let pressedKey=null;
 
           pointerCanvas.style.pointerEvents='auto';
-          pointerCanvas.style.cursor='pointer';
+          pointerCanvas.style.cursor='default';
           pointerCanvas.style.touchAction='none';
 
-          const onPointerUp=(event)=>{
+          const raycast=(event)=>{
             const rect=pointerCanvas.getBoundingClientRect();
-            if(!rect.width || !rect.height) return;
+            if(!rect.width || !rect.height) return null;
 
             pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
             pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
@@ -63,17 +64,67 @@
             raycaster.setFromCamera(pointer,camera);
 
             const hit=raycaster.intersectObject(screen,false)[0];
-            if(!hit || !hit.uv) return;
+            return hit?.uv || null;
+          };
 
-            const action=textureController.handleUv?.(hit.uv);
-            if(action){
+          const onPointerMove=(event)=>{
+            const uv=raycast(event);
+            const target=textureController.setPointerUv?.(uv);
+            pointerCanvas.style.cursor=target?'pointer':'default';
+          };
+
+          const onPointerDown=(event)=>{
+            if(event.button!==0 && event.pointerType!=='touch') return;
+            const uv=raycast(event);
+            const target=textureController.setPressedUv?.(uv);
+            pressedKey=target?.key || null;
+            if(target){
+              pointerCanvas.setPointerCapture?.(event.pointerId);
               event.preventDefault();
               event.stopPropagation();
             }
           };
 
+          const onPointerUp=(event)=>{
+            const uv=raycast(event);
+            const target=textureController.hitTestUv?.(uv);
+            const sameTarget=target && target.key===pressedKey;
+            textureController.clearPressed?.();
+            pressedKey=null;
+
+            if(sameTarget){
+              const action=textureController.handleUv?.(uv);
+              if(action){
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }
+
+            pointerCanvas.releasePointerCapture?.(event.pointerId);
+            const hover=textureController.setPointerUv?.(uv);
+            pointerCanvas.style.cursor=hover?'pointer':'default';
+          };
+
+          const onPointerLeave=()=>{
+            pressedKey=null;
+            textureController.clearPressed?.();
+            textureController.setPointerUv?.(null);
+            pointerCanvas.style.cursor='default';
+          };
+
+          pointerCanvas.addEventListener('pointermove',onPointerMove);
+          pointerCanvas.addEventListener('pointerdown',onPointerDown);
           pointerCanvas.addEventListener('pointerup',onPointerUp);
-          controller.disposeTabletPointer=()=>pointerCanvas.removeEventListener('pointerup',onPointerUp);
+          pointerCanvas.addEventListener('pointerleave',onPointerLeave);
+          pointerCanvas.addEventListener('pointercancel',onPointerLeave);
+
+          controller.disposeTabletPointer=()=>{
+            pointerCanvas.removeEventListener('pointermove',onPointerMove);
+            pointerCanvas.removeEventListener('pointerdown',onPointerDown);
+            pointerCanvas.removeEventListener('pointerup',onPointerUp);
+            pointerCanvas.removeEventListener('pointerleave',onPointerLeave);
+            pointerCanvas.removeEventListener('pointercancel',onPointerLeave);
+          };
         }
       }
 
