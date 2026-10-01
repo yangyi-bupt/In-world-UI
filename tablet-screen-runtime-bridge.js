@@ -147,6 +147,9 @@
           let screenPressVelocity=0;
           let refractionX=0;
           let refractionY=0;
+          let metalMotion=0;
+          let lastGlassX=0;
+          let lastGlassY=0;
           let lastFxTime=0;
 
           const onTabletOpenFx=()=>{
@@ -179,6 +182,13 @@
 
               glassX=THREE.MathUtils.lerp(glassX,glassTargetX,.11);
               glassY=THREE.MathUtils.lerp(glassY,glassTargetY,.11);
+
+              const vx=(glassX-lastGlassX)/dt;
+              const vy=(glassY-lastGlassY)/dt;
+              const pointerSpeed=Math.min(1,Math.hypot(vx,vy)*.035);
+              metalMotion=THREE.MathUtils.lerp(metalMotion,pointerSpeed,1-Math.pow(.0004,dt));
+              lastGlassX=glassX;
+              lastGlassY=glassY;
 
               // The LCD layer appears to sit under the cover glass: content
               // drifts a few millimeters with pointer angle, while press uses
@@ -235,11 +245,29 @@
                 const pressFlash=Math.max(0,screenPress)*.035;
                 const angleX=Math.abs(glassX);
                 const angleY=Math.abs(glassY);
+                const motionFlash=metalMotion*.075;
+                const motionX=THREE.MathUtils.clamp(vx*.018,-1,1);
+                const motionY=THREE.MathUtils.clamp(vy*.018,-1,1);
 
-                chassisGlow.left.material.opacity=metalBase+Math.max(0,-glassX)*.11+angleY*.025+pressFlash+sweepEnvelope*.07*(1-sweepProgress);
-                chassisGlow.right.material.opacity=metalBase+Math.max(0,glassX)*.11+angleY*.025+pressFlash+sweepEnvelope*.07*sweepProgress;
-                chassisGlow.top.material.opacity=metalBase+Math.max(0,glassY)*.075+angleX*.028+pressFlash*.7+sweepEnvelope*.045;
-                chassisGlow.bottom.material.opacity=metalBase+Math.max(0,-glassY)*.075+angleX*.028+pressFlash*.7+sweepEnvelope*.035;
+                chassisGlow.left.material.opacity=
+                  metalBase+Math.max(0,-glassX)*.11+angleY*.025+pressFlash+
+                  motionFlash*Math.max(.25,.55-Math.max(0,motionX))+
+                  sweepEnvelope*.07*(1-sweepProgress);
+
+                chassisGlow.right.material.opacity=
+                  metalBase+Math.max(0,glassX)*.11+angleY*.025+pressFlash+
+                  motionFlash*Math.max(.25,.55+Math.min(0,motionX))+
+                  sweepEnvelope*.07*sweepProgress;
+
+                chassisGlow.top.material.opacity=
+                  metalBase+Math.max(0,glassY)*.075+angleX*.028+pressFlash*.7+
+                  motionFlash*Math.max(.2,.45+Math.max(0,motionY))+
+                  sweepEnvelope*.045;
+
+                chassisGlow.bottom.material.opacity=
+                  metalBase+Math.max(0,-glassY)*.075+angleX*.028+pressFlash*.7+
+                  motionFlash*Math.max(.2,.45-Math.min(0,motionY))+
+                  sweepEnvelope*.035;
               }
 
               textureController.update?.(t,open);

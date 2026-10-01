@@ -279,27 +279,34 @@
       // The hardware and hands now share one physical raise/lower pose. Pointer
       // parallax is intentionally subtle so the tablet still reads as a held object.
       rig.scale.setScalar(.965+.035*hold);
-      rig.rotation.x=-.032 + hidden*.075 + Math.sin(t*.72)*.004*hold - pointerY*.010*hold + pressAmount*.006;
-      rig.rotation.y=.018 - hidden*.018 + Math.sin(t*.53)*.010*hold + pointerX*.013*hold;
-      rig.rotation.z=hidden*.012 + Math.sin(t*.41)*.0026*hold - pointerX*.0025*hold;
-      rig.position.x=pointerX*.010*hold;
-      rig.position.y=hidden*.115 + Math.sin(t*.83)*.006*hold - pointerY*.006*hold - pressAmount*.004;
-      rig.position.z=-hidden*.055-pressAmount*.014;
+      const impact=Math.max(0,pressAmount);
+      const impactX=impact*pointerX;
+      const impactY=impact*pointerY;
+
+      rig.rotation.x=-.032 + hidden*.075 + Math.sin(t*.72)*.004*hold - pointerY*.010*hold + impact*(.0045+pointerY*.0035);
+      rig.rotation.y=.018 - hidden*.018 + Math.sin(t*.53)*.010*hold + pointerX*.013*hold + impactX*.0065;
+      rig.rotation.z=hidden*.012 + Math.sin(t*.41)*.0026*hold - pointerX*.0025*hold - impactX*.0028;
+      rig.position.x=pointerX*.010*hold + impactX*.0025;
+      rig.position.y=hidden*.115 + Math.sin(t*.83)*.006*hold - pointerY*.006*hold - impact*.0035 + impactY*.0015;
+      rig.position.z=-hidden*.055-impact*.014;
 
       leftHand.rotation.z=-pointerX*.004*hold;
       rightHand.rotation.z=-pointerX*.004*hold;
 
       const leftSide=leftHand.userData.side;
       const rightSide=rightHand.userData.side;
-      leftHand.position.x=leftSide*.042*hidden-leftSide*pressAmount*.004;
-      rightHand.position.x=rightSide*.042*hidden-rightSide*pressAmount*.004;
-      leftHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-pressAmount*.002;
-      rightHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-pressAmount*.002;
+      const leftLoad=impact*(.72-pointerX*.28);
+      const rightLoad=impact*(.72+pointerX*.28);
 
-      leftHand.userData.thumb.rotation.x=.28+.06*hold+pressAmount*.05;
-      rightHand.userData.thumb.rotation.x=.28+.06*hold+pressAmount*.05;
-      leftHand.userData.thumb.rotation.z=leftSide*(.76+.08*hold+pressAmount*.035);
-      rightHand.userData.thumb.rotation.z=rightSide*(.76+.08*hold+pressAmount*.035);
+      leftHand.position.x=leftSide*.042*hidden-leftSide*leftLoad*.005;
+      rightHand.position.x=rightSide*.042*hidden-rightSide*rightLoad*.005;
+      leftHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-leftLoad*.0022;
+      rightHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-rightLoad*.0022;
+
+      leftHand.userData.thumb.rotation.x=.28+.06*hold+leftLoad*.055;
+      rightHand.userData.thumb.rotation.x=.28+.06*hold+rightLoad*.055;
+      leftHand.userData.thumb.rotation.z=leftSide*(.76+.08*hold+leftLoad*.042);
+      rightHand.userData.thumb.rotation.z=rightSide*(.76+.08*hold+rightLoad*.042);
 
       // Material response: the metal gets slightly sharper at steeper pointer
       // angles, while the camera lens catches a moving pin-prick reflection.
