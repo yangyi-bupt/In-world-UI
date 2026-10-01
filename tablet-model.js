@@ -107,6 +107,21 @@
     lens.position.set(0,.893,.112);
     rig.add(lens);
 
+    // Tiny moving specular glint keeps the camera glass alive as the device tilts.
+    const lensGlintMat=new THREE.MeshBasicMaterial({
+      color:0xeaf7ff,
+      transparent:true,
+      opacity:.0,
+      depthWrite:false,
+      toneMapped:false,
+      blending:THREE.AdditiveBlending
+    });
+    const lensGlint=new THREE.Mesh(new THREE.CircleGeometry(.0085,24),lensGlintMat);
+    lensGlint.position.set(-.006,.900,.116);
+    lensGlint.renderOrder=8;
+    lensGlint.raycast=()=>{};
+    rig.add(lensGlint);
+
     // Power and volume buttons have their own highlight, so side-on views read as hardware.
     const power=new THREE.Mesh(new THREE.BoxGeometry(.38,.032,.058),edgeMetal);
     power.position.set(.78,1.016,.0);
@@ -222,6 +237,7 @@
     let pointerY=0;
     let pressTarget=0;
     let pressAmount=0;
+    let pressVelocity=0;
     let holdAmount=0;
     let lastRenderTime=0;
 
@@ -243,12 +259,18 @@
       const dt=Math.min(.05,Math.max(.001,lastRenderTime?t-lastRenderTime:.016));
       lastRenderTime=t;
       const follow=1-Math.pow(.003,dt);
-      const pressFollow=1-Math.pow(.00005,dt);
       const holdFollow=1-Math.pow(open?.000035:.00022,dt);
 
       pointerX=THREE.MathUtils.lerp(pointerX,pointerTargetX,follow);
       pointerY=THREE.MathUtils.lerp(pointerY,pointerTargetY,follow);
-      pressAmount=THREE.MathUtils.lerp(pressAmount,pressTarget,pressFollow);
+
+      // A lightly under-damped spring gives pointer-down a weighted compression
+      // and pointer-up a tiny forward overshoot instead of a simple lerp.
+      pressVelocity+=(pressTarget-pressAmount)*185*dt;
+      pressVelocity*=Math.exp(-15.5*dt);
+      pressAmount+=pressVelocity*dt;
+      pressAmount=THREE.MathUtils.clamp(pressAmount,-.10,1.08);
+
       holdAmount=THREE.MathUtils.lerp(holdAmount,open?1:0,holdFollow);
 
       const hold=holdAmount*holdAmount*(3-2*holdAmount);
@@ -278,6 +300,14 @@
       rightHand.userData.thumb.rotation.x=.28+.06*hold+pressAmount*.05;
       leftHand.userData.thumb.rotation.z=leftSide*(.76+.08*hold+pressAmount*.035);
       rightHand.userData.thumb.rotation.z=rightSide*(.76+.08*hold+pressAmount*.035);
+
+      // Material response: the metal gets slightly sharper at steeper pointer
+      // angles, while the camera lens catches a moving pin-prick reflection.
+      aluminum.roughness=.22-Math.min(.025,Math.abs(pointerX)*.016+Math.abs(pointerY)*.009);
+      edgeMetal.roughness=.16-Math.min(.022,Math.abs(pointerX)*.014+Math.abs(pointerY)*.008);
+      lensGlint.position.x=-.006+pointerX*.010;
+      lensGlint.position.y=.900+pointerY*.006;
+      lensGlintMat.opacity=(.22+.34*hold)*(1-Math.min(.45,Math.abs(pointerX)*.15))+Math.max(0,pressAmount)*.08;
 
       key.position.x=-2.6+Math.sin(t*.38)*.28+pointerX*.22;
       rim.position.y=-1.2+Math.cos(t*.46)*.2-pointerY*.15;

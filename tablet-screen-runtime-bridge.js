@@ -30,6 +30,7 @@
         const screen=window.attachTabletScreenMesh(capturedRig,textureController);
         let glare=null;
         let edgeGlow=null;
+        let chassisGlow=null;
 
         if(screen){
           screen.position.z=.102;
@@ -45,8 +46,10 @@
           const glareGradient=glareCtx.createLinearGradient(0,256,512,0);
           glareGradient.addColorStop(0,'rgba(255,255,255,0)');
           glareGradient.addColorStop(.34,'rgba(255,255,255,0)');
+          glareGradient.addColorStop(.44,'rgba(255,255,255,.03)');
           glareGradient.addColorStop(.47,'rgba(255,255,255,.22)');
-          glareGradient.addColorStop(.54,'rgba(180,220,255,.08)');
+          glareGradient.addColorStop(.515,'rgba(164,218,255,.10)');
+          glareGradient.addColorStop(.55,'rgba(236,196,255,.035)');
           glareGradient.addColorStop(.66,'rgba(255,255,255,0)');
           glareGradient.addColorStop(1,'rgba(255,255,255,0)');
           glareCtx.fillStyle=glareGradient;
@@ -94,12 +97,43 @@
             part.raycast=()=>{};
             capturedRig.add(part);
           });
+
+          // A second highlight ring sits on the physical chassis, outside the
+          // display. It behaves like a cheap Fresnel approximation and makes
+          // the aluminum frame read as metal even in the dark room.
+          const chassisMaterial=()=>new THREE.MeshBasicMaterial({
+            color:0xd9efff,
+            transparent:true,
+            opacity:0,
+            depthWrite:false,
+            toneMapped:false,
+            blending:THREE.AdditiveBlending
+          });
+
+          chassisGlow={
+            top:new THREE.Mesh(new THREE.PlaneGeometry(2.69,.012),chassisMaterial()),
+            bottom:new THREE.Mesh(new THREE.PlaneGeometry(2.69,.012),chassisMaterial()),
+            left:new THREE.Mesh(new THREE.PlaneGeometry(.012,1.87),chassisMaterial()),
+            right:new THREE.Mesh(new THREE.PlaneGeometry(.012,1.87),chassisMaterial())
+          };
+
+          chassisGlow.top.position.set(0,.963,.105);
+          chassisGlow.bottom.position.set(0,-.963,.105);
+          chassisGlow.left.position.set(-1.363,0,.105);
+          chassisGlow.right.position.set(1.363,0,.105);
+
+          Object.values(chassisGlow).forEach(part=>{
+            part.renderOrder=11;
+            part.raycast=()=>{};
+            capturedRig.add(part);
+          });
         }
 
         controller.screenTexture=textureController;
         controller.screenMesh=screen || null;
         controller.screenGlare=glare;
         controller.screenEdgeGlow=edgeGlow;
+        controller.chassisGlow=chassisGlow;
 
         const pointerCanvas=controller.renderer?.domElement ||
           (canvas && typeof canvas.getContext==='function' ? canvas : canvas?.querySelector?.('canvas'));
@@ -113,6 +147,11 @@
           let glassPressed=0;
           let screenLight=.36;
           let powerSweepUntil=0;
+          let screenPress=0;
+          let screenPressVelocity=0;
+          let refractionX=0;
+          let refractionY=0;
+          let lastFxTime=0;
 
           const onTabletOpenFx=()=>{
             powerSweepUntil=performance.now()+920;
@@ -139,11 +178,32 @@
 
           if(baseRender){
             controller.render=(t,open)=>{
+              const dt=Math.min(.05,Math.max(.001,lastFxTime?t-lastFxTime:.016));
+              lastFxTime=t;
+
               glassX=THREE.MathUtils.lerp(glassX,glassTargetX,.11);
               glassY=THREE.MathUtils.lerp(glassY,glassTargetY,.11);
               screenLight=THREE.MathUtils.lerp(screenLight,open?.62:.30,.10);
 
-              screen.material.emissiveIntensity=screenLight-glassPressed*.05;
+              // The LCD layer appears to sit under the cover glass: content
+              // drifts a few millimeters with pointer angle, while press uses
+              // a spring so release carries a visible but restrained overshoot.
+              refractionX=THREE.MathUtils.lerp(refractionX,glassX*.0065,1-Math.pow(.0005,dt));
+              refractionY=THREE.MathUtils.lerp(refractionY,glassY*.0042,1-Math.pow(.0005,dt));
+
+              screenPressVelocity+=((glassPressed?1:0)-screenPress)*235*dt;
+              screenPressVelocity*=Math.exp(-17*dt);
+              screenPress+=screenPressVelocity*dt;
+              screenPress=THREE.MathUtils.clamp(screenPress,-.08,1.06);
+
+              const pressScale=1-screenPress*.0042;
+              screen.position.x=refractionX;
+              screen.position.y=refractionY;
+              screen.position.z=.102-screenPress*.0055;
+              screen.scale.set(pressScale,pressScale,1);
+              screen.material.emissiveIntensity=screenLight-screenPress*.045;
+              screen.material.roughness=.14+Math.abs(glassX)*.018+Math.abs(glassY)*.012;
+              screen.material.clearcoatRoughness=.045+Math.abs(glassX)*.012;
 
               const now=performance.now();
               const sweepRemaining=Math.max(0,powerSweepUntil-now);
@@ -161,12 +221,24 @@
 
               if(edgeGlow){
                 const base=open?.055:.008;
-                const clickBoost=glassPressed*.11;
+                const clickBoost=Math.max(0,screenPress)*.12;
                 const sweepBoost=sweepEnvelope*.22;
                 edgeGlow.left.material.opacity=base+Math.max(0,-glassX)*.065+clickBoost+sweepBoost*(1-sweepProgress);
                 edgeGlow.right.material.opacity=base+Math.max(0,glassX)*.065+clickBoost+sweepBoost*sweepProgress;
                 edgeGlow.top.material.opacity=base+Math.max(0,glassY)*.045+clickBoost*.65+sweepBoost*.55;
                 edgeGlow.bottom.material.opacity=base+Math.max(0,-glassY)*.045+clickBoost*.65+sweepBoost*.35;
+              }
+
+              if(chassisGlow){
+                const metalBase=open?.018:.003;
+                const pressFlash=Math.max(0,screenPress)*.035;
+                const angleX=Math.abs(glassX);
+                const angleY=Math.abs(glassY);
+
+                chassisGlow.left.material.opacity=metalBase+Math.max(0,-glassX)*.11+angleY*.025+pressFlash+sweepEnvelope*.07*(1-sweepProgress);
+                chassisGlow.right.material.opacity=metalBase+Math.max(0,glassX)*.11+angleY*.025+pressFlash+sweepEnvelope*.07*sweepProgress;
+                chassisGlow.top.material.opacity=metalBase+Math.max(0,glassY)*.075+angleX*.028+pressFlash*.7+sweepEnvelope*.045;
+                chassisGlow.bottom.material.opacity=metalBase+Math.max(0,-glassY)*.075+angleX*.028+pressFlash*.7+sweepEnvelope*.035;
               }
 
               textureController.update?.(t,open);
