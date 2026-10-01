@@ -209,18 +209,45 @@ const tabletLayer=document.querySelector('#tabletLayer');
 const hud=document.querySelector('#hud');
 const crosshair=document.querySelector('#crosshair');
 const modeLabel=document.querySelector('#modeLabel');
+let tabletCloseTimer=null;
+
 function openTablet(){
+  if(tabletCloseTimer){
+    clearTimeout(tabletCloseTimer);
+    tabletCloseTimer=null;
+  }
+
   tabletOpen=true; keys.clear(); document.exitPointerLock?.();
   cameraFovTarget=71;
   document.body.classList.add('device-open');
-  tabletLayer.classList.add('open');tabletLayer.setAttribute('aria-hidden','false');hud.classList.add('dimmed');crosshair.style.display='none';modeLabel.textContent='DEVICE';
+  tabletLayer?.classList.remove('closing');
+  tabletLayer?.classList.add('open');
+  tabletLayer?.setAttribute('aria-hidden','false');
+  hud?.classList.add('dimmed');
+  if(crosshair) crosshair.style.display='none';
+  if(modeLabel) modeLabel.textContent='DEVICE';
+  window.dispatchEvent(new CustomEvent('tablet-open'));
 }
+
 function closeTablet(){
+  if(!tabletOpen) return;
+
   tabletOpen=false; cameraFovTarget=78;
-  document.body.classList.remove('device-open');
-  tabletLayer.classList.remove('open');tabletLayer.setAttribute('aria-hidden','true');hud.classList.remove('dimmed');crosshair.style.display='';modeLabel.textContent='EXPLORE';
-  setTimeout(()=>{ if(started && !tabletOpen) canvas.requestPointerLock?.(); },180);
+  tabletLayer?.classList.add('closing');
+  tabletLayer?.setAttribute('aria-hidden','true');
+  window.dispatchEvent(new CustomEvent('tablet-close'));
+
+  tabletCloseTimer=setTimeout(()=>{
+    tabletLayer?.classList.remove('open','closing');
+    document.body.classList.remove('device-open');
+    hud?.classList.remove('dimmed');
+    if(crosshair) crosshair.style.display='';
+    if(modeLabel) modeLabel.textContent='EXPLORE';
+    tabletCloseTimer=null;
+    if(started && !tabletOpen) canvas.requestPointerLock?.();
+  },460);
 }
+
 function toggleTablet(){tabletOpen?closeTablet():openTablet()}
 const closeTabletBtn=document.querySelector('#closeTablet');
 if(closeTabletBtn){closeTabletBtn.addEventListener('click',closeTablet);}

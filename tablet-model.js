@@ -222,6 +222,7 @@
     let pointerY=0;
     let pressTarget=0;
     let pressAmount=0;
+    let holdAmount=0;
     let lastRenderTime=0;
 
     function setInteractionPointer(x=0,y=0,pressed=false){
@@ -241,33 +242,42 @@
 
       const dt=Math.min(.05,Math.max(.001,lastRenderTime?t-lastRenderTime:.016));
       lastRenderTime=t;
-      const presence=open?1:0;
       const follow=1-Math.pow(.003,dt);
       const pressFollow=1-Math.pow(.00005,dt);
+      const holdFollow=1-Math.pow(open?.000035:.00022,dt);
 
       pointerX=THREE.MathUtils.lerp(pointerX,pointerTargetX,follow);
       pointerY=THREE.MathUtils.lerp(pointerY,pointerTargetY,follow);
       pressAmount=THREE.MathUtils.lerp(pressAmount,pressTarget,pressFollow);
+      holdAmount=THREE.MathUtils.lerp(holdAmount,open?1:0,holdFollow);
 
-      // Idle breathing + tiny pointer-driven parallax makes the device feel held,
-      // while a click gives the tablet a subtle physical recoil.
-      rig.rotation.x=-.032 + Math.sin(t*.72)*.004*presence - pointerY*.010*presence + pressAmount*.006;
-      rig.rotation.y=.018 + Math.sin(t*.53)*.010*presence + pointerX*.013*presence;
-      rig.rotation.z=Math.sin(t*.41)*.0026*presence - pointerX*.0025*presence;
-      rig.position.x=pointerX*.010*presence;
-      rig.position.y=Math.sin(t*.83)*.006*presence - pointerY*.006*presence - pressAmount*.004;
-      rig.position.z=-pressAmount*.014;
+      const hold=holdAmount*holdAmount*(3-2*holdAmount);
+      const hidden=1-hold;
 
-      leftHand.rotation.z=-pointerX*.004;
-      rightHand.rotation.z=-pointerX*.004;
-      leftHand.position.x=-leftHand.userData.side*pressAmount*.004;
-      rightHand.position.x=-rightHand.userData.side*pressAmount*.004;
-      leftHand.position.y=Math.sin(t*.83)*.0015-pressAmount*.002;
-      rightHand.position.y=Math.sin(t*.83)*.0015-pressAmount*.002;
-      leftHand.userData.thumb.rotation.x=.34+pressAmount*.05;
-      rightHand.userData.thumb.rotation.x=.34+pressAmount*.05;
-      leftHand.userData.thumb.rotation.z=leftHand.userData.side*(.84+pressAmount*.035);
-      rightHand.userData.thumb.rotation.z=rightHand.userData.side*(.84+pressAmount*.035);
+      // The hardware and hands now share one physical raise/lower pose. Pointer
+      // parallax is intentionally subtle so the tablet still reads as a held object.
+      rig.scale.setScalar(.965+.035*hold);
+      rig.rotation.x=-.032 + hidden*.075 + Math.sin(t*.72)*.004*hold - pointerY*.010*hold + pressAmount*.006;
+      rig.rotation.y=.018 - hidden*.018 + Math.sin(t*.53)*.010*hold + pointerX*.013*hold;
+      rig.rotation.z=hidden*.012 + Math.sin(t*.41)*.0026*hold - pointerX*.0025*hold;
+      rig.position.x=pointerX*.010*hold;
+      rig.position.y=hidden*.115 + Math.sin(t*.83)*.006*hold - pointerY*.006*hold - pressAmount*.004;
+      rig.position.z=-hidden*.055-pressAmount*.014;
+
+      leftHand.rotation.z=-pointerX*.004*hold;
+      rightHand.rotation.z=-pointerX*.004*hold;
+
+      const leftSide=leftHand.userData.side;
+      const rightSide=rightHand.userData.side;
+      leftHand.position.x=leftSide*.042*hidden-leftSide*pressAmount*.004;
+      rightHand.position.x=rightSide*.042*hidden-rightSide*pressAmount*.004;
+      leftHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-pressAmount*.002;
+      rightHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-pressAmount*.002;
+
+      leftHand.userData.thumb.rotation.x=.28+.06*hold+pressAmount*.05;
+      rightHand.userData.thumb.rotation.x=.28+.06*hold+pressAmount*.05;
+      leftHand.userData.thumb.rotation.z=leftSide*(.76+.08*hold+pressAmount*.035);
+      rightHand.userData.thumb.rotation.z=rightSide*(.76+.08*hold+pressAmount*.035);
 
       key.position.x=-2.6+Math.sin(t*.38)*.28+pointerX*.22;
       rim.position.y=-1.2+Math.cos(t*.46)*.2-pointerY*.15;

@@ -5,29 +5,78 @@
 
     const style=document.createElement('style');
     style.textContent=`
+      #tablet { transform-origin:50% 88%; }
+
+      .tablet-layer.closing {
+        pointer-events:none !important;
+      }
+
       .tablet-open-motion {
-        animation: tabletLiftIn .72s cubic-bezier(.14,.88,.16,1) both,
-          tabletFloat 5.8s 1s ease-in-out infinite;
+        animation:
+          tabletRaiseHeld .68s cubic-bezier(.16,.78,.18,1) both,
+          tabletHeldBreath 6.4s .82s ease-in-out infinite;
       }
+
       .tablet-close-motion {
-        animation: tabletLowerOut .45s ease-in both;
+        animation:tabletLowerHeld .46s cubic-bezier(.42,0,.62,.3) both !important;
       }
-      @keyframes tabletLiftIn {
-        0% { transform:translate(-50%,82%) rotateX(38deg) rotateZ(-2deg) scale(.68); opacity:.1; }
-        55% { transform:translate(-50%,-54%) rotateX(-5deg) rotateZ(.8deg) scale(1.03); opacity:1; }
-        100% { transform:translate(-50%,-50%) rotateX(-1.4deg) rotateY(.4deg) rotateZ(0) scale(1); opacity:1; }
+
+      @keyframes tabletRaiseHeld {
+        0% {
+          transform:translate(-50%,38%) rotateX(25deg) rotateY(-2.4deg) rotateZ(-1.8deg) scale(.90);
+          opacity:.08;
+          filter:blur(2px);
+        }
+        42% {
+          transform:translate(-50%,-38%) rotateX(7deg) rotateY(-1deg) rotateZ(-.7deg) scale(.975);
+          opacity:.86;
+          filter:blur(.35px);
+        }
+        72% {
+          transform:translate(-50%,-51.5%) rotateX(-2.2deg) rotateY(.55deg) rotateZ(.2deg) scale(1.006);
+          opacity:1;
+          filter:none;
+        }
+        100% {
+          transform:translate(-50%,-50%) rotateX(-1.4deg) rotateY(.4deg) rotateZ(0) scale(1);
+          opacity:1;
+          filter:none;
+        }
       }
-      @keyframes tabletLowerOut {
-        from { transform:translate(-50%,-50%) rotateX(-1.4deg) scale(1); opacity:1; }
-        to { transform:translate(-50%,82%) rotateX(38deg) scale(.68); opacity:.1; }
+
+      @keyframes tabletLowerHeld {
+        0% {
+          transform:translate(-50%,-50%) rotateX(-1.4deg) rotateY(.4deg) rotateZ(0) scale(1);
+          opacity:1;
+          filter:none;
+        }
+        36% {
+          transform:translate(-50%,-45%) rotateX(3deg) rotateY(-.6deg) rotateZ(-.3deg) scale(.985);
+          opacity:.95;
+        }
+        100% {
+          transform:translate(-50%,42%) rotateX(28deg) rotateY(-2deg) rotateZ(-1.5deg) scale(.90);
+          opacity:.05;
+          filter:blur(2px);
+        }
       }
-      @keyframes tabletFloat {
+
+      @keyframes tabletHeldBreath {
         0%,100% { margin-top:0; }
-        50% { margin-top:-5px; }
+        50% { margin-top:-2px; }
       }
+
       .app.active {
         transform:translateY(-4px) scale(1.04);
         filter:brightness(1.25);
+      }
+
+      @media (prefers-reduced-motion:reduce) {
+        .tablet-open-motion,
+        .tablet-close-motion {
+          animation-duration:.01ms !important;
+          animation-iteration-count:1 !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -36,6 +85,7 @@
       const tablet=document.querySelector('#tablet');
       if(!tablet) return;
       tablet.classList.remove('tablet-close-motion');
+      void tablet.offsetWidth;
       tablet.classList.add('tablet-open-motion');
     });
 
@@ -43,12 +93,11 @@
       const tablet=document.querySelector('#tablet');
       if(!tablet) return;
       tablet.classList.remove('tablet-open-motion');
+      void tablet.offsetWidth;
       tablet.classList.add('tablet-close-motion');
     });
 
-    // Tablet home screen app interaction.
-    // The current iPad screen still uses CanvasTexture, so keep this bridge
-    // for the HTML prototype layer and later raycast UV mapping.
+    // Legacy DOM buttons remain available for fallback/debug layouts.
     document.querySelectorAll('.app').forEach(btn=>{
       btn.addEventListener('click',()=>{
         const app=btn.dataset.app;
@@ -61,5 +110,6 @@
       });
     });
   }
+
   install();
 })();
