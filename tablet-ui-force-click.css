@@ -1,0 +1,22 @@
+/* Force tablet app buttons above all view layers */
+#screen {
+  pointer-events: auto !important;
+}
+#screen .tablet-home {
+  position: absolute;
+  z-index: 100 !important;
+  pointer-events: auto !important;
+}
+#screen .tablet-home .app {
+  position: relative;
+  z-index: 101 !important;
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+#screen .view {
+  z-index: 10;
+  pointer-events: none !important;
+}
+#screen .view.active-view {
+  pointer-events: none !important;
+}
