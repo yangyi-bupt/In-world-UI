@@ -19,11 +19,12 @@
       'message: '+(event.message || 'unknown'),
       'file: '+(event.filename || 'unknown'),
       'line: '+(event.lineno || '?')+':'+(event.colno || '?'),
-      event.error?.stack || ''
+      event.error?.stack || '',
+      'target: '+(event.target?.src || event.target?.href || '')
     ].join('\n');
 
     showError('runtime error', detail);
-  });
+  }, true);
 
   window.addEventListener('unhandledrejection', (event)=>{
     showError('promise rejection', event.reason?.stack || String(event.reason));
