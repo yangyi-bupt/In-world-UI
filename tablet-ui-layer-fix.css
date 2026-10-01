@@ -1,0 +1,21 @@
+/* Fix tablet home buttons being covered by active view panels */
+.tablet-home{
+  position:relative;
+  z-index:20;
+  pointer-events:auto;
+}
+
+.tablet-home .app{
+  position:relative;
+  z-index:21;
+  pointer-events:auto;
+}
+
+.screen .view{
+  z-index:5;
+}
+
+.screen #home,
+.screen .tablet-home{
+  z-index:20;
+}
