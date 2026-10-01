@@ -1,0 +1,40 @@
+/* V4.2.5 tablet UI cleanup */
+
+/* Keep DOM UI as fallback, but prevent desktop HUD styles leaking into iPad */
+.tablet .screen {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  transform-origin: center center;
+}
+
+.tablet .tablet-home,
+.tablet .view {
+  box-sizing: border-box;
+}
+
+.tablet .tablet-home {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  padding: 24px;
+}
+
+.tablet .app {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Avoid the duplicated HTML layer fighting the future CanvasTexture screen */
+.tablet-live-screen {
+  border-radius: 0.16rem;
+}
+
+.tablet .view h3,
+.tablet .view div {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
