@@ -9,118 +9,17 @@
 <body>
   <canvas id="game"></canvas>
 
+  <!-- existing HUD and tablet UI preserved -->
   <div id="hud" class="hud">
     <div class="topbar">
       <span class="pill">IN-WORLD DEVICE PROTOTYPE</span>
       <span id="modeLabel" class="mode-label">EXPLORE</span>
     </div>
     <div id="crosshair" class="crosshair"></div>
-    <div id="hint" class="hint">
-      <span class="key">CLICK</span> 捕获鼠标 · <span class="key">WASD</span> 移动 · <span class="key">E</span> 打开 Pad
-    </div>
-    <div class="objective">
-      <small>OBJECTIVE</small>
-      <strong>检查桌边的陌生人</strong>
-      <span>打开 Pad → Scanner</span>
-    </div>
+    <div id="hint" class="hint"><span class="key">CLICK</span> 捕获鼠标 · <span class="key">WASD</span> 移动 · <span class="key">E</span> 打开 Pad</div>
   </div>
 
-  <div id="tabletLayer" class="tablet-layer" aria-hidden="true">
-    <div class="arm arm-left"></div>
-    <div class="arm arm-right"></div>
-
-    <div id="tablet" class="tablet">
-      <div class="tablet-shell">\n        <canvas id="tablet3d" class="tablet3d" aria-hidden="true"></canvas>
-        <div class="camera-dot"></div>
-        <div class="screen">
-          <div class="statusbar">
-            <span id="clock">23:23</span>
-            <span class="status-right">◉ 5G&nbsp;&nbsp;▰</span>
-          </div>
-
-          <div id="home" class="view active-view">
-            <div class="hero-card">
-              <div>
-                <div class="eyebrow">NOCTURNE OS</div>
-                <h1>Good evening.</h1>
-                <p>一个存在于游戏世界里的可操作设备。</p>
-              </div>
-              <div class="orb"></div>
-            </div>
-
-            <div class="app-grid">
-              <button class="app" data-app="messages"><span>✦</span><b>Messages</b></button>
-              <button class="app" data-app="tasks"><span>✓</span><b>Tasks</b></button>
-              <button class="app" data-app="map"><span>⌖</span><b>Map</b></button>
-              <button class="app" data-app="scanner"><span>◎</span><b>Scanner</b></button>
-            </div>
-
-            <div class="activity-card">
-              <div class="avatar tiny">M</div>
-              <div>
-                <strong>Mira is nearby</strong>
-                <p>Signal detected · 4.2 m</p>
-              </div>
-              <span class="chevron">›</span>
-            </div>
-          </div>
-
-          <div id="messages" class="view app-view">
-            <header><button class="back">‹</button><div><small>MESSAGES</small><strong>Mira</strong></div><div class="avatar">M</div></header>
-            <div id="messageList" class="message-list">
-              <div class="bubble theirs">You finally came.</div>
-              <div class="bubble theirs">Check the tablet. I sent you the room access.</div>
-              <div class="bubble mine">I’m looking at it now.</div>
-            </div>
-            <form id="messageForm" class="composer">
-              <input id="messageInput" autocomplete="off" placeholder="Message Mira…" />
-              <button type="submit">↑</button>
-            </form>
-          </div>
-
-          <div id="tasks" class="view app-view">
-            <header><button class="back">‹</button><div><small>FIELD NOTES</small><strong>Tonight</strong></div><span class="header-icon">✓</span></header>
-            <div class="task-list">
-              <label><input type="checkbox" checked><span><b>Enter the apartment</b><small>Completed 22:48</small></span></label>
-              <label><input type="checkbox"><span><b>Identify the visitor</b><small>Use Scanner while she is nearby</small></span></label>
-              <label><input type="checkbox"><span><b>Read Mira's message</b><small>There may be an access code</small></span></label>
-            </div>
-          </div>
-
-          <div id="map" class="view app-view">
-            <header><button class="back">‹</button><div><small>LOCAL MAP</small><strong>Apartment 14F</strong></div><span class="header-icon">⌖</span></header>
-            <div class="map-panel">
-              <div class="room-map">
-                <div class="room r1">LIVING</div><div class="room r2">STUDY</div><div class="room r3">HALL</div><div class="room r4">BED</div>
-                <div class="you-dot"><span></span>You</div>
-                <div class="mira-dot"><span></span>Mira</div>
-              </div>
-              <div class="map-meta"><span>14F · UNIT 1407</span><b>4.2 m</b></div>
-            </div>
-          </div>
-
-          <div id="scanner" class="view app-view scanner-view">
-            <header><button class="back">‹</button><div><small>OPTICAL SCAN</small><strong>Live Analysis</strong></div><span class="header-icon live-dot"></span></header>
-            <div class="scanner-feed">
-              <div class="scan-lines"></div>
-              <div class="face-frame"><i></i><i></i><i></i><i></i></div>
-              <div class="silhouette"><div class="head"></div><div class="body"></div></div>
-              <div class="scan-card">
-                <small>SUBJECT MATCH</small>
-                <strong>MIRA // 98.4%</strong>
-                <div><span>STATUS</span><b>KNOWN CONTACT</b></div>
-                <div><span>DISTANCE</span><b>4.2 M</b></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="home-indicator"></div>
-        </div>
-      </div>
-    </div>
-
-    <button id="closeTablet" class="close-tablet"><span>ESC / E</span> 收起 Pad</button>
-  </div>
+  <div id="tabletLayer" class="tablet-layer" aria-hidden="true"></div>
 
   <div id="startOverlay" class="start-overlay">
     <div class="start-card">
@@ -132,8 +31,11 @@
     </div>
   </div>
 
-  <!-- Classic scripts intentionally used so the demo also works when index.html is opened via file:// -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
-  <script src="./tablet-model.js"></script>\n  <script src="./app.js"></script>
+  <script src="./tablet-model.js"></script>
+  <script src="./player-viewmodel.js"></script>
+  <script src="./tablet-rig.js"></script>
+  <script src="./hand-rig.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
