@@ -34,9 +34,7 @@
 
         if(screen){
           screen.position.z=.102;
-          screen.material.emissive=new THREE.Color(0xffffff);
-          screen.material.emissiveMap=textureController.texture;
-          screen.material.emissiveIntensity=.55;
+          screen.material.toneMapped=false;
           screen.material.needsUpdate=true;
 
           const glareCanvas=document.createElement('canvas');
@@ -144,7 +142,6 @@
           let glassX=0;
           let glassY=0;
           let glassPressed=0;
-          let screenLight=.36;
           let powerSweepUntil=0;
           let screenPress=0;
           let screenPressVelocity=0;
@@ -182,7 +179,6 @@
 
               glassX=THREE.MathUtils.lerp(glassX,glassTargetX,.11);
               glassY=THREE.MathUtils.lerp(glassY,glassTargetY,.11);
-              screenLight=THREE.MathUtils.lerp(screenLight,open?.62:.30,.10);
 
               // The LCD layer appears to sit under the cover glass: content
               // drifts a few millimeters with pointer angle, while press uses
@@ -200,9 +196,6 @@
               screen.position.y=refractionY;
               screen.position.z=.102-screenPress*.0055;
               screen.scale.set(pressScale,pressScale,1);
-              screen.material.emissiveIntensity=screenLight-screenPress*.045;
-              screen.material.roughness=.14+Math.abs(glassX)*.018+Math.abs(glassY)*.012;
-              screen.material.clearcoatRoughness=.045+Math.abs(glassX)*.012;
 
               const now=performance.now();
               const sweepRemaining=Math.max(0,powerSweepUntil-now);

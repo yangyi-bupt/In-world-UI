@@ -5,12 +5,14 @@
     if(!parent || !tabletTexture || !window.THREE) return null;
 
     const geometry = new THREE.PlaneGeometry(2.48,1.66);
-    const material = new THREE.MeshPhysicalMaterial({
+    // The UI layer itself is intentionally unlit. Using a physical material
+    // here caused the tablet's front point light to create a hot white specular
+    // spot over text. Glass/reflection effects are rendered by separate overlay
+    // meshes so readability is never sacrificed.
+    const material = new THREE.MeshBasicMaterial({
       map: tabletTexture.texture || tabletTexture,
-      roughness:0.16,
-      metalness:0.02,
-      clearcoat:1,
-      clearcoatRoughness:0.06
+      color:0xffffff,
+      toneMapped:false
     });
 
     const screen = new THREE.Mesh(geometry, material);
