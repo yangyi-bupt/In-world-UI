@@ -1,0 +1,32 @@
+/* V4.3 tablet screen cleanup */
+#tablet .screen {
+  overflow: hidden;
+  transform-origin: center center;
+  box-sizing: border-box;
+}
+
+#tablet .screen .tablet-header {
+  position: relative;
+  z-index: 2;
+  letter-spacing: .08em;
+}
+
+#tablet .screen .tablet-home,
+#tablet .screen .view {
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+#tablet .screen .app {
+  min-width: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+/* hide duplicated HTML layer later when CanvasTexture becomes active */
+#tablet.canvas-screen-active .screen {
+  opacity: 0;
+  pointer-events: none;
+}
