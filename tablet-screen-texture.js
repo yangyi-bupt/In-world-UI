@@ -14,7 +14,11 @@
       hoverKey:null,
       pressedKey:null,
       completedTasks:[false,false,false],
-      scannerComplete:false
+      scannerComplete:false,
+      scanning:false,
+      scannerProgress:0,
+      uiTime:0,
+      actionPulse:0
     };
 
     const apps=[
@@ -91,7 +95,8 @@
 
         card(x,y,390,120,28,rect.key);
 
-        ctx.fillStyle=isHover(rect.key)?'rgba(120,190,255,.28)':'rgba(120,190,255,.18)';
+        const ambient=.16+Math.sin(state.uiTime*1.6+i*.9)*.025;
+        ctx.fillStyle=isHover(rect.key)?'rgba(120,190,255,.28)':'rgba(120,190,255,'+ambient.toFixed(3)+')';
         roundedRect(x+20,y+20,80,80,20,true);
 
         text(app.short,x+30,y+70,20,'bold','#8fc5ff');
@@ -191,10 +196,17 @@
       text('LIVING',260,330,14,'bold','rgba(255,255,255,.34)');
       text('STUDY',710,330,14,'bold','rgba(255,255,255,.34)');
 
+      const youPulse=4+Math.sin(state.uiTime*3.1)*2;
+      ctx.strokeStyle='rgba(141,229,255,.26)';
+      ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(350,500,18+youPulse,0,Math.PI*2);ctx.stroke();
       ctx.fillStyle='#8de5ff';
       ctx.beginPath();ctx.arc(350,500,12,0,Math.PI*2);ctx.fill();
       text('YOU',375,508,18,'bold','#8de5ff');
 
+      const miraPulse=3+Math.sin(state.uiTime*2.6+1.2)*1.5;
+      ctx.strokeStyle='rgba(255,159,175,.20)';
+      ctx.beginPath();ctx.arc(500,365,18+miraPulse,0,Math.PI*2);ctx.stroke();
       ctx.fillStyle='#ff9faf';
       ctx.beginPath();ctx.arc(500,365,12,0,Math.PI*2);ctx.fill();
       text('MIRA',525,373,18,'bold','#ffb1bd');
@@ -204,7 +216,11 @@
 
     function drawScanner(){
       text('Scanner',70,230,44,'bold');
-      text(state.scannerComplete?'SCAN COMPLETE':'LIVE OBJECT ANALYSIS',72,264,18,'normal',state.scannerComplete?'#b8ffd6':'#7cffb4');
+
+      const status=state.scanning
+        ? 'SCANNING '+Math.round(state.scannerProgress*100)+'%'
+        : (state.scannerComplete?'SCAN COMPLETE':'LIVE OBJECT ANALYSIS');
+      text(status,72,264,18,'normal',state.scannerComplete?'#b8ffd6':'#7cffb4');
 
       ctx.strokeStyle=state.scannerComplete?'rgba(184,255,214,.72)':'rgba(124,255,180,.55)';
       ctx.lineWidth=3;
@@ -215,15 +231,35 @@
       ctx.moveTo(280,420);ctx.lineTo(744,420);
       ctx.stroke();
 
+      if(state.scanning){
+        const scanY=312+state.scannerProgress*216;
+        const beam=ctx.createLinearGradient(250,scanY-24,250,scanY+24);
+        beam.addColorStop(0,'rgba(124,255,180,0)');
+        beam.addColorStop(.5,'rgba(124,255,180,.26)');
+        beam.addColorStop(1,'rgba(124,255,180,0)');
+        ctx.fillStyle=beam;
+        ctx.fillRect(250,scanY-24,524,48);
+
+        ctx.strokeStyle='rgba(190,255,220,.9)';
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.moveTo(250,scanY);
+        ctx.lineTo(774,scanY);
+        ctx.stroke();
+      }
+
       if(state.scannerComplete){
         ctx.fillStyle='rgba(184,255,214,.11)';
         roundedRect(350,355,324,130,26,true);
         text('MIRA',460,405,30,'bold','#c8ffe0');
         text('human · friendly',420,445,20,'normal','#8fcca9');
+        text('confidence 98%',430,474,16,'normal','#79eeb0');
       }
 
       card(scannerRect.x,scannerRect.y,scannerRect.w,scannerRect.h,22,scannerRect.key,'rgba(124,255,180,.12)');
-      text(state.scannerComplete?'SCAN AGAIN':'RUN SCAN',state.scannerComplete?438:446,622,22,'bold','#a9ffd0');
+      const buttonLabel=state.scanning?'SCANNING…':(state.scannerComplete?'SCAN AGAIN':'RUN SCAN');
+      const buttonX=state.scanning?428:(state.scannerComplete?438:446);
+      text(buttonLabel,buttonX,622,22,'bold','#a9ffd0');
     }
 
     function drawApp(){
@@ -336,16 +372,54 @@
       }
 
       if(hit.type==='scanner-action'){
-        state.scannerComplete=!state.scannerComplete;
+        if(state.scanning) return null;
+        state.scannerComplete=false;
+        state.scanning=true;
+        state.scannerProgress=0;
+        state.actionPulse=1;
         state.pressedKey=null;
         draw();
-        window.dispatchEvent(new CustomEvent('tablet-scan',{
-          detail:{complete:state.scannerComplete}
-        }));
-        return {type:'scanner',complete:state.scannerComplete};
+        window.dispatchEvent(new CustomEvent('tablet-scan-start'));
+        return {type:'scanner-start'};
       }
 
       return null;
+    }
+
+    let lastUpdateTime=null;
+    let lastAnimatedDraw=0;
+
+    function update(t,open=true){
+      if(lastUpdateTime===null) lastUpdateTime=t;
+      const dt=Math.min(.05,Math.max(0,t-lastUpdateTime));
+      lastUpdateTime=t;
+      state.uiTime=t;
+
+      if(state.scanning){
+        state.scannerProgress=Math.min(1,state.scannerProgress+dt/.95);
+        if(state.scannerProgress>=1){
+          state.scanning=false;
+          state.scannerComplete=true;
+          state.actionPulse=1;
+          window.dispatchEvent(new CustomEvent('tablet-scan',{
+            detail:{complete:true}
+          }));
+        }
+      }
+
+      state.actionPulse=Math.max(0,state.actionPulse-dt*2.4);
+
+      const animated=open && (
+        !state.activeApp ||
+        state.activeApp==='map' ||
+        state.activeApp==='scanner' ||
+        state.actionPulse>0
+      );
+
+      if(animated && t-lastAnimatedDraw>=1/30){
+        lastAnimatedDraw=t;
+        draw();
+      }
     }
 
     function handleUv(uv){
@@ -355,7 +429,7 @@
     draw();
 
     return {
-      canvas,ctx,texture,draw,state,
+      canvas,ctx,texture,draw,state,update,
       hitTestUv,setPointerUv,setPressedUv,clearPressed,handleUv
     };
   };

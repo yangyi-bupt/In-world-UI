@@ -117,6 +117,7 @@
                 glare.material.opacity=(open?.62:.18)*(1-glassPressed*.16);
               }
 
+              textureController.update?.(t,open);
               baseRender(t,open);
             };
           }
