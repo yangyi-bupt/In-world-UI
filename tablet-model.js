@@ -178,6 +178,6 @@
     }
 
     resize();
-    return {render,resize};
+    return {render,resize,renderer,camera};
   };
 })();
