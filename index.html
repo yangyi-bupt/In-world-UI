@@ -5,70 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>In-World Tablet Demo</title>
 <link rel="stylesheet" href="./styles.css" />
+<link rel="stylesheet" href="./tablet-screen-fix.css" />
 </head>
 <body>
 <canvas id="game"></canvas>
 
-<div id="hud" class="hud">
-  <div id="modeLabel"></div>
-  <div id="crosshair"></div>
-  <div id="hint"></div>
-</div>
-
-<div id="tabletLayer" class="tablet-layer" aria-hidden="true">
-  <div id="tablet" class="tablet">
-    <button id="closeTablet" style="display:none">close</button>
-    <div id="tablet3d"></div>
-    <div id="screen" class="screen">
-      <div class="tablet-header">NOVA PAD</div>
-      <div class="tablet-home">
-        <button class="app" data-app="messages">Messages</button>
-        <button class="app" data-app="tasks">Tasks</button>
-        <button class="app" data-app="map">Map</button>
-        <button class="app" data-app="scanner">Scanner</button>
-      </div>
-      <div class="view active-view" id="messages">
-        <h3>Messages</h3>
-        <div class="bubble theirs">Welcome back. Your world is ready.</div>
-      </div>
-      <div class="view" id="tasks">
-        <h3>Tasks</h3>
-        <div>Explore the room</div>
-        <div>Talk with Mira</div>
-      </div>
-      <div class="view" id="map">
-        <h3>Map</h3>
-        <div>Apartment Zone · Level 01</div>
-      </div>
-      <div class="view" id="scanner">
-        <h3>Scanner</h3>
-        <div>Nearby objects detected</div>
-      </div>
-      <div id="messagesLegacy"></div>
-      <div id="tasksLegacy"></div>
-      <div id="mapLegacy"></div>
-      <div id="scannerLegacy"></div>
-    </div>
-  </div>
-</div>
-
-<div id="clock" style="display:none"></div>
-<form id="messageForm" style="display:none"><input id="messageInput"><div id="messageList"></div></form>
-<div id="messageList" style="display:none"></div>
-
-<div id="startOverlay" class="start-overlay">
-  <button id="startBtn">Click to enter world</button>
-</div>
-
-<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
-<script src="./start-bridge.js"></script>
-<script src="./boot-guard.js"></script>
-<script src="./tablet-model.js"></script>
-<script src="./tablet-model-fix.js"></script>
-<script src="./player-viewmodel.js"></script>
-<script src="./tablet-rig.js"></script>
-<script src="./hand-rig.js"></script>
-<script src="./ui-bindings.js"></script>
-<script src="./app.js"></script>
-</body>
-</html>
+<div id="hud" class="hud"><div id="modeLabel"></div><div id="crosshair"></div><div id="hint"></div></div>
+<div id="tabletLayer" class="tablet-layer" aria-hidden="true"><div id="tablet" class="tablet"><button id="closeTablet" style="display:none">close</button><div id="tablet3d"></div><div id="screen" class="screen"><div class="tablet-header">NOVA PAD</div><div class="tablet-home"><button class="app" data-app="messages">Messages</button><button class="app" data-app="tasks">Tasks</button><button class="app" data-app="map">Map</button><button class="app" data-app="scanner">Scanner</button></div><div class="view active-view" id="messages"><h3>Messages</h3><div class="bubble theirs">Welcome back. Your world is ready.</div></div><div class="view" id="tasks"><h3>Tasks</h3><div>Explore the room</div><div>Talk with Mira</div></div><div class="view" id="map"><h3>Map</h3><div>Apartment Zone · Level 01</div></div><div class="view" id="scanner"><h3>Scanner</h3><div>Nearby objects detected</div></div></div></div></div>
+<div id="clock" style="display:none"></div><form id="messageForm" style="display:none"><input id="messageInput"><div id="messageList"></div></form><div id="messageList" style="display:none"></div>
+<div id="startOverlay" class="start-overlay"><button id="startBtn">Click to enter world</button></div>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script><script src="./start-bridge.js"></script><script src="./boot-guard.js"></script><script src="./tablet-model.js"></script><script src="./tablet-model-fix.js"></script><script src="./player-viewmodel.js"></script><script src="./tablet-rig.js"></script><script src="./hand-rig.js"></script><script src="./ui-bindings.js"></script><script src="./app.js"></script>
+</body></html>
