@@ -20,10 +20,34 @@
     <button id="closeTablet" style="display:none">close</button>
     <div id="tablet3d"></div>
     <div id="screen" class="screen">
-      <div id="messages"></div>
-      <div id="tasks"></div>
-      <div id="map"></div>
-      <div id="scanner"></div>
+      <div class="tablet-header">NOVA PAD</div>
+      <div class="tablet-home">
+        <button class="app" data-app="messages">Messages</button>
+        <button class="app" data-app="tasks">Tasks</button>
+        <button class="app" data-app="map">Map</button>
+        <button class="app" data-app="scanner">Scanner</button>
+      </div>
+      <div class="view active-view" id="messages">
+        <h3>Messages</h3>
+        <div class="bubble theirs">Welcome back. Your world is ready.</div>
+      </div>
+      <div class="view" id="tasks">
+        <h3>Tasks</h3>
+        <div>Explore the room</div>
+        <div>Talk with Mira</div>
+      </div>
+      <div class="view" id="map">
+        <h3>Map</h3>
+        <div>Apartment Zone · Level 01</div>
+      </div>
+      <div class="view" id="scanner">
+        <h3>Scanner</h3>
+        <div>Nearby objects detected</div>
+      </div>
+      <div id="messagesLegacy"></div>
+      <div id="tasksLegacy"></div>
+      <div id="mapLegacy"></div>
+      <div id="scannerLegacy"></div>
     </div>
   </div>
 </div>
