@@ -11,13 +11,14 @@
         pointer-events:none !important;
       }
 
-      .tablet-open-motion {
+      .tablet-layer.open .tablet.tablet-open-motion {
         animation:
           tabletRaiseHeld .68s cubic-bezier(.16,.78,.18,1) both,
-          tabletHeldBreath 6.4s .82s ease-in-out infinite;
+          tabletHeldBreath 6.4s .82s ease-in-out infinite !important;
       }
 
-      .tablet-close-motion {
+      .tablet-layer.open .tablet.tablet-close-motion,
+      .tablet-layer.closing .tablet.tablet-close-motion {
         animation:tabletLowerHeld .46s cubic-bezier(.42,0,.62,.3) both !important;
       }
 
@@ -72,8 +73,9 @@
       }
 
       @media (prefers-reduced-motion:reduce) {
-        .tablet-open-motion,
-        .tablet-close-motion {
+        .tablet-layer.open .tablet.tablet-open-motion,
+        .tablet-layer.open .tablet.tablet-close-motion,
+        .tablet-layer.closing .tablet.tablet-close-motion {
           animation-duration:.01ms !important;
           animation-iteration-count:1 !important;
         }

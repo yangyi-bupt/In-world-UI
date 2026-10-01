@@ -28,20 +28,99 @@
 
       if(controller && capturedRig){
         const screen=window.attachTabletScreenMesh(capturedRig,textureController);
+        let glare=null;
+
         if(screen){
           screen.position.z=.102;
           screen.material.emissive=new THREE.Color(0xffffff);
           screen.material.emissiveMap=textureController.texture;
           screen.material.emissiveIntensity=.55;
           screen.material.needsUpdate=true;
+
+          const glareCanvas=document.createElement('canvas');
+          glareCanvas.width=512;
+          glareCanvas.height=256;
+          const glareCtx=glareCanvas.getContext('2d');
+          const glareGradient=glareCtx.createLinearGradient(0,256,512,0);
+          glareGradient.addColorStop(0,'rgba(255,255,255,0)');
+          glareGradient.addColorStop(.34,'rgba(255,255,255,0)');
+          glareGradient.addColorStop(.47,'rgba(255,255,255,.22)');
+          glareGradient.addColorStop(.54,'rgba(180,220,255,.08)');
+          glareGradient.addColorStop(.66,'rgba(255,255,255,0)');
+          glareGradient.addColorStop(1,'rgba(255,255,255,0)');
+          glareCtx.fillStyle=glareGradient;
+          glareCtx.fillRect(0,0,512,256);
+
+          const glareTexture=new THREE.CanvasTexture(glareCanvas);
+          glareTexture.colorSpace=THREE.SRGBColorSpace;
+          const glareMaterial=new THREE.MeshBasicMaterial({
+            map:glareTexture,
+            transparent:true,
+            opacity:.62,
+            depthWrite:false,
+            toneMapped:false,
+            blending:THREE.AdditiveBlending
+          });
+          glare=new THREE.Mesh(new THREE.PlaneGeometry(2.45,1.63),glareMaterial);
+          glare.position.z=.116;
+          glare.renderOrder=12;
+          glare.raycast=()=>{};
+          capturedRig.add(glare);
         }
 
         controller.screenTexture=textureController;
         controller.screenMesh=screen || null;
+        controller.screenGlare=glare;
 
         const pointerCanvas=controller.renderer?.domElement ||
           (canvas && typeof canvas.getContext==='function' ? canvas : canvas?.querySelector?.('canvas'));
         const camera=controller.camera;
+
+        if(screen){
+          let glassTargetX=0;
+          let glassTargetY=0;
+          let glassX=0;
+          let glassY=0;
+          let glassPressed=0;
+          let screenLight=.36;
+
+          const baseSetPointer=controller.setInteractionPointer?.bind(controller);
+          const baseClearPointer=controller.clearInteractionPointer?.bind(controller);
+          const baseRender=controller.render?.bind(controller);
+
+          controller.setInteractionPointer=(x=0,y=0,pressed=false)=>{
+            baseSetPointer?.(x,y,pressed);
+            glassTargetX=THREE.MathUtils.clamp(x,-1,1);
+            glassTargetY=THREE.MathUtils.clamp(y,-1,1);
+            glassPressed=pressed?1:0;
+          };
+
+          controller.clearInteractionPointer=()=>{
+            baseClearPointer?.();
+            glassTargetX=0;
+            glassTargetY=0;
+            glassPressed=0;
+          };
+
+          if(baseRender){
+            controller.render=(t,open)=>{
+              glassX=THREE.MathUtils.lerp(glassX,glassTargetX,.11);
+              glassY=THREE.MathUtils.lerp(glassY,glassTargetY,.11);
+              screenLight=THREE.MathUtils.lerp(screenLight,open?.62:.30,.10);
+
+              screen.material.emissiveIntensity=screenLight-glassPressed*.05;
+
+              if(glare){
+                glare.position.x=glassX*.055;
+                glare.position.y=glassY*.032;
+                glare.rotation.z=-.035+glassX*.012;
+                glare.material.opacity=(open?.62:.18)*(1-glassPressed*.16);
+              }
+
+              baseRender(t,open);
+            };
+          }
+        }
 
         if(pointerCanvas && camera && screen){
           const raycaster=new THREE.Raycaster();
