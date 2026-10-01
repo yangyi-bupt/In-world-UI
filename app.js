@@ -222,7 +222,8 @@ function closeTablet(){
   setTimeout(()=>{ if(started && !tabletOpen) canvas.requestPointerLock?.(); },180);
 }
 function toggleTablet(){tabletOpen?closeTablet():openTablet()}
-document.querySelector('#closeTablet').addEventListener('click',closeTablet);
+const closeTabletBtn=document.querySelector('#closeTablet');
+if(closeTabletBtn){closeTabletBtn.addEventListener('click',closeTablet);}
 
 // ---------- tablet UI ----------
 const views=[...document.querySelectorAll('.view')];
@@ -230,11 +231,12 @@ function showView(id){views.forEach(v=>v.classList.toggle('active-view',v.id===i
 document.querySelectorAll('.app').forEach(btn=>btn.addEventListener('click',()=>showView(btn.dataset.app)));
 document.querySelectorAll('.back').forEach(btn=>btn.addEventListener('click',()=>showView('home')));
 const form=document.querySelector('#messageForm');const input=document.querySelector('#messageInput');const list=document.querySelector('#messageList');
-form.addEventListener('submit',e=>{e.preventDefault();const t=input.value.trim();if(!t)return;const b=document.createElement('div');b.className='bubble mine';b.textContent=t;list.appendChild(b);input.value='';list.scrollTop=list.scrollHeight;setTimeout(()=>{const r=document.createElement('div');r.className='bubble theirs';r.textContent='Got it. Meet me by the window.';list.appendChild(r);list.scrollTop=list.scrollHeight;},700)});
-function updateClock(){document.querySelector('#clock').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});}updateClock();setInterval(updateClock,30000);
+if(form && input && list){form.addEventListener('submit',e=>{e.preventDefault();const t=input.value.trim();if(!t)return;const b=document.createElement('div');b.className='bubble mine';b.textContent=t;list.appendChild(b);input.value='';list.scrollTop=list.scrollHeight;setTimeout(()=>{const r=document.createElement('div');r.className='bubble theirs';r.textContent='Got it. Meet me by the window.';list.appendChild(r);list.scrollTop=list.scrollHeight;},700)});}
+function updateClock(){const clockEl=document.querySelector('#clock');if(!clockEl)return;clockEl.textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});}updateClock();setInterval(updateClock,30000);
 
 const startOverlay=document.querySelector('#startOverlay');
-document.querySelector('#startBtn').addEventListener('click',()=>{started=true;startOverlay.classList.add('hidden');setTimeout(()=>canvas.requestPointerLock?.(),250)});
+const startBtn=document.querySelector('#startBtn');
+if(startBtn){startBtn.addEventListener('click',()=>{started=true;startOverlay?.classList.add('hidden');setTimeout(()=>canvas.requestPointerLock?.(),250)});}
 
 // ---------- animation ----------
 const clock=new THREE.Clock();
