@@ -140,6 +140,44 @@
     sideShade.position.set(0,-1.004,0);
     rig.add(sideShade);
 
+    const handSkin=new THREE.MeshStandardMaterial({color:0xb9826f,roughness:.74,metalness:0});
+    const sleeveMat=new THREE.MeshStandardMaterial({color:0x242a31,roughness:.9,metalness:.02});
+
+    function createHoldingHand(side){
+      const hand=new THREE.Group();
+      const s=side==='left'?-1:1;
+
+      const palm=new THREE.Mesh(new THREE.SphereGeometry(.18,20,14),handSkin);
+      palm.scale.set(.76,1.18,.58);
+      palm.position.set(s*1.43,-.73,-.015);
+      palm.rotation.z=s*.12;
+      hand.add(palm);
+
+      const thumb=new THREE.Mesh(new THREE.CapsuleGeometry(.035,.22,8,12),handSkin);
+      thumb.position.set(s*1.28,-.72,.105);
+      thumb.rotation.z=s*.62;
+      thumb.rotation.x=.10;
+      hand.add(thumb);
+
+      const indexFinger=new THREE.Mesh(new THREE.CapsuleGeometry(.03,.22,8,12),handSkin);
+      indexFinger.position.set(s*1.31,-.91,.07);
+      indexFinger.rotation.z=s*.18;
+      hand.add(indexFinger);
+
+      const forearm=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.52,8,14),sleeveMat);
+      forearm.position.set(s*1.67,-1.03,-.12);
+      forearm.rotation.z=s*.78;
+      forearm.rotation.x=-.08;
+      hand.add(forearm);
+
+      hand.userData={palm,thumb,indexFinger,forearm,baseY:hand.position.y};
+      rig.add(hand);
+      return hand;
+    }
+
+    const leftHand=createHoldingHand('left');
+    const rightHand=createHoldingHand('right');
+
     const hemi=new THREE.HemisphereLight(0xeaf3ff,0x17130f,1.7);
     scene.add(hemi);
     const key=new THREE.DirectionalLight(0xffe3cf,4.4);
@@ -165,19 +203,61 @@
       }
     }
 
+    let pointerTargetX=0;
+    let pointerTargetY=0;
+    let pointerX=0;
+    let pointerY=0;
+    let pressTarget=0;
+    let pressAmount=0;
+    let lastRenderTime=0;
+
+    function setInteractionPointer(x=0,y=0,pressed=false){
+      pointerTargetX=THREE.MathUtils.clamp(x,-1,1);
+      pointerTargetY=THREE.MathUtils.clamp(y,-1,1);
+      pressTarget=pressed?1:0;
+    }
+
+    function clearInteractionPointer(){
+      pointerTargetX=0;
+      pointerTargetY=0;
+      pressTarget=0;
+    }
+
     function render(t,open){
       resize();
+
+      const dt=Math.min(.05,Math.max(.001,lastRenderTime?t-lastRenderTime:.016));
+      lastRenderTime=t;
       const presence=open?1:0;
-      rig.rotation.x=-.032 + Math.sin(t*.72)*.004*presence;
-      rig.rotation.y=.018 + Math.sin(t*.53)*.010*presence;
-      rig.rotation.z=Math.sin(t*.41)*.0026*presence;
-      rig.position.y=Math.sin(t*.83)*.006*presence;
-      key.position.x=-2.6+Math.sin(t*.38)*.28;
-      rim.position.y=-1.2+Math.cos(t*.46)*.2;
+      const follow=1-Math.pow(.003,dt);
+      const pressFollow=1-Math.pow(.00005,dt);
+
+      pointerX=THREE.MathUtils.lerp(pointerX,pointerTargetX,follow);
+      pointerY=THREE.MathUtils.lerp(pointerY,pointerTargetY,follow);
+      pressAmount=THREE.MathUtils.lerp(pressAmount,pressTarget,pressFollow);
+
+      // Idle breathing + tiny pointer-driven parallax makes the device feel held,
+      // while a click gives the tablet a subtle physical recoil.
+      rig.rotation.x=-.032 + Math.sin(t*.72)*.004*presence - pointerY*.010*presence + pressAmount*.006;
+      rig.rotation.y=.018 + Math.sin(t*.53)*.010*presence + pointerX*.013*presence;
+      rig.rotation.z=Math.sin(t*.41)*.0026*presence - pointerX*.0025*presence;
+      rig.position.x=pointerX*.010*presence;
+      rig.position.y=Math.sin(t*.83)*.006*presence - pointerY*.006*presence - pressAmount*.004;
+      rig.position.z=-pressAmount*.014;
+
+      leftHand.rotation.z=-pointerX*.004;
+      rightHand.rotation.z=-pointerX*.004;
+      leftHand.position.y=Math.sin(t*.83)*.0015-pressAmount*.002;
+      rightHand.position.y=Math.sin(t*.83)*.0015-pressAmount*.002;
+      leftHand.userData.thumb.rotation.x=.10+pressAmount*.08;
+      rightHand.userData.thumb.rotation.x=.10+pressAmount*.08;
+
+      key.position.x=-2.6+Math.sin(t*.38)*.28+pointerX*.22;
+      rim.position.y=-1.2+Math.cos(t*.46)*.2-pointerY*.15;
       renderer.render(scene,camera);
     }
 
     resize();
-    return {render,resize,renderer,camera};
+    return {render,resize,renderer,camera,setInteractionPointer,clearInteractionPointer};
   };
 })();

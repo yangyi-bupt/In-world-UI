@@ -68,6 +68,11 @@
           };
 
           const onPointerMove=(event)=>{
+            const rect=pointerCanvas.getBoundingClientRect();
+            const nx=rect.width?((event.clientX-rect.left)/rect.width)*2-1:0;
+            const ny=rect.height?-(((event.clientY-rect.top)/rect.height)*2-1):0;
+            controller.setInteractionPointer?.(nx,ny,pressedKey!==null);
+
             const uv=raycast(event);
             const target=textureController.setPointerUv?.(uv);
             pointerCanvas.style.cursor=target?'pointer':'default';
@@ -75,9 +80,15 @@
 
           const onPointerDown=(event)=>{
             if(event.button!==0 && event.pointerType!=='touch') return;
+            const rect=pointerCanvas.getBoundingClientRect();
+            const nx=rect.width?((event.clientX-rect.left)/rect.width)*2-1:0;
+            const ny=rect.height?-(((event.clientY-rect.top)/rect.height)*2-1):0;
+
             const uv=raycast(event);
             const target=textureController.setPressedUv?.(uv);
             pressedKey=target?.key || null;
+            controller.setInteractionPointer?.(nx,ny,Boolean(target));
+
             if(target){
               pointerCanvas.setPointerCapture?.(event.pointerId);
               event.preventDefault();
@@ -91,6 +102,11 @@
             const sameTarget=target && target.key===pressedKey;
             textureController.clearPressed?.();
             pressedKey=null;
+
+            const rect=pointerCanvas.getBoundingClientRect();
+            const nx=rect.width?((event.clientX-rect.left)/rect.width)*2-1:0;
+            const ny=rect.height?-(((event.clientY-rect.top)/rect.height)*2-1):0;
+            controller.setInteractionPointer?.(nx,ny,false);
 
             if(sameTarget){
               const action=textureController.handleUv?.(uv);
@@ -109,6 +125,7 @@
             pressedKey=null;
             textureController.clearPressed?.();
             textureController.setPointerUv?.(null);
+            controller.clearInteractionPointer?.();
             pointerCanvas.style.cursor='default';
           };
 
