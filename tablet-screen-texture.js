@@ -28,7 +28,13 @@
       messageReplyTimer:0,
       messageUnread:false,
       mapFocus:null,
-      ripples:[]
+      ripples:[],
+      pointerTargetX:width*.5,
+      pointerTargetY:height*.5,
+      pointerX:width*.5,
+      pointerY:height*.5,
+      pointerVisible:false,
+      pointerAlpha:0
     };
 
     const apps=[
@@ -64,16 +70,68 @@
     function isPressed(key){return state.pressedKey===key;}
 
     function card(x,y,w,h,r,key,base='rgba(255,255,255,.09)'){
-      if(isPressed(key)) ctx.fillStyle='rgba(143,197,255,.22)';
-      else if(isHover(key)) ctx.fillStyle='rgba(255,255,255,.145)';
-      else ctx.fillStyle=base;
-      roundedRect(x,y,w,h,r,true);
+      const hovered=isHover(key);
+      const pressed=isPressed(key);
 
-      if(isHover(key) || isPressed(key)){
-        ctx.strokeStyle=isPressed(key)?'rgba(157,215,255,.95)':'rgba(157,215,255,.62)';
-        ctx.lineWidth=isPressed(key)?3:2;
+      ctx.save();
+
+      if(hovered || pressed){
+        ctx.shadowColor=pressed?'rgba(122,204,255,.42)':'rgba(122,204,255,.24)';
+        ctx.shadowBlur=pressed?28:20;
+        ctx.shadowOffsetY=pressed?2:5;
+      }
+
+      if(pressed) ctx.fillStyle='rgba(143,197,255,.22)';
+      else if(hovered) ctx.fillStyle='rgba(255,255,255,.145)';
+      else ctx.fillStyle=base;
+
+      roundedRect(x,y,w,h,r,true);
+      ctx.shadowColor='transparent';
+      ctx.shadowBlur=0;
+      ctx.shadowOffsetY=0;
+
+      if((hovered || pressed) && state.pointerAlpha>.01){
+        ctx.save();
+        roundedRect(x,y,w,h,r,false);
+        ctx.clip();
+
+        const px=THREE.MathUtils.clamp(state.pointerX,x-80,x+w+80);
+        const py=THREE.MathUtils.clamp(state.pointerY,y-80,y+h+80);
+        const radius=Math.max(w,h)*.68;
+        const glow=ctx.createRadialGradient(px,py,0,px,py,radius);
+        glow.addColorStop(0,'rgba(187,231,255,'+(state.pointerAlpha*(pressed?.18:.13)).toFixed(3)+')');
+        glow.addColorStop(.28,'rgba(114,190,255,'+(state.pointerAlpha*(pressed?.10:.065)).toFixed(3)+')');
+        glow.addColorStop(1,'rgba(114,190,255,0)');
+        ctx.fillStyle=glow;
+        ctx.fillRect(x,y,w,h);
+
+        const sweepX=THREE.MathUtils.clamp((state.pointerX-x)/Math.max(1,w),0,1);
+        const sheen=ctx.createLinearGradient(
+          x+w*(sweepX-.22),y+h,
+          x+w*(sweepX+.22),y
+        );
+        sheen.addColorStop(0,'rgba(255,255,255,0)');
+        sheen.addColorStop(.48,'rgba(255,255,255,'+(state.pointerAlpha*.075).toFixed(3)+')');
+        sheen.addColorStop(.52,'rgba(170,221,255,'+(state.pointerAlpha*.055).toFixed(3)+')');
+        sheen.addColorStop(1,'rgba(255,255,255,0)');
+        ctx.fillStyle=sheen;
+        ctx.fillRect(x,y,w,h);
+        ctx.restore();
+      }
+
+      if(hovered || pressed){
+        roundedRect(x,y,w,h,r,false);
+        ctx.strokeStyle=pressed?'rgba(157,215,255,.95)':'rgba(157,215,255,.62)';
+        ctx.lineWidth=pressed?3:2;
+        ctx.stroke();
+
+        roundedRect(x+4,y+4,w-8,h-8,Math.max(4,r-4),false);
+        ctx.strokeStyle=pressed?'rgba(225,245,255,.20)':'rgba(225,245,255,.10)';
+        ctx.lineWidth=1;
         ctx.stroke();
       }
+
+      ctx.restore();
     }
 
     function base(){
@@ -357,6 +415,32 @@
       ctx.restore();
     }
 
+    function drawPointerAura(){
+      if(state.pointerAlpha<=.002) return;
+
+      ctx.save();
+      ctx.globalCompositeOperation='screen';
+
+      const hoverBoost=state.hoverKey?1.35:1;
+      const radius=state.hoverKey?170:135;
+      const glow=ctx.createRadialGradient(
+        state.pointerX,state.pointerY,0,
+        state.pointerX,state.pointerY,radius
+      );
+      glow.addColorStop(0,'rgba(186,229,255,'+(state.pointerAlpha*.075*hoverBoost).toFixed(3)+')');
+      glow.addColorStop(.28,'rgba(98,177,255,'+(state.pointerAlpha*.045*hoverBoost).toFixed(3)+')');
+      glow.addColorStop(1,'rgba(98,177,255,0)');
+      ctx.fillStyle=glow;
+      ctx.fillRect(0,0,width,height);
+
+      ctx.fillStyle='rgba(224,245,255,'+(state.pointerAlpha*.18).toFixed(3)+')';
+      ctx.beginPath();
+      ctx.arc(state.pointerX,state.pointerY,2.2,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
     function drawRipples(){
       if(!state.ripples.length) return;
 
@@ -448,6 +532,7 @@
         drawHome();
       }
 
+      drawPointerAura();
       drawRipples();
       reflection();
       texture.needsUpdate=true;
@@ -487,11 +572,20 @@
     }
 
     function setPointerUv(uv){
+      const point=pointFromUv(uv);
+      state.pointerVisible=Boolean(point);
+
+      if(point){
+        state.pointerTargetX=point.x;
+        state.pointerTargetY=point.y;
+      }
+
       const hit=hitTestUv(uv);
       const next=hit?.key || null;
-      if(next===state.hoverKey) return hit;
-      state.hoverKey=next;
-      draw();
+      if(next!==state.hoverKey){
+        state.hoverKey=next;
+        draw();
+      }
       return hit;
     }
 
@@ -603,6 +697,12 @@
       lastUpdateTime=t;
       state.uiTime=t;
 
+      const pointerFollow=1-Math.pow(.00008,Math.max(.001,dt));
+      const alphaFollow=1-Math.pow(.00002,Math.max(.001,dt));
+      state.pointerX=THREE.MathUtils.lerp(state.pointerX,state.pointerTargetX,pointerFollow);
+      state.pointerY=THREE.MathUtils.lerp(state.pointerY,state.pointerTargetY,pointerFollow);
+      state.pointerAlpha=THREE.MathUtils.lerp(state.pointerAlpha,state.pointerVisible?1:0,alphaFollow);
+
       if(state.messageReplyPending){
         state.messageReplyTimer+=dt;
         if(state.messageReplyTimer>=.78){
@@ -654,6 +754,7 @@
       const animated=open && (
         Boolean(state.transitionKind) ||
         state.messageReplyPending ||
+        state.pointerAlpha>.002 ||
         state.ripples.length>0 ||
         !state.activeApp ||
         state.activeApp==='map' ||
@@ -661,7 +762,7 @@
         state.actionPulse>0
       );
 
-      const frameStep=state.transitionKind?1/60:1/30;
+      const frameStep=(state.transitionKind || state.pointerAlpha>.002)?1/60:1/30;
       if(animated && t-lastAnimatedDraw>=frameStep){
         lastAnimatedDraw=t;
         draw();
