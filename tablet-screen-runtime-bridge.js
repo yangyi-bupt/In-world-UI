@@ -29,6 +29,7 @@
       if(controller && capturedRig){
         const screen=window.attachTabletScreenMesh(capturedRig,textureController);
         let glare=null;
+        let edgeGlow=null;
 
         if(screen){
           screen.position.z=.102;
@@ -66,11 +67,39 @@
           glare.renderOrder=12;
           glare.raycast=()=>{};
           capturedRig.add(glare);
+
+          const edgeMaterial=()=>new THREE.MeshBasicMaterial({
+            color:0x8fcfff,
+            transparent:true,
+            opacity:0,
+            depthWrite:false,
+            toneMapped:false,
+            blending:THREE.AdditiveBlending
+          });
+
+          edgeGlow={
+            top:new THREE.Mesh(new THREE.PlaneGeometry(2.50,.018),edgeMaterial()),
+            bottom:new THREE.Mesh(new THREE.PlaneGeometry(2.50,.018),edgeMaterial()),
+            left:new THREE.Mesh(new THREE.PlaneGeometry(.018,1.66),edgeMaterial()),
+            right:new THREE.Mesh(new THREE.PlaneGeometry(.018,1.66),edgeMaterial())
+          };
+
+          edgeGlow.top.position.set(0,.838,.119);
+          edgeGlow.bottom.position.set(0,-.838,.119);
+          edgeGlow.left.position.set(-1.258,0,.119);
+          edgeGlow.right.position.set(1.258,0,.119);
+
+          Object.values(edgeGlow).forEach(part=>{
+            part.renderOrder=13;
+            part.raycast=()=>{};
+            capturedRig.add(part);
+          });
         }
 
         controller.screenTexture=textureController;
         controller.screenMesh=screen || null;
         controller.screenGlare=glare;
+        controller.screenEdgeGlow=edgeGlow;
 
         const pointerCanvas=controller.renderer?.domElement ||
           (canvas && typeof canvas.getContext==='function' ? canvas : canvas?.querySelector?.('canvas'));
@@ -83,6 +112,12 @@
           let glassY=0;
           let glassPressed=0;
           let screenLight=.36;
+          let powerSweepUntil=0;
+
+          const onTabletOpenFx=()=>{
+            powerSweepUntil=performance.now()+920;
+          };
+          window.addEventListener('tablet-open',onTabletOpenFx);
 
           const baseSetPointer=controller.setInteractionPointer?.bind(controller);
           const baseClearPointer=controller.clearInteractionPointer?.bind(controller);
@@ -110,11 +145,28 @@
 
               screen.material.emissiveIntensity=screenLight-glassPressed*.05;
 
+              const now=performance.now();
+              const sweepRemaining=Math.max(0,powerSweepUntil-now);
+              const sweepProgress=sweepRemaining>0 ? 1-sweepRemaining/920 : 1;
+              const sweepEnvelope=sweepRemaining>0 ? Math.sin(Math.PI*sweepProgress) : 0;
+
               if(glare){
-                glare.position.x=glassX*.055;
+                const sweepOffset=sweepRemaining>0 ? (-.42+.84*sweepProgress) : 0;
+                glare.position.x=glassX*.055+sweepOffset;
                 glare.position.y=glassY*.032;
                 glare.rotation.z=-.035+glassX*.012;
-                glare.material.opacity=(open?.62:.18)*(1-glassPressed*.16);
+                glare.material.opacity=((open?.62:.18)+sweepEnvelope*.30)*(1-glassPressed*.16);
+                glare.scale.x=1+sweepEnvelope*.10;
+              }
+
+              if(edgeGlow){
+                const base=open?.055:.008;
+                const clickBoost=glassPressed*.11;
+                const sweepBoost=sweepEnvelope*.22;
+                edgeGlow.left.material.opacity=base+Math.max(0,-glassX)*.065+clickBoost+sweepBoost*(1-sweepProgress);
+                edgeGlow.right.material.opacity=base+Math.max(0,glassX)*.065+clickBoost+sweepBoost*sweepProgress;
+                edgeGlow.top.material.opacity=base+Math.max(0,glassY)*.045+clickBoost*.65+sweepBoost*.55;
+                edgeGlow.bottom.material.opacity=base+Math.max(0,-glassY)*.045+clickBoost*.65+sweepBoost*.35;
               }
 
               textureController.update?.(t,open);
@@ -170,6 +222,7 @@
             controller.setInteractionPointer?.(nx,ny,Boolean(target));
 
             if(target){
+              textureController.pulseUv?.(uv);
               pointerCanvas.setPointerCapture?.(event.pointerId);
               event.preventDefault();
               event.stopPropagation();
@@ -221,6 +274,7 @@
             pointerCanvas.removeEventListener('pointerup',onPointerUp);
             pointerCanvas.removeEventListener('pointerleave',onPointerLeave);
             pointerCanvas.removeEventListener('pointercancel',onPointerLeave);
+            window.removeEventListener('tablet-open',onTabletOpenFx);
           };
         }
       }

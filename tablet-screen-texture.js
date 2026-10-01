@@ -27,7 +27,8 @@
       messageReplyPending:false,
       messageReplyTimer:0,
       messageUnread:false,
-      mapFocus:null
+      mapFocus:null,
+      ripples:[]
     };
 
     const apps=[
@@ -356,6 +357,55 @@
       ctx.restore();
     }
 
+    function drawRipples(){
+      if(!state.ripples.length) return;
+
+      ctx.save();
+      ctx.globalCompositeOperation='screen';
+
+      state.ripples.forEach(ripple=>{
+        const p=Math.min(1,ripple.age/ripple.life);
+        const eased=1-Math.pow(1-p,3);
+        const radius=12+118*eased;
+        const alpha=Math.pow(1-p,2);
+
+        const glow=ctx.createRadialGradient(
+          ripple.x,ripple.y,Math.max(1,radius*.2),
+          ripple.x,ripple.y,radius
+        );
+        glow.addColorStop(0,'rgba(148,214,255,0)');
+        glow.addColorStop(.64,'rgba(148,214,255,'+(alpha*.035).toFixed(3)+')');
+        glow.addColorStop(.82,'rgba(190,232,255,'+(alpha*.16).toFixed(3)+')');
+        glow.addColorStop(1,'rgba(148,214,255,0)');
+
+        ctx.fillStyle=glow;
+        ctx.beginPath();
+        ctx.arc(ripple.x,ripple.y,radius,0,Math.PI*2);
+        ctx.fill();
+
+        ctx.strokeStyle='rgba(205,239,255,'+(alpha*.48).toFixed(3)+')';
+        ctx.lineWidth=1.5+alpha*1.5;
+        ctx.beginPath();
+        ctx.arc(ripple.x,ripple.y,radius*.78,0,Math.PI*2);
+        ctx.stroke();
+      });
+
+      ctx.restore();
+    }
+
+    function pulseUv(uv){
+      const point=pointFromUv(uv);
+      if(!point) return;
+      state.ripples.push({
+        x:point.x,
+        y:point.y,
+        age:0,
+        life:.42
+      });
+      if(state.ripples.length>4) state.ripples.shift();
+      draw();
+    }
+
     function reflection(){
       const gradient=ctx.createLinearGradient(0,0,width,0);
       gradient.addColorStop(0,'rgba(255,255,255,0)');
@@ -398,6 +448,7 @@
         drawHome();
       }
 
+      drawRipples();
       reflection();
       texture.needsUpdate=true;
     }
@@ -595,9 +646,15 @@
 
       state.actionPulse=Math.max(0,state.actionPulse-dt*2.4);
 
+      if(state.ripples.length){
+        state.ripples.forEach(ripple=>{ripple.age+=dt;});
+        state.ripples=state.ripples.filter(ripple=>ripple.age<ripple.life);
+      }
+
       const animated=open && (
         Boolean(state.transitionKind) ||
         state.messageReplyPending ||
+        state.ripples.length>0 ||
         !state.activeApp ||
         state.activeApp==='map' ||
         state.activeApp==='scanner' ||
@@ -618,7 +675,7 @@
     draw();
 
     return {
-      canvas,ctx,texture,draw,state,update,
+      canvas,ctx,texture,draw,state,update,pulseUv,
       hitTestUv,setPointerUv,setPressedUv,clearPressed,handleUv
     };
   };
