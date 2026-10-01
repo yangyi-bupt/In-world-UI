@@ -147,23 +147,29 @@
       const hand=new THREE.Group();
       const s=side==='left'?-1:1;
 
-      // Keep the palm and fingers behind the tablet body. Only the outer edge
-      // of the thumb should peek around the bezel so the grip reads naturally.
+      // Keep almost the whole hand behind the tablet, but let a thin crescent
+      // of palm + thumb base show beyond the side rail. This gives a readable
+      // grip silhouette without ever crossing onto the display surface.
       const palm=new THREE.Mesh(new THREE.SphereGeometry(.18,20,14),handSkin);
-      palm.scale.set(.68,1.05,.48);
-      palm.position.set(s*1.50,-.76,-.135);
-      palm.rotation.z=s*.10;
+      palm.scale.set(.72,.98,.50);
+      palm.position.set(s*1.47,-.765,-.105);
+      palm.rotation.z=s*.09;
       hand.add(palm);
 
-      const thumb=new THREE.Mesh(new THREE.CapsuleGeometry(.032,.14,8,12),handSkin);
-      thumb.position.set(s*1.405,-.75,-.018);
-      thumb.rotation.z=s*.82;
+      const thumbRoot=new THREE.Mesh(new THREE.SphereGeometry(.075,16,12),handSkin);
+      thumbRoot.scale.set(.62,.82,.52);
+      thumbRoot.position.set(s*1.455,-.755,-.07);
+      thumbRoot.rotation.z=s*.18;
+      hand.add(thumbRoot);
+
+      const thumb=new THREE.Mesh(new THREE.CapsuleGeometry(.031,.12,8,12),handSkin);
+      thumb.position.set(s*1.455,-.735,-.012);
+      thumb.rotation.z=s*.84;
       thumb.rotation.x=.34;
       hand.add(thumb);
 
-      // Front-facing finger geometry was visibly clipping through the screen.
-      // Keep it in the rig for future posing, but hide it until we have a
-      // proper skinned hand model with reliable occlusion around the bezel.
+      // Front-facing finger geometry remains hidden until a skinned hand model
+      // can bend around the rear shell without clipping through the screen.
       const indexFinger=new THREE.Mesh(new THREE.CapsuleGeometry(.026,.14,8,12),handSkin);
       indexFinger.position.set(s*1.43,-.92,-.11);
       indexFinger.rotation.z=s*.12;
@@ -171,13 +177,13 @@
       indexFinger.visible=false;
       hand.add(indexFinger);
 
-      const forearm=new THREE.Mesh(new THREE.CapsuleGeometry(.095,.48,8,14),sleeveMat);
-      forearm.position.set(s*1.76,-1.04,-.20);
-      forearm.rotation.z=s*.76;
+      const forearm=new THREE.Mesh(new THREE.CapsuleGeometry(.092,.46,8,14),sleeveMat);
+      forearm.position.set(s*1.73,-1.035,-.18);
+      forearm.rotation.z=s*.75;
       forearm.rotation.x=-.10;
       hand.add(forearm);
 
-      hand.userData={palm,thumb,indexFinger,forearm,baseY:hand.position.y};
+      hand.userData={side:s,palm,thumbRoot,thumb,indexFinger,forearm,baseY:hand.position.y};
       rig.add(hand);
       return hand;
     }
@@ -254,10 +260,14 @@
 
       leftHand.rotation.z=-pointerX*.004;
       rightHand.rotation.z=-pointerX*.004;
+      leftHand.position.x=-leftHand.userData.side*pressAmount*.004;
+      rightHand.position.x=-rightHand.userData.side*pressAmount*.004;
       leftHand.position.y=Math.sin(t*.83)*.0015-pressAmount*.002;
       rightHand.position.y=Math.sin(t*.83)*.0015-pressAmount*.002;
-      leftHand.userData.thumb.rotation.x=.34+pressAmount*.06;
-      rightHand.userData.thumb.rotation.x=.34+pressAmount*.06;
+      leftHand.userData.thumb.rotation.x=.34+pressAmount*.05;
+      rightHand.userData.thumb.rotation.x=.34+pressAmount*.05;
+      leftHand.userData.thumb.rotation.z=leftHand.userData.side*(.84+pressAmount*.035);
+      rightHand.userData.thumb.rotation.z=rightHand.userData.side*(.84+pressAmount*.035);
 
       key.position.x=-2.6+Math.sin(t*.38)*.28+pointerX*.22;
       rim.position.y=-1.2+Math.cos(t*.46)*.2-pointerY*.15;
