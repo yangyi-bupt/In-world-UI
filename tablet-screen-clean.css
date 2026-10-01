@@ -1,0 +1,17 @@
+/* V4.3: remove duplicated DOM-like tablet presentation */
+.tablet .screen {
+  display: none !important;
+}
+
+/* keep the physical tablet canvas as the only visible display */
+.tablet #tablet3d {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.tablet #tablet3d canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
