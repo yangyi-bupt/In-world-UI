@@ -8,9 +8,29 @@
 </head>
 <body>
 <canvas id="game"></canvas>
-<div id="hud" class="hud"></div>
-<div id="tabletLayer" class="tablet-layer" aria-hidden="true"></div>
-<div id="startOverlay" class="start-overlay"></div>
+
+<div id="hud" class="hud">
+  <div id="modeLabel"></div>
+  <div id="crosshair"></div>
+  <div id="hint"></div>
+</div>
+
+<div id="tabletLayer" class="tablet-layer" aria-hidden="true">
+  <div id="tablet" class="tablet">
+    <div id="tablet3d"></div>
+    <div id="screen" class="screen">
+      <div id="messages"></div>
+      <div id="tasks"></div>
+      <div id="map"></div>
+      <div id="scanner"></div>
+    </div>
+  </div>
+</div>
+
+<div id="startOverlay" class="start-overlay">
+  <div>Click to enter world</div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
 <script src="./tablet-model.js"></script>
 <script src="./player-viewmodel.js"></script>
