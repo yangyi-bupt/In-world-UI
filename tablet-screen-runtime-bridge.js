@@ -44,14 +44,13 @@
           glareCanvas.height=256;
           const glareCtx=glareCanvas.getContext('2d');
           const glareGradient=glareCtx.createLinearGradient(0,256,512,0);
-          glareGradient.addColorStop(0,'rgba(255,255,255,0)');
-          glareGradient.addColorStop(.34,'rgba(255,255,255,0)');
-          glareGradient.addColorStop(.44,'rgba(255,255,255,.03)');
-          glareGradient.addColorStop(.47,'rgba(255,255,255,.22)');
-          glareGradient.addColorStop(.515,'rgba(164,218,255,.10)');
-          glareGradient.addColorStop(.55,'rgba(236,196,255,.035)');
-          glareGradient.addColorStop(.66,'rgba(255,255,255,0)');
-          glareGradient.addColorStop(1,'rgba(255,255,255,0)');
+          glareGradient.addColorStop(0.00,'rgba(255,255,255,0)');
+          glareGradient.addColorStop(0.32,'rgba(255,255,255,0)');
+          glareGradient.addColorStop(0.44,'rgba(214,235,255,.015)');
+          glareGradient.addColorStop(0.50,'rgba(214,235,255,.08)');
+          glareGradient.addColorStop(0.56,'rgba(214,235,255,.025)');
+          glareGradient.addColorStop(0.68,'rgba(255,255,255,0)');
+          glareGradient.addColorStop(1.00,'rgba(255,255,255,0)');
           glareCtx.fillStyle=glareGradient;
           glareCtx.fillRect(0,0,512,256);
 
@@ -60,10 +59,10 @@
           const glareMaterial=new THREE.MeshBasicMaterial({
             map:glareTexture,
             transparent:true,
-            opacity:.62,
+            opacity:.16,
             depthWrite:false,
             toneMapped:false,
-            blending:THREE.AdditiveBlending
+            blending:THREE.NormalBlending
           });
           glare=new THREE.Mesh(new THREE.PlaneGeometry(2.45,1.63),glareMaterial);
           glare.position.z=.116;
@@ -211,12 +210,21 @@
               const sweepEnvelope=sweepRemaining>0 ? Math.sin(Math.PI*sweepProgress) : 0;
 
               if(glare){
-                const sweepOffset=sweepRemaining>0 ? (-.42+.84*sweepProgress) : 0;
-                glare.position.x=glassX*.055+sweepOffset;
-                glare.position.y=glassY*.032;
-                glare.rotation.z=-.035+glassX*.012;
-                glare.material.opacity=((open?.62:.18)+sweepEnvelope*.30)*(1-glassPressed*.16);
-                glare.scale.x=1+sweepEnvelope*.10;
+                // Keep the idle reflection off the reading area. The brighter
+                // sweep only crosses the display briefly when the tablet wakes.
+                const idleBiasX=-.34;
+                const sweepOffset=sweepRemaining>0
+                  ? (-.78+1.56*sweepProgress)
+                  : idleBiasX;
+
+                glare.position.x=sweepOffset+glassX*.018;
+                glare.position.y=glassY*.012;
+                glare.rotation.z=-.16+glassX*.006;
+
+                const baseOpacity=open?.07:.015;
+                const sweepOpacity=sweepEnvelope*.10;
+                glare.material.opacity=(baseOpacity+sweepOpacity)*(1-Math.max(0,screenPress)*.10);
+                glare.scale.x=.86+sweepEnvelope*.08;
               }
 
               if(edgeGlow){
