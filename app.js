@@ -202,7 +202,10 @@ document.addEventListener('mousemove',e=>{
 });
 canvas.addEventListener('click',()=>{ if(started && !tabletOpen) canvas.requestPointerLock(); });
 
-const tablet3DCanvas=document.querySelector('#tablet3d');\nconst tablet3D=window.createTablet3DController?.(tablet3DCanvas) || null;\n\nconst tabletLayer=document.querySelector('#tabletLayer');
+const tablet3DCanvas=document.querySelector('#tablet3d');
+const tablet3D=window.createTablet3DController?.(tablet3DCanvas) || null;
+
+const tabletLayer=document.querySelector('#tabletLayer');
 const hud=document.querySelector('#hud');
 const crosshair=document.querySelector('#crosshair');
 const modeLabel=document.querySelector('#modeLabel');
@@ -292,7 +295,8 @@ function animate(){
   lFore.rotation.x=-.05+Math.sin(t*.62)*.012;
   rFore.rotation.x=-.05-Math.sin(t*.62)*.012;
 
-  tablet3D?.render(t,tabletOpen);\n  renderer.render(scene,camera);
+  tablet3D?.render(t,tabletOpen);
+  renderer.render(scene,camera);
   requestAnimationFrame(animate);
 }
 animate();
