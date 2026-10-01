@@ -25,6 +25,10 @@
         0%,100% { margin-top:0; }
         50% { margin-top:-5px; }
       }
+      .app.active {
+        transform:translateY(-4px) scale(1.04);
+        filter:brightness(1.25);
+      }
     `;
     document.head.appendChild(style);
 
@@ -40,6 +44,21 @@
       if(!tablet) return;
       tablet.classList.remove('tablet-open-motion');
       tablet.classList.add('tablet-close-motion');
+    });
+
+    // Tablet home screen app interaction.
+    // The current iPad screen still uses CanvasTexture, so keep this bridge
+    // for the HTML prototype layer and later raycast UV mapping.
+    document.querySelectorAll('.app').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const app=btn.dataset.app;
+        document.querySelectorAll('.app').forEach(x=>x.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.view').forEach(v=>v.classList.remove('active-view'));
+        const view=document.getElementById(app);
+        if(view) view.classList.add('active-view');
+        window.dispatchEvent(new CustomEvent('tablet-app-open',{detail:{app}}));
+      });
     });
   }
   install();
