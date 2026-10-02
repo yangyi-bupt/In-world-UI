@@ -246,20 +246,20 @@ streetBannerCanvas.width=256;
 streetBannerCanvas.height=512;
 const streetBannerCtx=streetBannerCanvas.getContext('2d');
 const bannerGrad=streetBannerCtx.createLinearGradient(0,0,0,512);
-bannerGrad.addColorStop(0,'#496b78');
-bannerGrad.addColorStop(.52,'#6f8f91');
-bannerGrad.addColorStop(1,'#a98268');
+bannerGrad.addColorStop(0,'#738f8b');
+bannerGrad.addColorStop(.52,'#91a79a');
+bannerGrad.addColorStop(1,'#b99c82');
 streetBannerCtx.fillStyle=bannerGrad;
 streetBannerCtx.fillRect(0,0,256,512);
 streetBannerCtx.fillStyle='rgba(255,255,255,.10)';
 streetBannerCtx.fillRect(28,24,200,2);
 streetBannerCtx.fillRect(28,486,200,2);
-streetBannerCtx.fillStyle='#f5f0e6';
+streetBannerCtx.fillStyle='#f8f3ea';
 streetBannerCtx.font='700 48px Inter, sans-serif';
 streetBannerCtx.textAlign='center';
 streetBannerCtx.fillText('NOVA',128,226);
 streetBannerCtx.font='500 22px Inter, sans-serif';
-streetBannerCtx.fillStyle='rgba(245,240,230,.82)';
+streetBannerCtx.fillStyle='rgba(248,243,234,.84)';
 streetBannerCtx.fillText('CITY WALK',128,264);
 streetBannerCtx.fillStyle='rgba(245,240,230,.28)';
 streetBannerCtx.beginPath();
@@ -452,7 +452,7 @@ scene.add(focalCurbMark);
 const roadSheenMat=new THREE.MeshBasicMaterial({
   color:0xdde8eb,
   transparent:true,
-  opacity:.035,
+  opacity:.025,
   depthWrite:false,
   blending:THREE.NormalBlending
 });
@@ -572,6 +572,27 @@ function createStorePlaque(label,z,bg,fg){
 createStorePlaque('MORI',-10.6,'#e7e8df','#58625d');
 createStorePlaque('ATELIER',13.8,'#eee4d8','#63574d');
 
+const facadePlanterMat=new THREE.MeshStandardMaterial({color:0xb8aa97,roughness:.92});
+const facadeLeafMats=[
+  new THREE.MeshStandardMaterial({color:0x78986f,roughness:.96}),
+  new THREE.MeshStandardMaterial({color:0x91ad80,roughness:.95})
+];
+[-10.6,13.8].forEach((z,groupIndex)=>{
+  const planter=new THREE.Mesh(new THREE.BoxGeometry(.62,.22,2.15),facadePlanterMat);
+  planter.position.set(7.55,.36,z);
+  planter.castShadow=true;
+  planter.receiveShadow=true;
+  scene.add(planter);
+
+  [-.72,-.38,0,.37,.70].forEach((offset,i)=>{
+    const leaf=new THREE.Mesh(new THREE.SphereGeometry(.16+(i%2)*.02,10,8),facadeLeafMats[(i+groupIndex)%2]);
+    leaf.scale.set(1.0,.72,.92);
+    leaf.position.set(7.40,.58+(i%2)*.025,z+offset);
+    leaf.castShadow=true;
+    scene.add(leaf);
+  });
+});
+
 // Ground-floor cafe corner.
 const cafeFrame=box(.48,3.0,8.5,0xb58e70,8.33,1.55,4.8,.72);
 cafeFrame.castShadow=false;
@@ -636,6 +657,14 @@ for(let i=0;i<7;i++){
   valance.castShadow=true;
   scene.add(valance);
 }
+
+const awningLightMat=new THREE.MeshBasicMaterial({color:0xffe8c9,toneMapped:false});
+[3.0,4.8,6.6].forEach(z=>{
+  const light=new THREE.Mesh(new THREE.CircleGeometry(.045,14),awningLightMat);
+  light.position.set(6.79,2.59,z);
+  light.rotation.y=-Math.PI/2;
+  scene.add(light);
+});
 
 const cafeInteriorMat=new THREE.MeshStandardMaterial({
   color:0xf0c38f,
@@ -990,8 +1019,8 @@ const focalPlantMats=[
   scene.add(plant);
 });
 
-function createLampPost(x,z){
-  const metal=new THREE.MeshStandardMaterial({color:0x3f494b,roughness:.48,metalness:.62});
+function createLampPost(x,z,withBanner=true){
+  const metal=new THREE.MeshStandardMaterial({color:0x687170,roughness:.56,metalness:.38});
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,3.2,10),metal);
   pole.position.set(x,1.6,z);
   pole.castShadow=true;
@@ -1008,24 +1037,28 @@ function createLampPost(x,z){
   lamp.position.set(x-.59,3.11,z);
   scene.add(lamp);
 
-  const banner=new THREE.Mesh(
-    new THREE.PlaneGeometry(.40,.80),
-    new THREE.MeshBasicMaterial({
-      map:streetBannerTexture,
-      transparent:true,
-      side:THREE.DoubleSide,
-      toneMapped:false
-    })
-  );
-  banner.position.set(x+.15,2.55,z);
-  banner.rotation.y=Math.PI/2;
-  scene.add(banner);
+  if(withBanner){
+    const banner=new THREE.Mesh(
+      new THREE.PlaneGeometry(.36,.72),
+      new THREE.MeshBasicMaterial({
+        map:streetBannerTexture,
+        transparent:true,
+        side:THREE.DoubleSide,
+        toneMapped:false
+      })
+    );
+    banner.position.set(x+.15,2.55,z);
+    banner.rotation.y=Math.PI/2;
+    scene.add(banner);
+  }
 }
-[-11,2,15].forEach(z=>createLampPost(.45,z));
+createLampPost(.45,-11,true);
+createLampPost(.45,2,false);
+createLampPost(.45,15,true);
 
 const wayfindingPole=new THREE.Mesh(
   new THREE.CylinderGeometry(.045,.055,2.25,10),
-  new THREE.MeshStandardMaterial({color:0x485254,roughness:.52,metalness:.42})
+  new THREE.MeshStandardMaterial({color:0x66716e,roughness:.58,metalness:.30})
 );
 wayfindingPole.position.set(.48,1.13,-16.1);
 wayfindingPole.castShadow=true;
@@ -1035,7 +1068,7 @@ const wayfindingCanvas=document.createElement('canvas');
 wayfindingCanvas.width=256;
 wayfindingCanvas.height=128;
 const wayfindingCtx=wayfindingCanvas.getContext('2d');
-wayfindingCtx.fillStyle='#405458';
+wayfindingCtx.fillStyle='#607571';
 wayfindingCtx.fillRect(0,0,256,128);
 wayfindingCtx.fillStyle='#f2efe6';
 wayfindingCtx.font='700 28px Inter, sans-serif';
@@ -1046,17 +1079,17 @@ wayfindingCtx.fillText('CAFÉ  •  PARK',20,82);
 const wayfindingTexture=new THREE.CanvasTexture(wayfindingCanvas);
 wayfindingTexture.colorSpace=THREE.SRGBColorSpace;
 const wayfindingSign=new THREE.Mesh(
-  new THREE.PlaneGeometry(1.18,.58),
+  new THREE.PlaneGeometry(.96,.48),
   new THREE.MeshBasicMaterial({map:wayfindingTexture,toneMapped:false,side:THREE.DoubleSide})
 );
-wayfindingSign.position.set(.72,1.88,-16.1);
+wayfindingSign.position.set(.66,1.80,-16.1);
 wayfindingSign.rotation.y=Math.PI/2;
 scene.add(wayfindingSign);
 
 // A bench and bike rack near the cafe create readable points of interest for
 // future Scanner/Map interactions.
-const benchWood=new THREE.MeshStandardMaterial({color:0x9b795d,roughness:.82});
-const benchMetal=new THREE.MeshStandardMaterial({color:0x454d4e,roughness:.55,metalness:.45});
+const benchWood=new THREE.MeshStandardMaterial({color:0xb09073,roughness:.86});
+const benchMetal=new THREE.MeshStandardMaterial({color:0x707875,roughness:.60,metalness:.32});
 const benchSeat=new THREE.Mesh(new THREE.BoxGeometry(1.75,.10,.48),benchWood);
 benchSeat.position.set(6.15,.54,-5.55);benchSeat.castShadow=true;scene.add(benchSeat);
 const benchBack=new THREE.Mesh(new THREE.BoxGeometry(1.75,.48,.08),benchWood);
@@ -1077,6 +1110,45 @@ for(let i=0;i<3;i++){
 
 // Small outdoor cafe setup turns the building edge into a believable place,
 // not just a facade.
+const menuCanvas=document.createElement('canvas');
+menuCanvas.width=256;
+menuCanvas.height=384;
+const menuCtx=menuCanvas.getContext('2d');
+menuCtx.fillStyle='#f3eee4';
+menuCtx.fillRect(0,0,256,384);
+menuCtx.fillStyle='#59655f';
+menuCtx.textAlign='center';
+menuCtx.font='700 28px Inter, sans-serif';
+menuCtx.fillText('NOVA',128,92);
+menuCtx.font='500 18px Inter, sans-serif';
+menuCtx.fillText('COFFEE  •  BAKES',128,134);
+menuCtx.strokeStyle='rgba(89,101,95,.34)';
+menuCtx.lineWidth=3;
+menuCtx.beginPath();
+menuCtx.moveTo(54,174);
+menuCtx.lineTo(202,174);
+menuCtx.stroke();
+menuCtx.font='500 16px Inter, sans-serif';
+menuCtx.fillText('TODAY  08 — 18',128,226);
+const menuTexture=new THREE.CanvasTexture(menuCanvas);
+menuTexture.colorSpace=THREE.SRGBColorSpace;
+const menuBoard=new THREE.Mesh(
+  new THREE.PlaneGeometry(.56,.84),
+  new THREE.MeshBasicMaterial({map:menuTexture,toneMapped:false,side:THREE.DoubleSide})
+);
+menuBoard.position.set(6.78,.62,3.42);
+menuBoard.rotation.y=-.18;
+scene.add(menuBoard);
+
+const menuLegMat=new THREE.MeshStandardMaterial({color:0x8c8174,roughness:.72});
+[-.18,.18].forEach(dx=>{
+  const leg=new THREE.Mesh(new THREE.BoxGeometry(.035,.70,.035),menuLegMat);
+  leg.position.set(6.78+dx,.30,3.40);
+  leg.rotation.z=dx<0?.10:-.10;
+  leg.castShadow=true;
+  scene.add(leg);
+});
+
 const cafeTerrace=new THREE.Mesh(
   new THREE.PlaneGeometry(3.25,6.15),
   new THREE.MeshStandardMaterial({color:0xe9e1d5,roughness:.96})
@@ -1144,7 +1216,7 @@ const cupMat=new THREE.MeshStandardMaterial({color:0xf0ece2,roughness:.72});
   scene.add(cup);
 });
 
-[-9.5,-6.5,8.7].forEach(z=>{
+[-9.5,8.7].forEach(z=>{
   const bollard=new THREE.Mesh(
     new THREE.CylinderGeometry(.065,.075,.72,12),
     new THREE.MeshStandardMaterial({color:0x596266,roughness:.50,metalness:.48})
