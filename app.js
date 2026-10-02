@@ -1960,8 +1960,9 @@ function createAmbientWalker(x,z,direction,color,speed=.58,assetVariant='primary
     baseSpeed:speed,
     assetVariant,
     baseX:x,
-    headingBias:(ambientWalkers.length-1)*.018,
+    headingBias:(ambientWalkers.length-2)*.014,
     modelYawOffset:0,
+    idleFacingBias:(ambientWalkers.length%2===0?1:-1)*(.035+ambientWalkers.length*.006),
     pacePhase:Math.random()*Math.PI*2,
     phase:Math.random()*Math.PI*2,
     strollOffset:ambientWalkers.length*6.25+2.5,
@@ -1975,6 +1976,8 @@ function createAmbientWalker(x,z,direction,color,speed=.58,assetVariant='primary
 createAmbientWalker(4.95,-15.8,1,0xa98f82,.53,'primary');
 createAmbientWalker(6.15,16.6,-1,0x718692,.59,'secondary');
 createAmbientWalker(5.45,13.5,-1,0x8d9a73,.50,'tertiary');
+createAmbientWalker(4.72,-24.8,1,0x8c8580,.55,'quaternary');
+createAmbientWalker(6.38,24.6,-1,0x7e8982,.48,'quinary');
 
 const movingTraffic=[];
 function createTrafficCar(x,z,color,speed,assetVariant='primary'){
@@ -2170,6 +2173,8 @@ const WORLD_GLB_ASSETS={
   pedestrianPrimary:'https://cdn.jsdelivr.net/gh/MrArun005/3D-Games-AmusementPark@2d827a479ef7a44938372ca07d24c0faffb43b1d/public/models/characters/civilian_man.glb',
   pedestrianSecondary:'https://cdn.jsdelivr.net/gh/MrArun005/3D-Games-AmusementPark@2d827a479ef7a44938372ca07d24c0faffb43b1d/public/models/characters/civilian_longsleeve.glb',
   pedestrianTertiary:'https://cdn.jsdelivr.net/gh/MrArun005/3D-Games-AmusementPark@2d827a479ef7a44938372ca07d24c0faffb43b1d/public/models/characters/civilian_woman.glb',
+  pedestrianQuaternary:'https://cdn.jsdelivr.net/gh/MrArun005/3D-Games-AmusementPark@2d827a479ef7a44938372ca07d24c0faffb43b1d/public/models/characters/civilian_suit.glb',
+  pedestrianQuinary:'https://cdn.jsdelivr.net/gh/MrArun005/3D-Games-AmusementPark@2d827a479ef7a44938372ca07d24c0faffb43b1d/public/models/characters/civilian_woman2.glb',
   mira:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/Michelle.glb'
 };
 const worldAssetMixers=[];
@@ -2357,7 +2362,7 @@ function attachCarAsset(entry,source,index=0,targetLength=3.85){
 function attachWalkerAsset(entry,source,animations,index){
   const root=cloneAssetScene(source);
   prepareImportedModel(root,.28);
-  normalizeHumanAsset(root,[1.74,1.69,1.66][index%3]);
+  normalizeHumanAsset(root,[1.74,1.69,1.66,1.78,1.63][index%5]);
   tunePedestrianAsset(root,index);
   root.rotation.y=(entry.direction>0?0:Math.PI)+entry.headingBias+(entry.modelYawOffset||0);
   entry.placeholderChildren?.forEach(child=>{child.visible=false;});
@@ -2455,13 +2460,15 @@ async function initWorldGLBAssets(){
   ensureWorldAssetEnvironment();
   const loader=new window.GLTFLoader();
 
-  const [carPrimary,carSecondary,carFallback,pedestrianPrimary,pedestrianSecondary,pedestrianTertiary,miraResult]=await Promise.allSettled([
+  const [carPrimary,carSecondary,carFallback,pedestrianPrimary,pedestrianSecondary,pedestrianTertiary,pedestrianQuaternary,pedestrianQuinary,miraResult]=await Promise.allSettled([
     loadGLB(loader,WORLD_GLB_ASSETS.carPrimary),
     loadGLB(loader,WORLD_GLB_ASSETS.carSecondary),
     loadGLB(loader,WORLD_GLB_ASSETS.carFallback),
     loadGLB(loader,WORLD_GLB_ASSETS.pedestrianPrimary),
     loadGLB(loader,WORLD_GLB_ASSETS.pedestrianSecondary),
     loadGLB(loader,WORLD_GLB_ASSETS.pedestrianTertiary),
+    loadGLB(loader,WORLD_GLB_ASSETS.pedestrianQuaternary),
+    loadGLB(loader,WORLD_GLB_ASSETS.pedestrianQuinary),
     loadGLB(loader,WORLD_GLB_ASSETS.mira)
   ]);
 
@@ -2485,13 +2492,26 @@ async function initWorldGLBAssets(){
   const pedestrianSources={
     primary:pedestrianPrimary.status==='fulfilled'?pedestrianPrimary.value:null,
     secondary:pedestrianSecondary.status==='fulfilled'?pedestrianSecondary.value:null,
-    tertiary:pedestrianTertiary.status==='fulfilled'?pedestrianTertiary.value:null
+    tertiary:pedestrianTertiary.status==='fulfilled'?pedestrianTertiary.value:null,
+    quaternary:pedestrianQuaternary.status==='fulfilled'?pedestrianQuaternary.value:null,
+    quinary:pedestrianQuinary.status==='fulfilled'?pedestrianQuinary.value:null
   };
   ambientWalkers.forEach((entry,index)=>{
-    const source=pedestrianSources[entry.assetVariant] || pedestrianSources.primary || pedestrianSources.secondary || pedestrianSources.tertiary;
+    const source=pedestrianSources[entry.assetVariant] ||
+      pedestrianSources.primary ||
+      pedestrianSources.secondary ||
+      pedestrianSources.tertiary ||
+      pedestrianSources.quaternary ||
+      pedestrianSources.quinary;
     if(source) attachWalkerAsset(entry,source.scene,source.animations,index);
   });
-  if(!pedestrianSources.primary && !pedestrianSources.secondary && !pedestrianSources.tertiary){
+  if(
+    !pedestrianSources.primary &&
+    !pedestrianSources.secondary &&
+    !pedestrianSources.tertiary &&
+    !pedestrianSources.quaternary &&
+    !pedestrianSources.quinary
+  ){
     console.warn('Pedestrian GLBs failed; retaining procedural fallbacks.');
   }
 
@@ -2727,10 +2747,10 @@ function animate(){
 
   ambientWalkers.forEach((walker,index)=>{
     const pace=1+Math.sin(t*.21+walker.pacePhase)*.038;
-    const cycleLength=19+index*2.8;
+    const cycleLength=18.5+index*2.35;
     const cycle=(t+walker.strollOffset)%cycleLength;
     const farFromMira=Math.abs(walker.group.position.z-mira.position.z)>9.0;
-    const pauseDuration=1.7+index*.35;
+    const pauseDuration=1.45+(index%3)*.38;
     const shouldPause=Boolean(
       walker.assetRoot &&
       walker.idleAction &&
@@ -2752,6 +2772,12 @@ function animate(){
     if(walker.assetRoot){
       walker.group.position.y=0;
       walker.group.position.x=walker.baseX+Math.sin(t*.27+walker.pacePhase)*.030;
+      const idleYaw=walker.motionState==='idle'?walker.idleFacingBias:0;
+      walker.group.rotation.y=THREE.MathUtils.lerp(
+        walker.group.rotation.y,
+        idleYaw,
+        1-Math.pow(.12,dt)
+      );
       walker.group.rotation.z=0;
       if(walker.walkAction && walker.motionState==='walk'){
         walker.walkAction.setEffectiveTimeScale(
@@ -2764,12 +2790,12 @@ function animate(){
     }
 
     if(walker.direction>0 && walker.group.position.z>31){
-      walker.group.position.z=-30-index*1.5;
+      walker.group.position.z=-31-index*1.25;
       walker.speed=walker.baseSpeed;
       setWalkerMotionState(walker,'walk');
     }
     if(walker.direction<0 && walker.group.position.z<-30){
-      walker.group.position.z=31+index*1.5;
+      walker.group.position.z=32+index*1.25;
       walker.speed=walker.baseSpeed;
       setWalkerMotionState(walker,'walk');
     }
