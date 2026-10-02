@@ -1059,6 +1059,49 @@ road.material.roughness=.965;
 road.material.envMapIntensity=.035;
 road.material.needsUpdate=true;
 
+// Visual-only continuation beyond the playable bounds. Extending the surface
+// removes the "map edge" at the end of the boulevard while keeping collision
+// and player limits unchanged.
+const distantRoadTexture=asphaltTexture.clone();
+distantRoadTexture.repeat.set(5,12);
+distantRoadTexture.offset.set(.17,.08);
+distantRoadTexture.needsUpdate=true;
+const distantRoad=new THREE.Mesh(
+  new THREE.PlaneGeometry(15,34),
+  new THREE.MeshStandardMaterial({
+    color:0xffffff,
+    map:distantRoadTexture,
+    bumpMap:roadMicroBump,
+    bumpScale:.010,
+    roughness:.97,
+    envMapIntensity:.025
+  })
+);
+distantRoad.rotation.x=-Math.PI/2;
+distantRoad.position.set(-6.7,.003,-67);
+distantRoad.receiveShadow=true;
+scene.add(distantRoad);
+
+const distantSidewalkTexture=pavementTexture.clone();
+distantSidewalkTexture.repeat.set(4,9);
+distantSidewalkTexture.offset.set(.28,.11);
+distantSidewalkTexture.needsUpdate=true;
+const distantSidewalk=new THREE.Mesh(
+  new THREE.PlaneGeometry(10.8,34),
+  new THREE.MeshStandardMaterial({
+    color:0xc7c4b9,
+    map:distantSidewalkTexture,
+    bumpMap:pavementMicroBump,
+    bumpScale:.007,
+    roughness:.97,
+    envMapIntensity:.035
+  })
+);
+distantSidewalk.rotation.x=-Math.PI/2;
+distantSidewalk.position.set(4.2,.010,-67);
+distantSidewalk.receiveShadow=true;
+scene.add(distantSidewalk);
+
 const sidewalk=plane(10.8,92,0xffffff,4.2,.014,-4);
 sidewalk.material.map=pavementTexture;
 sidewalk.material.bumpMap=pavementMicroBump;
@@ -2698,10 +2741,34 @@ const cafeBenchMat=new THREE.MeshStandardMaterial({
   bumpMap:woodSurface.bump,
   bumpScale:.017
 });
-const cafeBench=new THREE.Mesh(new THREE.BoxGeometry(.34,.48,2.60),cafeBenchMat);
-cafeBench.position.set(8.18,.46,6.25);
+const cafeBench=new THREE.Mesh(new THREE.BoxGeometry(.34,.40,2.60),cafeBenchMat);
+cafeBench.position.set(8.18,.42,6.25);
 cafeBench.castShadow=true;
 scene.add(cafeBench);
+
+const cafeBenchBack=new THREE.Mesh(
+  new THREE.BoxGeometry(.12,.62,2.62),
+  cafeBenchMat
+);
+cafeBenchBack.position.set(8.30,.76,6.25);
+cafeBenchBack.castShadow=true;
+scene.add(cafeBenchBack);
+
+const cafeBenchCushion=new THREE.Mesh(
+  new THREE.BoxGeometry(.24,.075,2.45),
+  new THREE.MeshPhysicalMaterial({
+    color:0xb7a08c,
+    roughness:.88,
+    metalness:0,
+    sheen:1,
+    sheenColor:new THREE.Color(0xd8c1aa),
+    sheenRoughness:.90,
+    envMapIntensity:.12
+  })
+);
+cafeBenchCushion.position.set(8.00,.66,6.25);
+cafeBenchCushion.castShadow=true;
+scene.add(cafeBenchCushion);
 
 const cafeSmallTableMat=new THREE.MeshStandardMaterial({
   color:0xc9aa88,
@@ -2710,15 +2777,49 @@ const cafeSmallTableMat=new THREE.MeshStandardMaterial({
   bumpMap:woodSurface.bump,
   bumpScale:.017
 });
-[3.45,5.05,6.65].forEach(z=>{
-  const top=new THREE.Mesh(new THREE.CylinderGeometry(.20,.20,.035,18),cafeSmallTableMat);
+[3.45,5.05,6.65].forEach((z,tableIndex)=>{
+  const top=new THREE.Mesh(new THREE.CylinderGeometry(.20,.20,.035,20),cafeSmallTableMat);
   top.position.set(7.92,.72,z);
   top.castShadow=true;
   scene.add(top);
-  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.022,.030,.64,8),cafeMullionMat);
-  stem.position.set(7.92,.39,z);
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.022,.030,.60,10),cafeMullionMat);
+  stem.position.set(7.92,.41,z);
   stem.castShadow=true;
   scene.add(stem);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.13,.15,.025,18),cafeMullionMat);
+  base.position.set(7.92,.095,z);
+  base.castShadow=true;
+  scene.add(base);
+
+  // A compact chair silhouette behind each table reads through the glazing
+  // without crowding the shallow interior.
+  const chairZ=z+(tableIndex%2?.31:-.31);
+  const chairSeat=new THREE.Mesh(
+    new THREE.BoxGeometry(.22,.045,.20),
+    cafeBenchMat
+  );
+  chairSeat.position.set(7.95,.44,chairZ);
+  chairSeat.castShadow=true;
+  scene.add(chairSeat);
+
+  const chairBack=new THREE.Mesh(
+    new THREE.BoxGeometry(.055,.34,.22),
+    cafeBenchMat
+  );
+  chairBack.position.set(8.04,.62,chairZ);
+  chairBack.rotation.z=-.08;
+  chairBack.castShadow=true;
+  scene.add(chairBack);
+
+  [-.075,.075].forEach(offset=>{
+    const chairLeg=new THREE.Mesh(
+      new THREE.CylinderGeometry(.012,.014,.39,7),
+      cafeMullionMat
+    );
+    chairLeg.position.set(7.94,.235,chairZ+offset);
+    chairLeg.castShadow=true;
+    scene.add(chairLeg);
+  });
 });
 for(let z=2.95;z<=6.75;z+=1.90){
   const shelf=new THREE.Mesh(new THREE.BoxGeometry(.10,.065,1.15),cafeInteriorWarm);
@@ -3035,6 +3136,59 @@ function createGlassTower(x,z,w,d,h,tint){
 
 createGlassTower(-17.8,-4.8,4.4,7.0,12.4,0xa8c8d2);
 createGlassTower(-19.2,16.2,4.8,6.4,10.6,0xb7ccd2);
+
+// Low-detail buildings continue beyond the playable road. Their desaturated
+// palette and reduced contrast keep them atmospheric while giving the street a
+// real vanishing corridor rather than a visible world boundary.
+const distantBlockPalette=[0xc6cdca,0xd1d0c8,0xbfc8c6,0xd5d2ca];
+[
+  [-15.2,-61,5.6,8.4,8.8],
+  [-14.8,-72,6.0,7.0,11.2],
+  [8.8,-61,4.8,7.6,9.4],
+  [9.6,-71,5.4,6.8,12.0],
+  [9.1,-80,5.0,6.2,10.4]
+].forEach(([x,z,w,d,h],index)=>{
+  const block=new THREE.Mesh(
+    new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshStandardMaterial({
+      color:distantBlockPalette[index%distantBlockPalette.length],
+      roughness:.91,
+      map:index%2?concreteSurface.map:facadeSurface.map,
+      bumpMap:index%2?concreteSurface.bump:facadeSurface.bump,
+      bumpScale:.004,
+      envMapIntensity:.035
+    })
+  );
+  block.position.set(x,h/2,z);
+  scene.add(block);
+
+  const crown=new THREE.Mesh(
+    new THREE.BoxGeometry(w*.62,.30,d*.58),
+    new THREE.MeshStandardMaterial({
+      color:0xb7c0bd,
+      roughness:.88,
+      envMapIntensity:.03
+    })
+  );
+  crown.position.set(x+(index%2?.24:-.16),h+.15,z);
+  scene.add(crown);
+
+  const distantWindowMat=new THREE.MeshBasicMaterial({
+    color:index%2?0xaebfbe:0xb7c2bd,
+    transparent:true,
+    opacity:.34,
+    toneMapped:false
+  });
+  for(let y=1.3;y<h-.8;y+=1.55){
+    const band=new THREE.Mesh(
+      new THREE.PlaneGeometry(d*.68,.34),
+      distantWindowMat
+    );
+    band.position.set(x-(w/2+.008),y,z);
+    band.rotation.y=Math.PI/2;
+    scene.add(band);
+  }
+});
 
 // Soft skyline silhouettes keep the horizon bright and city-like.
 for(let i=0;i<9;i++){
