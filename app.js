@@ -3687,12 +3687,16 @@ const cafeBenchCushion=new THREE.Mesh(
   new THREE.BoxGeometry(.24,.075,2.45),
   new THREE.MeshPhysicalMaterial({
     color:0xb7a08c,
-    roughness:.88,
+    roughness:.92,
+    roughnessMap:clothRoughnessTexture,
     metalness:0,
-    sheen:1,
+    bumpMap:fabricMicroBump,
+    bumpScale:.004,
+    sheen:.24,
     sheenColor:new THREE.Color(0xd8c1aa),
-    sheenRoughness:.90,
-    envMapIntensity:.12
+    sheenRoughness:.97,
+    clearcoat:0,
+    envMapIntensity:.07
   })
 );
 cafeBenchCushion.position.set(8.00,.66,6.25);
@@ -6241,21 +6245,44 @@ function tuneVehicleAsset(root,bodyColor){
 function tunePedestrianAsset(root,index=0){
   root.traverse(object=>{
     if(!object.isMesh) return;
+    const hasUv=Boolean(object.geometry?.attributes?.uv);
     const materials=Array.isArray(object.material)?object.material:[object.material];
+
     materials.forEach(material=>{
       if(!material) return;
-      if('roughness' in material){
-        material.roughness=THREE.MathUtils.clamp(material.roughness ?? .78,.72,.94);
-      }
+      const key=((object.name||'')+' '+(material.name||'')).toLowerCase();
+
       if('metalness' in material){
-        material.metalness=Math.min(material.metalness ?? 0,.025);
+        material.metalness=0;
       }
-      if('envMapIntensity' in material){
-        material.envMapIntensity=Math.min(material.envMapIntensity ?? .24,.26);
+
+      if(/skin|face|head/.test(key)){
+        if('roughness' in material){
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .74,.70,.82);
+        }
+        if('envMapIntensity' in material) material.envMapIntensity=.12;
+        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
+          material.roughnessMap=skinRoughnessTexture;
+        }
+      }else if(/hair/.test(key)){
+        if('roughness' in material){
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .78,.72,.86);
+        }
+        if('envMapIntensity' in material) material.envMapIntensity=.16;
+        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
+          material.roughnessMap=hairRoughnessTexture;
+        }
+      }else{
+        if('roughness' in material){
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .84,.80,.96);
+        }
+        if('envMapIntensity' in material) material.envMapIntensity=.10;
+        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
+          material.roughnessMap=clothRoughnessTexture;
+        }
       }
-      // Background pedestrians stay deliberately quieter than Mira. Slightly
-      // reducing saturated clothing prevents five equally strong color spots
-      // from competing with the focal character.
+
+      // Background pedestrians stay deliberately quieter than Mira.
       if(material.color){
         const hsl={h:0,s:0,l:0};
         material.color.getHSL(hsl);
