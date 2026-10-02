@@ -1129,6 +1129,26 @@ curbCap.material.bumpMap=concreteSurface.bump;
 curbCap.material.bumpScale=.008;
 curbCap.material.needsUpdate=true;
 
+// A narrow rounded nose catches daylight along the curb edge. The original box
+// remains the structural/collision-friendly base while this adds the missing
+// masonry profile without changing world dimensions.
+const curbNose=new THREE.Mesh(
+  new THREE.CylinderGeometry(.028,.028,91.8,8,1,false),
+  new THREE.MeshStandardMaterial({
+    color:0xd8d1c5,
+    roughness:.91,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.006,
+    envMapIntensity:.055
+  })
+);
+curbNose.rotation.x=Math.PI/2;
+curbNose.position.set(-.095,.157,-4);
+curbNose.castShadow=true;
+curbNose.receiveShadow=true;
+scene.add(curbNose);
+
 const gutterStrip=new THREE.Mesh(
   new THREE.PlaneGeometry(.34,88),
   new THREE.MeshStandardMaterial({
@@ -1705,6 +1725,51 @@ facadeBayCenters.forEach((z,bayIndex)=>{
     const mullion=box(.045,.035,bayDepth-.40,0xa3adaa,8.35,y,z,.42,.28);
     mullion.castShadow=false;
   });
+
+  // Perimeter frame + projecting sill gives the glazing actual construction
+  // depth, so reflections sit inside an opening rather than on a flat wall.
+  const frameMat=new THREE.MeshStandardMaterial({
+    color:z<-7?0x929e9b:(z>10?0xa69688:0x9b948b),
+    roughness:.44,
+    metalness:.30,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.003,
+    envMapIntensity:.82
+  });
+  const frameDepth=bayDepth-.30;
+  const frameX=8.315;
+  [
+    [frameX,1.04,z-frameDepth*.5,.075,.88,.075],
+    [frameX,1.04,z+frameDepth*.5,.075,.88,.075],
+    [frameX,5.65,z-frameDepth*.5,.075,.34,.075],
+    [frameX,5.65,z+frameDepth*.5,.075,.34,.075]
+  ].forEach(([x,y,fz,w,h,d])=>{
+    const piece=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),frameMat);
+    piece.position.set(x,y,fz);
+    piece.castShadow=true;
+    scene.add(piece);
+  });
+  [1.02,5.68].forEach(y=>{
+    const rail=new THREE.Mesh(new THREE.BoxGeometry(.075,.075,frameDepth+.08),frameMat);
+    rail.position.set(frameX,y,z);
+    rail.castShadow=true;
+    scene.add(rail);
+  });
+  const sill=new THREE.Mesh(
+    new THREE.BoxGeometry(.34,.065,frameDepth+.10),
+    new THREE.MeshStandardMaterial({
+      color:0xc3bbb0,
+      roughness:.88,
+      map:concreteSurface.map,
+      bumpMap:concreteSurface.bump,
+      bumpScale:.008,
+      envMapIntensity:.06
+    })
+  );
+  sill.position.set(8.18,.94,z);
+  sill.castShadow=true;
+  scene.add(sill);
 
   // dark sill + pale canopy creates the cafe / mixed-use street rhythm.
   box(.38,.16,bayDepth-.18,0x666965,8.34,.62,z,.62,.10);
@@ -3226,26 +3291,51 @@ const cafeSeatMat=new THREE.MeshStandardMaterial({
 });
 
 function createCafeTable(x,z){
-  const top=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.055,24),cafeTableWood);
+  const top=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.050,32),cafeTableWood);
   top.position.set(x,.72,z);
   top.castShadow=true;
   scene.add(top);
 
-  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.035,.05,.68,10),cafeTableMetal);
-  stem.position.set(x,.36,z);
+  // Thin metal rim underneath gives the tabletop a believable laminated edge.
+  const topRim=new THREE.Mesh(
+    new THREE.TorusGeometry(.315,.018,8,32),
+    cafeTableMetal
+  );
+  topRim.rotation.x=Math.PI/2;
+  topRim.position.set(x,.690,z);
+  topRim.castShadow=true;
+  scene.add(topRim);
+
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.032,.045,.62,12),cafeTableMetal);
+  stem.position.set(x,.385,z);
   stem.castShadow=true;
   scene.add(stem);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.19,.22,.030,24),cafeTableMetal);
+  base.position.set(x,.065,z);
+  base.castShadow=true;
+  scene.add(base);
 
   [-.52,.52].forEach(side=>{
-    const seat=new THREE.Mesh(new THREE.BoxGeometry(.34,.06,.34),cafeSeatMat);
+    const seat=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.055,24),cafeSeatMat);
     seat.position.set(x+side,.46,z);
     seat.castShadow=true;
     scene.add(seat);
 
-    const leg=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,.43,8),cafeTableMetal);
-    leg.position.set(x+side,.23,z);
+    const leg=new THREE.Mesh(new THREE.CylinderGeometry(.023,.030,.40,10),cafeTableMetal);
+    leg.position.set(x+side,.235,z);
     leg.castShadow=true;
     scene.add(leg);
+
+    // Small curved backrest breaks the "stool made from primitives" silhouette.
+    const back=new THREE.Mesh(
+      new THREE.CapsuleGeometry(.035,.25,4,8),
+      cafeTableMetal
+    );
+    back.position.set(x+side,.69,z+(side<0?.14:-.14));
+    back.rotation.z=side<0?.10:-.10;
+    back.rotation.x=Math.PI/2;
+    back.castShadow=true;
+    scene.add(back);
   });
 }
 createCafeTable(5.9,5.7);
