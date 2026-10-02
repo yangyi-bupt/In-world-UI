@@ -1903,9 +1903,17 @@ function createParkedCar(x,z,color,assetVariant='primary'){
     group.add(mirror);
   });
 
-  group.position.set(x,0,z);
+  const parkedIndex=parkedCars.length;
+  group.position.set(x+(parkedIndex===0?-.05:.06),0,z);
+  group.rotation.y=parkedIndex===0?-.018:.024;
   scene.add(group);
-  parkedCars.push({group,color,assetVariant,placeholderChildren:[...group.children],assetRoot:null});
+  parkedCars.push({
+    group,
+    color,
+    assetVariant,
+    placeholderChildren:[...group.children],
+    assetRoot:null
+  });
   return group;
 }
 createParkedCar(-3.55,-8.5,0xa0adb0,'primary');
@@ -1949,8 +1957,11 @@ function createAmbientWalker(x,z,direction,color,speed=.58,assetVariant='primary
     group,
     direction,
     speed,
+    baseSpeed:speed,
     assetVariant,
     baseX:x,
+    headingBias:(ambientWalkers.length-1)*.018,
+    pacePhase:Math.random()*Math.PI*2,
     phase:Math.random()*Math.PI*2,
     placeholderChildren:[...group.children],
     assetRoot:null,
@@ -2015,6 +2026,7 @@ function createTrafficCar(x,z,color,speed,assetVariant='primary'){
     group,
     speed,
     baseSpeed:speed,
+    baseX:x,
     assetVariant,
     motionPhase:Math.random()*Math.PI*2,
     wheels,
@@ -2137,7 +2149,8 @@ const lHand=new THREE.Mesh(new THREE.SphereGeometry(.09,16,12),skinMat);lHand.sc
 const rHand=lHand.clone();rHand.position.x=.42;miraRig.add(rHand);
 
 mira.position.set(2.0,0,-1.6);
-mira.rotation.y=-.16;
+const miraBaseYaw=-.16;
+mira.rotation.y=miraBaseYaw;
 mira.scale.setScalar(1.02);
 scene.add(mira);
 
@@ -2327,9 +2340,9 @@ function attachCarAsset(entry,source,index=0,targetLength=3.85){
 function attachWalkerAsset(entry,source,animations,index){
   const root=cloneAssetScene(source);
   prepareImportedModel(root);
-  normalizeHumanAsset(root,1.72+(index-1)*.045);
+  normalizeHumanAsset(root,[1.68,1.75,1.71][index%3]);
   tunePedestrianAsset(root,index);
-  root.rotation.y=entry.direction>0?0:Math.PI;
+  root.rotation.y=(entry.direction>0?0:Math.PI)+entry.headingBias;
   entry.placeholderChildren?.forEach(child=>{child.visible=false;});
   entry.group.scale.setScalar(1);
   entry.group.add(root);
@@ -2633,11 +2646,13 @@ function animate(){
   worldAssetMixers.forEach(mixer=>mixer.update(dt));
 
   movingTraffic.forEach((traffic,index)=>{
-    const drift=1+Math.sin(t*.19+traffic.motionPhase)*.035;
+    const drift=1+Math.sin(t*.19+traffic.motionPhase)*.028;
     traffic.speed=traffic.baseSpeed*drift;
     traffic.group.position.z+=traffic.speed*dt;
+    traffic.group.position.x=traffic.baseX+Math.sin(t*.16+traffic.motionPhase)*.035;
     if(traffic.assetRoot){
-      traffic.assetRoot.position.y=traffic.assetBaseY+Math.sin(t*2.1+traffic.motionPhase)*.0025;
+      traffic.assetRoot.position.y=traffic.assetBaseY+Math.sin(t*2.1+traffic.motionPhase)*.0022;
+      traffic.assetRoot.rotation.z=Math.sin(t*.31+traffic.motionPhase)*.0018;
     }
     const spin=traffic.speed*dt*2.8;
     const rollingWheels=traffic.assetWheels?.length?traffic.assetWheels:traffic.wheels;
@@ -2647,25 +2662,47 @@ function animate(){
   });
 
   ambientWalkers.forEach((walker,index)=>{
-    const travel=walker.speed;
-    walker.group.position.z+=walker.direction*travel*dt;
-    walker.phase+=dt*(3.8+index*.35);
+    const pace=1+Math.sin(t*.23+walker.pacePhase)*.055;
+    walker.speed=walker.baseSpeed*pace;
+    walker.group.position.z+=walker.direction*walker.speed*dt;
+    walker.phase+=dt*(3.8+index*.35)*pace;
     if(walker.assetRoot){
       walker.group.position.y=0;
-      walker.group.position.x=walker.baseX+Math.sin(t*.38+walker.phase*.12)*.035;
+      walker.group.position.x=walker.baseX+Math.sin(t*.31+walker.pacePhase)*.045;
       walker.group.rotation.z=0;
+      if(walker.walkAction){
+        walker.walkAction.setEffectiveTimeScale(
+          THREE.MathUtils.clamp(walker.speed/.72,.70,.96)
+        );
+      }
     }else{
       walker.group.position.y=Math.abs(Math.sin(walker.phase))*0.012;
       walker.group.rotation.z=Math.sin(walker.phase)*.012;
     }
-    if(walker.direction>0 && walker.group.position.z>20) walker.group.position.z=-19.5-index;
-    if(walker.direction<0 && walker.group.position.z<-19.5) walker.group.position.z=20+index;
+    if(walker.direction>0 && walker.group.position.z>31) walker.group.position.z=-30-index*1.5;
+    if(walker.direction<0 && walker.group.position.z<-30) walker.group.position.z=31+index*1.5;
   });
 
   // Human idle: breathing, tiny weight shift and occasional attention toward player.
+  const miraToCameraX=camera.position.x-mira.position.x;
+  const miraToCameraZ=camera.position.z-mira.position.z;
+  const miraDistance=Math.hypot(miraToCameraX,miraToCameraZ);
+  const miraLookYaw=THREE.MathUtils.clamp(
+    Math.atan2(miraToCameraX,miraToCameraZ),
+    miraBaseYaw-.22,
+    miraBaseYaw+.20
+  );
+  const miraYawTarget=miraDistance<12?miraLookYaw:miraBaseYaw;
+  mira.rotation.y=THREE.MathUtils.lerp(
+    mira.rotation.y,
+    miraYawTarget,
+    1-Math.pow(.08,dt)
+  );
+
   if(miraGLBRoot){
-    miraGLBRoot.position.y=Math.sin(t*.74)*.004;
-    miraGLBRoot.rotation.z=Math.sin(t*.42)*.0035;
+    miraGLBRoot.position.y=Math.sin(t*.74)*.003;
+    miraGLBRoot.rotation.z=Math.sin(t*.42)*.0028;
+    miraGLBRoot.rotation.x=Math.sin(t*.29)*.0018;
   }
   const idleBreath=Math.sin(t*1.55);
   if(!miraGLBRoot){
