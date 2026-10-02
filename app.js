@@ -337,9 +337,20 @@ function makeMaterialTexture(kind,seed){
   const r=roughCanvas.getContext('2d');
   const rnd=makeSeededRandom(seed);
 
+  const isStone=/stone|limestone|sandstone/.test(kind);
+  const isConcrete=/concrete/i.test(kind);
+  const isFineConcrete=kind==='fineConcrete';
+  const isCoarseConcrete=kind==='coarseConcrete';
+  const isLimestone=kind==='limestone';
+  const isSandstone=kind==='sandstone';
+
   const palettes={
     stone:['#d4cbbf','#bfb5a8','#e4ddd2'],
+    limestone:['#ddd6ca','#c9c1b4','#eee8de'],
+    sandstone:['#c7a88a','#ad8d71','#dfc0a0'],
     concrete:['#c4c0b7','#aca79e','#d2cdc3'],
+    fineConcrete:['#cbc8c1','#b8b4ac','#dad6cf'],
+    coarseConcrete:['#b6b0a5','#969187','#cac3b7'],
     wood:['#ae8566','#8f684f','#c79b78'],
     metal:['#858e8b','#707977','#a2aaa7']
   };
@@ -349,7 +360,11 @@ function makeMaterialTexture(kind,seed){
   g.fillRect(0,0,size,size);
   b.fillStyle='#808080';
   b.fillRect(0,0,size,size);
-  r.fillStyle=kind==='metal'?'#777777':(kind==='wood'?'#b7b7b7':'#dedede');
+  r.fillStyle=kind==='metal'
+    ? '#777777'
+    : (kind==='wood'
+      ? '#b7b7b7'
+      : (isSandstone?'#d2d2d2':(isFineConcrete?'#e5e5e5':'#dedede')));
   r.fillRect(0,0,size,size);
 
   // Large-scale albedo and roughness drift is what stops a material from
@@ -457,43 +472,146 @@ function makeMaterialTexture(kind,seed){
       r.stroke();
     }
   }else{
-    const pores=kind==='stone'?2100:2800;
+    const pores=isLimestone
+      ? 1500
+      : (isSandstone
+        ? 3400
+        : (isFineConcrete
+          ? 1650
+          : (isCoarseConcrete?2300:2800)));
+
     for(let i=0;i<pores;i++){
       const x=rnd()*size;
       const y=rnd()*size;
-      const rr=.30+rnd()*(kind==='stone'?1.7:2.2);
+      const rr=isLimestone
+        ? .20+rnd()*1.10
+        : (isSandstone
+          ? .22+rnd()*1.35
+          : (isFineConcrete
+            ? .18+rnd()*1.15
+            : (isCoarseConcrete?.45+rnd()*2.8:.30+rnd()*2.2)));
       const dark=rnd()>.54;
+
+      let darkTone='83,77,69';
+      let lightTone='255,248,235';
+      if(isLimestone){
+        darkTone='118,109,96';
+        lightTone='250,245,233';
+      }else if(isSandstone){
+        darkTone='116,78,54';
+        lightTone='244,207,168';
+      }else if(isCoarseConcrete){
+        darkTone='73,72,68';
+        lightTone='225,218,205';
+      }
+
       g.fillStyle=dark
-        ? 'rgba(83,77,69,'+(.012+rnd()*.034).toFixed(3)+')'
-        : 'rgba(255,248,235,'+(.010+rnd()*.030).toFixed(3)+')';
+        ? 'rgba('+darkTone+','+(.012+rnd()*.038).toFixed(3)+')'
+        : 'rgba('+lightTone+','+(.010+rnd()*.032).toFixed(3)+')';
       g.beginPath();
       g.arc(x,y,rr,0,Math.PI*2);
       g.fill();
 
-      const bumpV=dark?112+Math.floor(rnd()*12):134+Math.floor(rnd()*13);
-      b.fillStyle='rgba('+bumpV+','+bumpV+','+bumpV+','+(.35+rnd()*.45).toFixed(3)+')';
+      const bumpV=dark?109+Math.floor(rnd()*15):134+Math.floor(rnd()*15);
+      b.fillStyle='rgba('+bumpV+','+bumpV+','+bumpV+','+(.34+rnd()*.46).toFixed(3)+')';
       b.beginPath();
-      b.arc(x,y,Math.max(.45,rr*.75),0,Math.PI*2);
+      b.arc(x,y,Math.max(.35,rr*.78),0,Math.PI*2);
       b.fill();
 
-      const roughV=kind==='stone'
-        ? 194+Math.floor(rnd()*52)
-        : 208+Math.floor(rnd()*38);
+      const roughV=isSandstone
+        ? 214+Math.floor(rnd()*35)
+        : (isFineConcrete
+          ? 220+Math.floor(rnd()*30)
+          : (isLimestone
+            ? 202+Math.floor(rnd()*42)
+            : 198+Math.floor(rnd()*48)));
       r.fillStyle='rgba('+roughV+','+roughV+','+roughV+','+(.18+rnd()*.34).toFixed(3)+')';
       r.beginPath();
       r.arc(x,y,rr*1.25,0,Math.PI*2);
       r.fill();
     }
 
-    const veins=kind==='stone'?34:18;
+    if(isCoarseConcrete){
+      for(let i=0;i<115;i++){
+        const x=rnd()*size;
+        const y=rnd()*size;
+        const rx=2+rnd()*7;
+        const ry=1.5+rnd()*5;
+        const aggregate=rnd()>.50
+          ? 'rgba(92,85,75,'+(.06+rnd()*.09).toFixed(3)+')'
+          : 'rgba(228,218,198,'+(.05+rnd()*.08).toFixed(3)+')';
+        g.fillStyle=aggregate;
+        g.beginPath();
+        g.ellipse(x,y,rx,ry,rnd()*Math.PI,0,Math.PI*2);
+        g.fill();
+
+        const bv=108+Math.floor(rnd()*36);
+        b.fillStyle='rgba('+bv+','+bv+','+bv+',.48)';
+        b.beginPath();
+        b.ellipse(x,y,rx*.72,ry*.72,0,0,Math.PI*2);
+        b.fill();
+      }
+    }
+
+    if(isFineConcrete || isCoarseConcrete){
+      const airCount=isFineConcrete?48:78;
+      for(let i=0;i<airCount;i++){
+        const x=rnd()*size;
+        const y=rnd()*size;
+        const rr=(isFineConcrete?.55:1.0)+rnd()*(isFineConcrete?1.25:2.6);
+        g.fillStyle='rgba(71,69,64,'+(.018+rnd()*.030).toFixed(3)+')';
+        g.beginPath();
+        g.arc(x,y,rr,0,Math.PI*2);
+        g.fill();
+        b.fillStyle='rgba(86,86,86,'+(.34+rnd()*.30).toFixed(3)+')';
+        b.beginPath();
+        b.arc(x,y,rr*.70,0,Math.PI*2);
+        b.fill();
+        r.fillStyle='rgba(244,244,244,.20)';
+        r.beginPath();
+        r.arc(x,y,rr*1.10,0,Math.PI*2);
+        r.fill();
+      }
+    }
+
+    if(isSandstone){
+      for(let i=0;i<42;i++){
+        const y=rnd()*size;
+        const amp=2+rnd()*8;
+        const wavelength=28+rnd()*90;
+        g.strokeStyle='rgba(119,78,50,'+(.018+rnd()*.038).toFixed(3)+')';
+        g.lineWidth=.45+rnd()*1.25;
+        g.beginPath();
+        for(let x=0;x<=size;x+=8){
+          const yy=y+Math.sin(x/wavelength*Math.PI*2+rnd()*.2)*amp;
+          if(x===0) g.moveTo(x,yy); else g.lineTo(x,yy);
+        }
+        g.stroke();
+      }
+    }
+
+    if(isLimestone){
+      for(let i=0;i<68;i++){
+        const x=rnd()*size;
+        const y=rnd()*size;
+        const rr=1+rnd()*3.8;
+        g.strokeStyle='rgba(126,116,100,'+(.014+rnd()*.026).toFixed(3)+')';
+        g.lineWidth=.45+rnd()*.55;
+        g.beginPath();
+        g.arc(x,y,rr,0,Math.PI*2);
+        g.stroke();
+      }
+    }
+
+    const veins=isStone?(isSandstone?18:(isLimestone?22:34)):14;
     for(let i=0;i<veins;i++){
       const y=rnd()*size;
       const x=rnd()*size;
       const len=70+rnd()*250;
-      g.strokeStyle=kind==='stone'
-        ? 'rgba(102,91,79,'+(.018+rnd()*.030).toFixed(3)+')'
-        : 'rgba(91,87,80,'+(.010+rnd()*.020).toFixed(3)+')';
-      g.lineWidth=.35+rnd()*1.0;
+      g.strokeStyle=isStone
+        ? 'rgba(102,91,79,'+(.012+rnd()*.026).toFixed(3)+')'
+        : 'rgba(91,87,80,'+(.008+rnd()*.018).toFixed(3)+')';
+      g.lineWidth=.30+rnd()*.90;
       g.beginPath();
       g.moveTo(x,y);
       g.bezierCurveTo(
@@ -503,8 +621,8 @@ function makeMaterialTexture(kind,seed){
       );
       g.stroke();
 
-      r.strokeStyle='rgba(166,166,166,'+(.035+rnd()*.065).toFixed(3)+')';
-      r.lineWidth=.8+rnd()*1.4;
+      r.strokeStyle='rgba(166,166,166,'+(.028+rnd()*.055).toFixed(3)+')';
+      r.lineWidth=.7+rnd()*1.2;
       r.beginPath();
       r.moveTo(x,y);
       r.bezierCurveTo(
@@ -603,11 +721,11 @@ const pavementRoughness=makeGroundRoughnessTexture('pavement',0x63b192e7);
 pavementRoughness.repeat.set(5,22);
 
 const facadeSurface=configureTexturePair(makeMaterialTexture('stone',0x51a72d31),1.8,15);
-const limestoneSurface=configureTexturePair(makeMaterialTexture('stone',0x2cb85419),1.35,11.5);
-const sandstoneSurface=configureTexturePair(makeMaterialTexture('stone',0x9a7345c2),2.15,8.4);
+const limestoneSurface=configureTexturePair(makeMaterialTexture('limestone',0x2cb85419),1.35,11.5);
+const sandstoneSurface=configureTexturePair(makeMaterialTexture('sandstone',0x9a7345c2),2.15,8.4);
 const concreteSurface=configureTexturePair(makeMaterialTexture('concrete',0x327c619b),2.2,5.6);
-const fineConcreteSurface=configureTexturePair(makeMaterialTexture('concrete',0x4ac9d176),3.6,8.2);
-const coarseConcreteSurface=configureTexturePair(makeMaterialTexture('concrete',0x8d31a5f0),1.45,3.8);
+const fineConcreteSurface=configureTexturePair(makeMaterialTexture('fineConcrete',0x4ac9d176),3.6,8.2);
+const coarseConcreteSurface=configureTexturePair(makeMaterialTexture('coarseConcrete',0x8d31a5f0),1.45,3.8);
 const woodSurface=configureTexturePair(makeMaterialTexture('wood',0x78d0bc53),1.2,5.8);
 const metalSurface=configureTexturePair(makeMaterialTexture('metal',0x1165a2ef),5.5,1.2);
 
