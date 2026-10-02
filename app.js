@@ -1159,6 +1159,159 @@ roadWearTexture.repeat.set(1.2,4.8);
 const metalWearTexture=makeWeatheringTexture('metal',0x31d7be42);
 metalWearTexture.repeat.set(2.5,5.0);
 
+function makeMacroPatinaTexture(kind,seed){
+  const w=512;
+  const h=512;
+  const colorCanvas=document.createElement('canvas');
+  const roughCanvas=document.createElement('canvas');
+  colorCanvas.width=roughCanvas.width=w;
+  colorCanvas.height=roughCanvas.height=h;
+  const g=colorCanvas.getContext('2d');
+  const r=roughCanvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+  g.clearRect(0,0,w,h);
+
+  if(kind==='wallBase'){
+    r.fillStyle='#dddddd';
+    r.fillRect(0,0,w,h);
+
+    const base=g.createLinearGradient(0,h*.48,0,h);
+    base.addColorStop(0,'rgba(82,74,65,0)');
+    base.addColorStop(.70,'rgba(91,80,68,.028)');
+    base.addColorStop(1,'rgba(73,68,59,.105)');
+    g.fillStyle=base;
+    g.fillRect(0,h*.45,w,h*.55);
+
+    const roughBase=r.createLinearGradient(0,h*.45,0,h);
+    roughBase.addColorStop(0,'#dddddd');
+    roughBase.addColorStop(.72,'#c6c6c6');
+    roughBase.addColorStop(1,'#b4b4b4');
+    r.fillStyle=roughBase;
+    r.fillRect(0,h*.45,w,h*.55);
+
+    for(let i=0;i<54;i++){
+      const x=rnd()*w;
+      const y=h*.55+rnd()*h*.43;
+      const rx=8+rnd()*42;
+      const ry=18+rnd()*96;
+      const grad=g.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+      grad.addColorStop(
+        0,
+        rnd()>.72
+          ? 'rgba(82,96,84,'+(.018+rnd()*.030).toFixed(3)+')'
+          : 'rgba(111,91,70,'+(.016+rnd()*.032).toFixed(3)+')'
+      );
+      grad.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=grad;
+      g.fillRect(x-rx,y-ry,rx*2,ry*2);
+
+      const rv=145+Math.floor(rnd()*54);
+      const rg=r.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+      rg.addColorStop(0,'rgba('+rv+','+rv+','+rv+','+(.10+rnd()*.18).toFixed(3)+')');
+      rg.addColorStop(1,'rgba('+rv+','+rv+','+rv+',0)');
+      r.fillStyle=rg;
+      r.fillRect(x-rx,y-ry,rx*2,ry*2);
+    }
+  }else if(kind==='roadOil'){
+    r.fillStyle='#d9d9d9';
+    r.fillRect(0,0,w,h);
+
+    for(let i=0;i<38;i++){
+      const x=w*(.18+rnd()*.64);
+      const y=rnd()*h;
+      const rx=10+rnd()*40;
+      const ry=24+rnd()*105;
+      const grad=g.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+      grad.addColorStop(0,'rgba(19,23,23,'+(.028+rnd()*.055).toFixed(3)+')');
+      grad.addColorStop(.55,'rgba(28,31,31,'+(.010+rnd()*.022).toFixed(3)+')');
+      grad.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=grad;
+      g.fillRect(x-rx,y-ry,rx*2,ry*2);
+
+      const polished=92+Math.floor(rnd()*54);
+      const rg=r.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+      rg.addColorStop(0,'rgba('+polished+','+polished+','+polished+','+(.28+rnd()*.28).toFixed(3)+')');
+      rg.addColorStop(1,'rgba(220,220,220,0)');
+      r.fillStyle=rg;
+      r.fillRect(x-rx,y-ry,rx*2,ry*2);
+    }
+  }else{
+    r.fillStyle='#e3e3e3';
+    r.fillRect(0,0,w,h);
+
+    for(let i=0;i<44;i++){
+      const x=rnd()*w;
+      const y=rnd()*h;
+      const rx=12+rnd()*48;
+      const ry=8+rnd()*30;
+      const grad=g.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+      grad.addColorStop(0,'rgba(101,93,82,'+(.012+rnd()*.026).toFixed(3)+')');
+      grad.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=grad;
+      g.fillRect(x-rx,y-ry,rx*2,ry*2);
+
+      const rv=165+Math.floor(rnd()*50);
+      const rg=r.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+      rg.addColorStop(0,'rgba('+rv+','+rv+','+rv+','+(.10+rnd()*.18).toFixed(3)+')');
+      rg.addColorStop(1,'rgba('+rv+','+rv+','+rv+',0)');
+      r.fillStyle=rg;
+      r.fillRect(x-rx,y-ry,rx*2,ry*2);
+    }
+  }
+
+  const map=new THREE.CanvasTexture(colorCanvas);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.wrapS=map.wrapT=THREE.ClampToEdgeWrapping;
+  map.anisotropy=8;
+
+  const roughness=new THREE.CanvasTexture(roughCanvas);
+  roughness.wrapS=roughness.wrapT=THREE.ClampToEdgeWrapping;
+  roughness.anisotropy=8;
+  return {map,roughness};
+}
+
+function makeWoodEndGrainTexture(seed){
+  const size=256;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='#a87958';
+  g.fillRect(0,0,size,size);
+
+  const cx=size*.50+(rnd()-.5)*12;
+  const cy=size*.52+(rnd()-.5)*12;
+  for(let ring=0;ring<34;ring++){
+    const rx=6+ring*3.35+(rnd()-.5)*1.4;
+    const ry=5+ring*2.55+(rnd()-.5)*1.2;
+    g.strokeStyle=ring%3===0
+      ? 'rgba(75,45,29,.085)'
+      : 'rgba(232,191,148,.045)';
+    g.lineWidth=.55+(ring%4===0?.35:0);
+    g.beginPath();
+    g.ellipse(cx,cy,rx,ry,(rnd()-.5)*.025,0,Math.PI*2);
+    g.stroke();
+  }
+  for(let i=0;i<95;i++){
+    g.fillStyle='rgba(68,43,30,'+(.015+rnd()*.030).toFixed(3)+')';
+    g.beginPath();
+    g.arc(rnd()*size,rnd()*size,.3+rnd()*.85,0,Math.PI*2);
+    g.fill();
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+  texture.anisotropy=8;
+  return texture;
+}
+
+const wallBasePatina=makeMacroPatinaTexture('wallBase',0x5169a27d);
+const roadOilPatina=makeMacroPatinaTexture('roadOil',0x87cd215b);
+const pavementPatina=makeMacroPatinaTexture('pavement',0x21bc95e3);
+const woodEndGrainTexture=makeWoodEndGrainTexture(0x53c921af);
+
 function makePaintWearAlpha(seed){
   const size=256;
   const canvas=document.createElement('canvas');
