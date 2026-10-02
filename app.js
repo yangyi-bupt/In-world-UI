@@ -10,18 +10,18 @@ renderer.toneMappingExposure = 1.12;
 renderer.physicallyCorrectLights = true;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xc8e3f4);
-scene.fog = new THREE.Fog(0xd7eaf2, 28, 86);
+scene.background = new THREE.Color(0xc9e2ef);
+scene.fog = new THREE.Fog(0xdde9e8, 30, 90);
 
 const skyCanvas=document.createElement('canvas');
 skyCanvas.width=32;
 skyCanvas.height=512;
 const skyCtx=skyCanvas.getContext('2d');
 const skyGradient=skyCtx.createLinearGradient(0,0,0,512);
-skyGradient.addColorStop(0,'#78b9e4');
-skyGradient.addColorStop(.42,'#a9d3ec');
-skyGradient.addColorStop(.72,'#d9edf4');
-skyGradient.addColorStop(1,'#f1eee6');
+skyGradient.addColorStop(0,'#82bee2');
+skyGradient.addColorStop(.40,'#b0d6e9');
+skyGradient.addColorStop(.72,'#dcecef');
+skyGradient.addColorStop(1,'#f4eee1');
 skyCtx.fillStyle=skyGradient;
 skyCtx.fillRect(0,0,32,512);
 const skyTexture=new THREE.CanvasTexture(skyCanvas);
@@ -87,9 +87,13 @@ sun.shadow.normalBias = .022;
 sun.shadow.radius = 3.2;
 scene.add(sun);
 
-const daylightFill = new THREE.DirectionalLight(0xb9d9ff, .58);
+const daylightFill = new THREE.DirectionalLight(0xc7ddf2, .54);
 daylightFill.position.set(10, 8, -12);
 scene.add(daylightFill);
+
+const shopBounce = new THREE.DirectionalLight(0xffddb9, .24);
+shopBounce.position.set(9,5,6);
+scene.add(shopBounce);
 
 const faceLight = new THREE.SpotLight(0xffe2c8, 12, 9, Math.PI * .22, .72, 1.5);
 faceLight.position.set(1.1, 3.8, 3.2);
@@ -172,6 +176,39 @@ glassReflectionTexture.wrapS=THREE.RepeatWrapping;
 glassReflectionTexture.wrapT=THREE.ClampToEdgeWrapping;
 glassReflectionTexture.repeat.set(2.2,1);
 glassReflectionTexture.anisotropy=8;
+
+const streetBannerCanvas=document.createElement('canvas');
+streetBannerCanvas.width=256;
+streetBannerCanvas.height=512;
+const streetBannerCtx=streetBannerCanvas.getContext('2d');
+const bannerGrad=streetBannerCtx.createLinearGradient(0,0,0,512);
+bannerGrad.addColorStop(0,'#496b78');
+bannerGrad.addColorStop(.52,'#6f8f91');
+bannerGrad.addColorStop(1,'#a98268');
+streetBannerCtx.fillStyle=bannerGrad;
+streetBannerCtx.fillRect(0,0,256,512);
+streetBannerCtx.fillStyle='rgba(255,255,255,.10)';
+streetBannerCtx.fillRect(28,24,200,2);
+streetBannerCtx.fillRect(28,486,200,2);
+streetBannerCtx.fillStyle='#f5f0e6';
+streetBannerCtx.font='700 48px Inter, sans-serif';
+streetBannerCtx.textAlign='center';
+streetBannerCtx.fillText('NOVA',128,226);
+streetBannerCtx.font='500 22px Inter, sans-serif';
+streetBannerCtx.fillStyle='rgba(245,240,230,.82)';
+streetBannerCtx.fillText('CITY WALK',128,264);
+streetBannerCtx.fillStyle='rgba(245,240,230,.28)';
+streetBannerCtx.beginPath();
+streetBannerCtx.arc(128,335,52,0,Math.PI*2);
+streetBannerCtx.strokeStyle='rgba(245,240,230,.42)';
+streetBannerCtx.lineWidth=3;
+streetBannerCtx.stroke();
+streetBannerCtx.beginPath();
+streetBannerCtx.arc(128,335,9,0,Math.PI*2);
+streetBannerCtx.fill();
+const streetBannerTexture=new THREE.CanvasTexture(streetBannerCanvas);
+streetBannerTexture.colorSpace=THREE.SRGBColorSpace;
+streetBannerTexture.anisotropy=8;
 
 function box(w, h, d, color, x, y, z, roughness=.72, metalness=.02) {
   const mesh = new THREE.Mesh(
@@ -348,6 +385,19 @@ for(let z=-31;z<=24;z+=7.2){
   ledge.castShadow=true;
 }
 
+// A few recessed ground-floor entries keep the frontage from feeling like one
+// repeated office wall.
+[-18.8,-10.6,13.8].forEach((z,i)=>{
+  const inset=box(.72,2.55,4.3,[0xa99b89,0x9daaa8,0xb3a08c][i],8.10,1.31,z,.72);
+  inset.castShadow=false;
+
+  const door=glassPanel(2.10,2.22,7.72,1.34,z,-Math.PI/2,0xa8c4c7);
+  door.material.opacity=.56;
+
+  const step=box(.92,.10,3.65,0xc5beb0,7.58,.08,z,.88);
+  step.castShadow=true;
+});
+
 // Ground-floor cafe corner.
 const cafeFrame=box(.48,3.0,8.5,0xb49778,8.33,1.55,4.8,.68);
 cafeFrame.castShadow=false;
@@ -497,6 +547,31 @@ function createPlanter(x,z,w=1.8){
 createPlanter(6.6,-8.3,2.2);
 createPlanter(6.6,11.8,2.5);
 
+const lowHedgeMat=new THREE.MeshStandardMaterial({color:0x78956e,roughness:.96});
+const hedgeBed=box(3.6,.22,.82,0xaa9d88,5.65,.11,-13.0,.94);
+hedgeBed.castShadow=false;
+for(let i=0;i<9;i++){
+  const shrub=new THREE.Mesh(new THREE.SphereGeometry(.24+(i%3)*.025,12,9),lowHedgeMat);
+  shrub.scale.set(1.12,.72,1);
+  shrub.position.set(4.20+i*.36,.43,-13.0+(i%2)*.05);
+  shrub.castShadow=true;
+  scene.add(shrub);
+}
+
+const accentFlowerMats=[
+  new THREE.MeshStandardMaterial({color:0xf1eee3,roughness:.82}),
+  new THREE.MeshStandardMaterial({color:0xd9c3c7,roughness:.82}),
+  new THREE.MeshStandardMaterial({color:0xb8c7df,roughness:.82})
+];
+for(let i=0;i<18;i++){
+  const bloom=new THREE.Mesh(
+    new THREE.SphereGeometry(.035+(i%3)*.006,8,6),
+    accentFlowerMats[i%accentFlowerMats.length]
+  );
+  bloom.position.set(4.15+i*.20,.63+((i%4)*.015),-12.72-(i%2)*.10);
+  scene.add(bloom);
+}
+
 function createLampPost(x,z){
   const metal=new THREE.MeshStandardMaterial({color:0x3f494b,roughness:.48,metalness:.62});
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,3.2,10),metal);
@@ -514,6 +589,19 @@ function createLampPost(x,z){
   );
   lamp.position.set(x-.59,3.11,z);
   scene.add(lamp);
+
+  const banner=new THREE.Mesh(
+    new THREE.PlaneGeometry(.48,.96),
+    new THREE.MeshBasicMaterial({
+      map:streetBannerTexture,
+      transparent:true,
+      side:THREE.DoubleSide,
+      toneMapped:false
+    })
+  );
+  banner.position.set(x+.15,2.55,z);
+  banner.rotation.y=Math.PI/2;
+  scene.add(banner);
 }
 [-11,2,15].forEach(z=>createLampPost(.45,z));
 
@@ -656,6 +744,43 @@ createContactShadow(-3.55,8.1,2.0,3.8,.13);
 createContactShadow(5.1,1.95,2.05,.85,.085);
 createContactShadow(5.9,5.7,1.65,1.12,.075);
 createContactShadow(5.9,8.2,1.65,1.12,.075);
+
+const movingTraffic=[];
+function createTrafficCar(x,z,color,speed){
+  const bodyMat=new THREE.MeshStandardMaterial({color,roughness:.44,metalness:.16});
+  const glassMat=new THREE.MeshStandardMaterial({color:0x607b84,roughness:.22,metalness:.22});
+  const group=new THREE.Group();
+
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.46,.34,2.72),bodyMat);
+  body.position.y=.40;
+  body.castShadow=true;
+  group.add(body);
+
+  const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.24,.40,1.28),glassMat);
+  cabin.position.set(0,.72,-.12);
+  cabin.castShadow=true;
+  group.add(cabin);
+
+  group.position.set(x,0,z);
+  scene.add(group);
+  movingTraffic.push({group,speed});
+}
+
+createTrafficCar(-9.2,-28,0xd4d0c7,2.15);
+createTrafficCar(-5.9,27,0x7c929d,-1.72);
+
+const storefrontShade=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.95,64),
+  new THREE.MeshBasicMaterial({
+    color:0x806f61,
+    transparent:true,
+    opacity:.045,
+    depthWrite:false
+  })
+);
+storefrontShade.rotation.x=-Math.PI/2;
+storefrontShade.position.set(7.65,.048,-5);
+scene.add(storefrontShade);
 
 // Small flower dots keep the palette warm without becoming decorative noise.
 const flowerMat=new THREE.MeshStandardMaterial({color:0xf0eee2,roughness:.8});
@@ -934,6 +1059,12 @@ function animate(){
   });
   sunHaze.material.opacity=.80+Math.sin(t*.11)*.018;
   sun.intensity=3.16+Math.sin(t*.045)*.035;
+
+  movingTraffic.forEach((traffic,index)=>{
+    traffic.group.position.z+=traffic.speed*dt;
+    if(traffic.speed>0 && traffic.group.position.z>38) traffic.group.position.z=-38-index*5;
+    if(traffic.speed<0 && traffic.group.position.z<-38) traffic.group.position.z=38+index*5;
+  });
 
   // Human idle: breathing, tiny weight shift and occasional attention toward player.
   const idleBreath=Math.sin(t*1.55);
