@@ -1818,6 +1818,7 @@ function createContactShadow(x,z,w,d,opacity=.10){
   return shadow;
 }
 
+const parkedCars=[];
 function createParkedCar(x,z,color){
   const bodyMat=new THREE.MeshStandardMaterial({color,roughness:.48,metalness:.12});
   const glassMat=new THREE.MeshStandardMaterial({color:0x8ca1a3,roughness:.28,metalness:.12});
@@ -1875,6 +1876,7 @@ function createParkedCar(x,z,color){
 
   group.position.set(x,0,z);
   scene.add(group);
+  parkedCars.push({group,color,placeholderChildren:[...group.children],assetRoot:null});
   return group;
 }
 createParkedCar(-3.55,-8.5,0xa0adb0);
@@ -1914,7 +1916,14 @@ function createAmbientWalker(x,z,direction,color){
   group.position.set(x,0,z);
   group.scale.setScalar(.76);
   scene.add(group);
-  ambientWalkers.push({group,direction,phase:Math.random()*Math.PI*2});
+  ambientWalkers.push({
+    group,
+    direction,
+    phase:Math.random()*Math.PI*2,
+    placeholderChildren:[...group.children],
+    assetRoot:null,
+    mixer:null
+  });
 }
 
 createAmbientWalker(-12.05,-15.8,1,0xa98f82);
@@ -1970,7 +1979,14 @@ function createTrafficCar(x,z,color,speed){
   group.position.set(x,0,z);
   if(speed<0) group.rotation.y=Math.PI;
   scene.add(group);
-  movingTraffic.push({group,speed,wheels});
+  movingTraffic.push({
+    group,
+    speed,
+    wheels,
+    placeholderChildren:[...group.children],
+    assetRoot:null,
+    assetWheels:[]
+  });
 }
 
 createTrafficCar(-9.2,-28,0xd4d0c7,1.78);
@@ -2089,6 +2105,241 @@ mira.position.set(2.0,0,-1.6);
 mira.rotation.y=-.16;
 mira.scale.setScalar(1.02);
 scene.add(mira);
+
+const WORLD_GLB_ASSETS={
+  // Pinned to the same three.js revision as the renderer so asset parsing is stable.
+  car:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/ferrari.glb',
+  pedestrian:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/Soldier.glb',
+  mira:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/Michelle.glb'
+};
+const worldAssetMixers=[];
+let worldGLBLoadStarted=false;
+let miraGLBRoot=null;
+
+function cloneAssetScene(source){
+  if(window.cloneGLTFScene) return window.cloneGLTFScene(source);
+  return source.clone(true);
+}
+
+function prepareImportedModel(root){
+  root.traverse(object=>{
+    if(!object.isMesh) return;
+    object.castShadow=true;
+    object.receiveShadow=true;
+    if(Array.isArray(object.material)){
+      object.material=object.material.map(material=>material?.clone?.() || material);
+    }else if(object.material?.clone){
+      object.material=object.material.clone();
+    }
+  });
+}
+
+function normalizeHumanAsset(root,targetHeight){
+  root.updateMatrixWorld(true);
+  let box=new THREE.Box3().setFromObject(root);
+  const size=box.getSize(new THREE.Vector3());
+  if(size.y>0){
+    root.scale.multiplyScalar(targetHeight/size.y);
+  }
+  root.updateMatrixWorld(true);
+  box=new THREE.Box3().setFromObject(root);
+  const center=box.getCenter(new THREE.Vector3());
+  root.position.x-=center.x;
+  root.position.z-=center.z;
+  root.position.y-=box.min.y;
+  root.updateMatrixWorld(true);
+}
+
+function normalizeCarAsset(root,targetLength=3.85){
+  root.updateMatrixWorld(true);
+  let box=new THREE.Box3().setFromObject(root);
+  let size=box.getSize(new THREE.Vector3());
+
+  // The street lanes run along Z. Turn assets whose long axis arrives on X.
+  if(size.x>size.z){
+    root.rotation.y+=Math.PI*.5;
+    root.updateMatrixWorld(true);
+    box=new THREE.Box3().setFromObject(root);
+    size=box.getSize(new THREE.Vector3());
+  }
+
+  const horizontalLength=Math.max(size.x,size.z);
+  if(horizontalLength>0) root.scale.multiplyScalar(targetLength/horizontalLength);
+
+  root.updateMatrixWorld(true);
+  box=new THREE.Box3().setFromObject(root);
+  const center=box.getCenter(new THREE.Vector3());
+  root.position.x-=center.x;
+  root.position.z-=center.z;
+  root.position.y-=box.min.y-.015;
+  root.updateMatrixWorld(true);
+}
+
+function tuneVehicleAsset(root,bodyColor){
+  const bodyTint=new THREE.Color(bodyColor);
+  const mutedTint=bodyTint.clone().lerp(new THREE.Color(0xd9d8d1),.16);
+  const wheels=[];
+
+  root.traverse(object=>{
+    if(!object.isMesh) return;
+    const materials=Array.isArray(object.material)?object.material:[object.material];
+    materials.forEach(material=>{
+      if(!material) return;
+      const key=((object.name||'')+' '+(material.name||'')).toLowerCase();
+
+      if(/glass|window|windshield|windscreen/.test(key)){
+        if(material.color) material.color.set(0xb7c9cb);
+        material.transparent=true;
+        material.opacity=.64;
+        material.roughness=.22;
+        if('metalness' in material) material.metalness=.04;
+        material.depthWrite=true;
+      }else if(/tire|tyre|rubber/.test(key)){
+        if(material.color) material.color.set(0x2d3131);
+        material.roughness=.88;
+      }else if(/wheel|rim/.test(key)){
+        if(material.color) material.color.lerp(new THREE.Color(0x9ba09d),.56);
+        material.roughness=.42;
+        if('metalness' in material) material.metalness=.46;
+      }else if(/body|paint|carpaint|car_paint|coachwork/.test(key)){
+        if(material.color) material.color.copy(mutedTint);
+        material.roughness=.34;
+        if('metalness' in material) material.metalness=.16;
+      }else if(material.color){
+        const hsl={h:0,s:0,l:0};
+        material.color.getHSL(hsl);
+        if(hsl.s>.46 && hsl.l>.12){
+          material.color.lerp(mutedTint,.34);
+        }
+      }
+      material.needsUpdate=true;
+    });
+
+    const meshKey=(object.name||'').toLowerCase();
+    if(/wheel|tire|tyre/.test(meshKey)) wheels.push(object);
+  });
+
+  return wheels;
+}
+
+function tunePedestrianAsset(root,index=0){
+  const clothTints=[
+    new THREE.Color(0x9a8f84),
+    new THREE.Color(0x7f9091),
+    new THREE.Color(0x89947c)
+  ];
+  root.traverse(object=>{
+    if(!object.isMesh) return;
+    const materials=Array.isArray(object.material)?object.material:[object.material];
+    materials.forEach(material=>{
+      if(!material?.color) return;
+      const key=((object.name||'')+' '+(material.name||'')).toLowerCase();
+      if(!/skin|face|head|hand/.test(key)){
+        const hsl={h:0,s:0,l:0};
+        material.color.getHSL(hsl);
+        material.color.lerp(clothTints[index%clothTints.length],hsl.s>.25?.18:.08);
+      }
+      if('roughness' in material) material.roughness=Math.max(material.roughness||0,.62);
+      if('metalness' in material) material.metalness=Math.min(material.metalness||0,.08);
+      material.needsUpdate=true;
+    });
+  });
+}
+
+function loadGLB(loader,url){
+  return new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
+}
+
+function attachCarAsset(entry,source,index=0,targetLength=3.85){
+  const root=source.clone(true);
+  prepareImportedModel(root);
+  normalizeCarAsset(root,targetLength);
+  const palette=[0xbfc5c2,0xd6ccbc,0xaebfc4,0xc8c7c0];
+  entry.assetWheels=tuneVehicleAsset(root,entry.color ?? palette[index%palette.length]);
+  entry.placeholderChildren?.forEach(child=>{child.visible=false;});
+  entry.group.add(root);
+  entry.assetRoot=root;
+}
+
+function attachWalkerAsset(entry,source,animations,index){
+  const root=cloneAssetScene(source);
+  prepareImportedModel(root);
+  normalizeHumanAsset(root,1.72+(index-1)*.045);
+  tunePedestrianAsset(root,index);
+  root.rotation.y=entry.direction>0?0:Math.PI;
+  entry.placeholderChildren?.forEach(child=>{child.visible=false;});
+  entry.group.scale.setScalar(1);
+  entry.group.add(root);
+  entry.assetRoot=root;
+
+  const walkClip=animations.find(clip=>/walk/i.test(clip.name)) || animations[3] || animations[0];
+  if(walkClip){
+    const mixer=new THREE.AnimationMixer(root);
+    const action=mixer.clipAction(walkClip);
+    action.setEffectiveTimeScale(.72+index*.05);
+    action.play();
+    entry.mixer=mixer;
+    worldAssetMixers.push(mixer);
+  }
+}
+
+function attachMiraAsset(source,animations){
+  const root=cloneAssetScene(source);
+  prepareImportedModel(root);
+  normalizeHumanAsset(root,1.72);
+  root.rotation.y=Math.PI;
+  miraRig.visible=false;
+  mira.add(root);
+  miraGLBRoot=root;
+
+  // Only play an explicitly named idle animation. A dancing/run clip would
+  // make the central character less believable than a restrained static pose.
+  const idleClip=animations.find(clip=>/idle|stand|breath/i.test(clip.name));
+  if(idleClip){
+    const mixer=new THREE.AnimationMixer(root);
+    mixer.clipAction(idleClip).play();
+    worldAssetMixers.push(mixer);
+  }
+}
+
+async function initWorldGLBAssets(){
+  if(worldGLBLoadStarted || !window.GLTFLoader) return;
+  worldGLBLoadStarted=true;
+  const loader=new window.GLTFLoader();
+
+  const [carResult,pedestrianResult,miraResult]=await Promise.allSettled([
+    loadGLB(loader,WORLD_GLB_ASSETS.car),
+    loadGLB(loader,WORLD_GLB_ASSETS.pedestrian),
+    loadGLB(loader,WORLD_GLB_ASSETS.mira)
+  ]);
+
+  if(carResult.status==='fulfilled'){
+    parkedCars.forEach((entry,index)=>attachCarAsset(entry,carResult.value.scene,index,3.90));
+    movingTraffic.forEach((entry,index)=>attachCarAsset(entry,carResult.value.scene,index+2,3.72));
+  }else{
+    console.warn('Car GLB failed; retaining procedural fallback.',carResult.reason);
+  }
+
+  if(pedestrianResult.status==='fulfilled'){
+    ambientWalkers.forEach((entry,index)=>{
+      attachWalkerAsset(entry,pedestrianResult.value.scene,pedestrianResult.value.animations,index);
+    });
+  }else{
+    console.warn('Pedestrian GLB failed; retaining procedural fallback.',pedestrianResult.reason);
+  }
+
+  if(miraResult.status==='fulfilled'){
+    attachMiraAsset(miraResult.value.scene,miraResult.value.animations);
+  }else{
+    console.warn('Mira GLB failed; retaining procedural fallback.',miraResult.reason);
+  }
+}
+
+if(window.GLTFLoader){
+  initWorldGLBAssets();
+}else{
+  window.addEventListener('gltf-loader-ready',initWorldGLBAssets,{once:true});
+}
 
 const miraBeaconCanvas=document.createElement('canvas');
 miraBeaconCanvas.width=192;
@@ -2289,10 +2540,13 @@ function animate(){
 
   glassReflectionTexture.offset.x=(Math.sin(t*.034)*.013+.013)%1;
 
+  worldAssetMixers.forEach(mixer=>mixer.update(dt));
+
   movingTraffic.forEach((traffic,index)=>{
     traffic.group.position.z+=traffic.speed*dt;
     const spin=traffic.speed*dt*2.8;
-    traffic.wheels?.forEach(wheel=>wheel.rotation.x-=spin);
+    const rollingWheels=traffic.assetWheels?.length?traffic.assetWheels:traffic.wheels;
+    rollingWheels?.forEach(wheel=>wheel.rotation.x-=spin);
     if(traffic.speed>0 && traffic.group.position.z>38) traffic.group.position.z=-38-index*5;
     if(traffic.speed<0 && traffic.group.position.z<-38) traffic.group.position.z=38+index*5;
   });
@@ -2301,13 +2555,22 @@ function animate(){
     const travel=.58+index*.06;
     walker.group.position.z+=walker.direction*travel*dt;
     walker.phase+=dt*(3.8+index*.35);
-    walker.group.position.y=Math.abs(Math.sin(walker.phase))*0.012;
-    walker.group.rotation.z=Math.sin(walker.phase)*.012;
+    if(walker.assetRoot){
+      walker.group.position.y=0;
+      walker.group.rotation.z=0;
+    }else{
+      walker.group.position.y=Math.abs(Math.sin(walker.phase))*0.012;
+      walker.group.rotation.z=Math.sin(walker.phase)*.012;
+    }
     if(walker.direction>0 && walker.group.position.z>20) walker.group.position.z=-19.5-index;
     if(walker.direction<0 && walker.group.position.z<-19.5) walker.group.position.z=20+index;
   });
 
   // Human idle: breathing, tiny weight shift and occasional attention toward player.
+  if(miraGLBRoot){
+    miraGLBRoot.position.y=Math.sin(t*.74)*.004;
+    miraGLBRoot.rotation.z=Math.sin(t*.42)*.0035;
+  }
   const idleBreath=Math.sin(t*1.55);
   torso.scale.y=1+idleBreath*.009;
   torso.position.y=1.25+idleBreath*.004;
