@@ -1186,14 +1186,27 @@ const curbDrainMat=new THREE.MeshStandardMaterial({
   bumpScale:.004
 });
 [-24,-8,8,24].forEach(z=>{
-  const grate=new THREE.Mesh(new THREE.BoxGeometry(.24,.018,.58),curbDrainMat);
-  grate.position.set(-.18,.034,z);
-  grate.receiveShadow=true;
-  scene.add(grate);
+  const grateFrame=new THREE.Mesh(
+    new THREE.BoxGeometry(.30,.020,.66),
+    curbDrainMat
+  );
+  grateFrame.position.set(-.18,.032,z);
+  grateFrame.receiveShadow=true;
+  scene.add(grateFrame);
 
-  [-.16,-.05,.06,.17].forEach(dz=>{
-    const slot=new THREE.Mesh(new THREE.BoxGeometry(.14,.012,.025),new THREE.MeshBasicMaterial({color:0x343938}));
-    slot.position.set(-.18,.047,z+dz);
+  const recess=new THREE.Mesh(
+    new THREE.BoxGeometry(.23,.012,.59),
+    new THREE.MeshBasicMaterial({color:0x303635})
+  );
+  recess.position.set(-.18,.043,z);
+  scene.add(recess);
+
+  [-.22,-.145,-.07,.005,.08,.155,.23].forEach(dz=>{
+    const slot=new THREE.Mesh(
+      new THREE.BoxGeometry(.15,.014,.022),
+      curbDrainMat
+    );
+    slot.position.set(-.18,.050,z+dz);
     scene.add(slot);
   });
 });
@@ -1657,10 +1670,22 @@ const balconyGreenMats=[
     bumpScale:.0035,
     envMapIntensity:.90
   });
-  const rail=new THREE.Mesh(new THREE.BoxGeometry(.045,.50,3.05),railMat);
-  rail.position.set(7.58,5.86,z);
-  rail.castShadow=true;
-  scene.add(rail);
+  const topRail=new THREE.Mesh(new THREE.BoxGeometry(.055,.055,3.05),railMat);
+  topRail.position.set(7.58,6.09,z);
+  topRail.castShadow=true;
+  scene.add(topRail);
+
+  const lowerRail=new THREE.Mesh(new THREE.BoxGeometry(.045,.045,3.05),railMat);
+  lowerRail.position.set(7.58,5.64,z);
+  lowerRail.castShadow=true;
+  scene.add(lowerRail);
+
+  [-1.38,-.92,-.46,0,.46,.92,1.38].forEach((oz,i)=>{
+    const baluster=new THREE.Mesh(new THREE.BoxGeometry(.035,.42,.035),railMat);
+    baluster.position.set(7.58,5.86,z+oz);
+    baluster.castShadow=true;
+    scene.add(baluster);
+  });
 
   [-1.00,-.50,0,.50,1.00].forEach((oz,i)=>{
     const planter=new THREE.Mesh(
@@ -2189,6 +2214,37 @@ cafeDoorGlass.material.opacity=.40;
 cafeDoorGlass.material.roughness=.32;
 addGlassEdgeDirt(.88,2.28,7.904,1.58,2.20,-Math.PI/2,.30);
 
+const cafeThreshold=new THREE.Mesh(
+  new THREE.BoxGeometry(.34,.045,1.02),
+  new THREE.MeshStandardMaterial({
+    color:0x8a8177,
+    roughness:.52,
+    metalness:.22,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.003,
+    envMapIntensity:.72
+  })
+);
+cafeThreshold.position.set(7.73,.075,2.20);
+cafeThreshold.castShadow=true;
+scene.add(cafeThreshold);
+
+const cafeDoorRevealMat=new THREE.MeshStandardMaterial({
+  color:0xb8aa9a,
+  roughness:.90,
+  map:concreteSurface.map,
+  bumpMap:concreteSurface.bump,
+  bumpScale:.008,
+  envMapIntensity:.055
+});
+[1.64,2.76].forEach(z=>{
+  const reveal=new THREE.Mesh(new THREE.BoxGeometry(.16,2.48,.08),cafeDoorRevealMat);
+  reveal.position.set(8.02,1.56,z);
+  reveal.castShadow=true;
+  scene.add(reveal);
+});
+
 const cafeDoorHandle=new THREE.Mesh(
   new THREE.CylinderGeometry(.018,.018,.42,10),
   new THREE.MeshStandardMaterial({
@@ -2289,6 +2345,44 @@ awningCreamEdge.roughness=.90;
 const awningApricotEdge=awningApricot.clone();
 awningApricotEdge.color.multiplyScalar(.955);
 awningApricotEdge.roughness=.89;
+
+const awningFrameMat=new THREE.MeshStandardMaterial({
+  color:0x8b8178,
+  roughness:.46,
+  metalness:.32,
+  map:metalWearTexture,
+  bumpMap:metalSurface.bump,
+  bumpScale:.003,
+  envMapIntensity:.82
+});
+
+const awningFrontBeam=new THREE.Mesh(
+  new THREE.BoxGeometry(.055,.055,5.22),
+  awningFrameMat
+);
+awningFrontBeam.position.set(6.82,2.78,4.80);
+awningFrontBeam.rotation.z=-.08;
+awningFrontBeam.castShadow=true;
+scene.add(awningFrontBeam);
+
+[2.28,4.80,7.32].forEach(z=>{
+  const support=new THREE.Mesh(
+    new THREE.CylinderGeometry(.018,.018,1.20,8),
+    awningFrameMat
+  );
+  support.position.set(7.18,2.73,z);
+  support.rotation.z=Math.PI/2-.12;
+  support.castShadow=true;
+  scene.add(support);
+
+  const wallBracket=new THREE.Mesh(
+    new THREE.BoxGeometry(.08,.15,.06),
+    awningFrameMat
+  );
+  wallBracket.position.set(7.80,2.86,z);
+  wallBracket.castShadow=true;
+  scene.add(wallBracket);
+});
 
 const awningDepth=5.18/7;
 for(let i=0;i<7;i++){
@@ -2608,28 +2702,68 @@ const streetTreeCrowns=[];
 function createStreetTree(x,z,scale=1){
   const pit=new THREE.Mesh(
     new THREE.PlaneGeometry(1.18*scale,1.18*scale),
-    new THREE.MeshStandardMaterial({color:0x897a66,roughness:1})
+    new THREE.MeshStandardMaterial({
+      color:0x897a66,
+      roughness:1,
+      map:concreteSurface.map,
+      bumpMap:concreteSurface.bump,
+      bumpScale:.010,
+      envMapIntensity:.035
+    })
   );
   pit.rotation.x=-Math.PI/2;
   pit.position.set(x,.041,z);
   pit.receiveShadow=true;
   scene.add(pit);
 
+  const grateMat=new THREE.MeshStandardMaterial({
+    color:0x626b67,
+    roughness:.58,
+    metalness:.42,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.004,
+    envMapIntensity:.84,
+    side:THREE.DoubleSide
+  });
   const grate=new THREE.Mesh(
     new THREE.RingGeometry(.32*scale,.50*scale,20),
-    new THREE.MeshStandardMaterial({
-      color:0x626b67,
-      roughness:.64,
-      metalness:.36,
-      map:metalWearTexture,
-      bumpMap:metalSurface.bump,
-      bumpScale:.004,
-      side:THREE.DoubleSide
-    })
+    grateMat
   );
   grate.rotation.x=-Math.PI/2;
   grate.position.set(x,.046,z);
   scene.add(grate);
+
+  for(let spokeIndex=0;spokeIndex<12;spokeIndex++){
+    const angle=spokeIndex*Math.PI/6;
+    const spoke=new THREE.Mesh(
+      new THREE.BoxGeometry(.018*scale,.012,.18*scale),
+      grateMat
+    );
+    spoke.position.set(
+      x+Math.sin(angle)*.405*scale,
+      .050,
+      z+Math.cos(angle)*.405*scale
+    );
+    spoke.rotation.y=angle;
+    scene.add(spoke);
+  }
+
+  const pitFrame=new THREE.Mesh(
+    new THREE.RingGeometry(.51*scale,.58*scale,4),
+    new THREE.MeshStandardMaterial({
+      color:0xb7aea0,
+      roughness:.94,
+      map:concreteSurface.map,
+      bumpMap:concreteSurface.bump,
+      bumpScale:.008,
+      side:THREE.DoubleSide
+    })
+  );
+  pitFrame.rotation.x=-Math.PI/2;
+  pitFrame.rotation.z=Math.PI/4;
+  pitFrame.position.set(x,.043,z);
+  scene.add(pitFrame);
 
   const trunk=new THREE.Mesh(
     new THREE.CylinderGeometry(.10*scale,.145*scale,2.55*scale,12),
