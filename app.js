@@ -532,6 +532,25 @@ function cloneTextureVariant(texture,offsetX,offsetY,repeatScaleX=1,repeatScaleY
   return clone;
 }
 
+function makeFoliageMaterial(color,roughness=.91,bumpScale=.009,lightness=.020){
+  const base=new THREE.Color(color);
+  const emissive=base.clone().multiplyScalar(.22);
+  return new THREE.MeshPhysicalMaterial({
+    color:base,
+    roughness,
+    metalness:0,
+    map:foliageSurface.map,
+    bumpMap:foliageSurface.bump,
+    bumpScale,
+    sheen:1,
+    sheenColor:base.clone().lerp(new THREE.Color(0xdce8c8),.34),
+    sheenRoughness:.86,
+    envMapIntensity:.16,
+    emissive,
+    emissiveIntensity:lightness
+  });
+}
+
 const glassReflectionCanvas=document.createElement('canvas');
 glassReflectionCanvas.width=128;
 glassReflectionCanvas.height=256;
@@ -1028,6 +1047,7 @@ const cityGround=plane(52,92,0xc7c4b9,0,-.045,-4);
 cityGround.material.map=pavementTexture;
 cityGround.material.bumpMap=pavementMicroBump;
 cityGround.material.bumpScale=.010;
+cityGround.material.envMapIntensity=.055;
 cityGround.material.color.set(0xc9c6bb);
 cityGround.material.needsUpdate=true;
 
@@ -1036,6 +1056,7 @@ road.material.map=asphaltTexture;
 road.material.bumpMap=roadMicroBump;
 road.material.bumpScale=.014;
 road.material.roughness=.965;
+road.material.envMapIntensity=.035;
 road.material.needsUpdate=true;
 
 const sidewalk=plane(10.8,92,0xffffff,4.2,.014,-4);
@@ -1043,6 +1064,7 @@ sidewalk.material.map=pavementTexture;
 sidewalk.material.bumpMap=pavementMicroBump;
 sidewalk.material.bumpScale=.011;
 sidewalk.material.roughness=.955;
+sidewalk.material.envMapIntensity=.055;
 sidewalk.material.needsUpdate=true;
 
 const curbsidePaving=new THREE.Mesh(
@@ -1394,6 +1416,7 @@ rightFacade.castShadow=false;
 rightFacade.material.map=facadeSurface.map;
 rightFacade.material.bumpMap=facadeSurface.bump;
 rightFacade.material.bumpScale=.018;
+rightFacade.material.envMapIntensity=.10;
 rightFacade.material.needsUpdate=true;
 
 const upperRecess=new THREE.Mesh(
@@ -2528,15 +2551,9 @@ function createStreetTree(x,z,scale=1){
 
   const crown=new THREE.Group();
   const leafMats=[
-    new THREE.MeshStandardMaterial({
-      color:0x7ba56f,roughness:.91,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.010
-    }),
-    new THREE.MeshStandardMaterial({
-      color:0x91b77e,roughness:.89,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.009
-    }),
-    new THREE.MeshStandardMaterial({
-      color:0x6f9765,roughness:.93,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.011
-    })
+    makeFoliageMaterial(0x7ba56f,.91,.010,.020),
+    makeFoliageMaterial(0x91b77e,.89,.009,.024),
+    makeFoliageMaterial(0x6f9765,.93,.011,.016)
   ];
   [
     [0,.02,0,.86,1.08,.92],
@@ -2554,13 +2571,7 @@ function createStreetTree(x,z,scale=1){
     crown.add(leaf);
   });
 
-  const crownShadeMat=new THREE.MeshStandardMaterial({
-    color:0x63875e,
-    roughness:.94,
-    map:foliageSurface.map,
-    bumpMap:foliageSurface.bump,
-    bumpScale:.010
-  });
+  const crownShadeMat=makeFoliageMaterial(0x63875e,.94,.010,.012);
   [
     [-.32,-.22,.02,.38],
     [.28,-.16,-.08,.34]
@@ -2572,13 +2583,7 @@ function createStreetTree(x,z,scale=1){
     crown.add(shadeLeaf);
   });
 
-  const highlightMat=new THREE.MeshStandardMaterial({
-    color:0xa8c895,
-    roughness:.88,
-    map:foliageSurface.map,
-    bumpMap:foliageSurface.bump,
-    bumpScale:.008
-  });
+  const highlightMat=makeFoliageMaterial(0xa8c895,.87,.008,.030);
   [
     [-.26,.62,.18,.28],
     [.30,.42,.14,.24]
@@ -2601,13 +2606,7 @@ function createStreetTree(x,z,scale=1){
   [.92,16.65,.93]
 ].forEach(([x,z,scale])=>createStreetTree(x,z,scale));
 
-const curbGroundcoverMat=new THREE.MeshStandardMaterial({
-  color:0x8ea27a,
-  roughness:.94,
-  map:foliageSurface.map,
-  bumpMap:foliageSurface.bump,
-  bumpScale:.009
-});
+const curbGroundcoverMat=makeFoliageMaterial(0x8ea27a,.93,.009,.018);
 [-6.4,10.8].forEach(z=>{
   [-.31,-.15,.14,.30].forEach((dx,i)=>{
     const tuft=new THREE.Mesh(new THREE.ConeGeometry(.055,.20,7),curbGroundcoverMat);
@@ -2630,15 +2629,9 @@ function createPlanter(x,z,w=1.8){
   planterBase.material.bumpScale=.014;
   planterBase.material.needsUpdate=true;
   const greens=[
-    new THREE.MeshStandardMaterial({
-      color:0x789d70,roughness:.93,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.009
-    }),
-    new THREE.MeshStandardMaterial({
-      color:0x91b77e,roughness:.91,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
-    }),
-    new THREE.MeshStandardMaterial({
-      color:0x6f9765,roughness:.94,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.010
-    })
+    makeFoliageMaterial(0x789d70,.93,.009,.016),
+    makeFoliageMaterial(0x91b77e,.90,.008,.022),
+    makeFoliageMaterial(0x6f9765,.94,.010,.014)
   ];
   const offsets=[
     [-.34,-.05,.94],
@@ -2658,13 +2651,7 @@ function createPlanter(x,z,w=1.8){
 createPlanter(6.6,-8.3,2.2);
 createPlanter(6.6,11.8,2.5);
 
-const lowHedgeMat=new THREE.MeshStandardMaterial({
-  color:0x78956e,
-  roughness:.93,
-  map:foliageSurface.map,
-  bumpMap:foliageSurface.bump,
-  bumpScale:.009
-});
+const lowHedgeMat=makeFoliageMaterial(0x78956e,.93,.009,.014);
 const hedgeBed=box(3.6,.22,.82,0xaa9d88,5.65,.11,-13.0,.95);
 hedgeBed.castShadow=false;
 hedgeBed.material.map=concreteSurface.map;
