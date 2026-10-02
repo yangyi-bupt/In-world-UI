@@ -6843,6 +6843,11 @@ function createAmbientWalker(x,z,direction,color,speed=.58,assetVariant='primary
     pacePhase:Math.random()*Math.PI*2,
     phase:Math.random()*Math.PI*2,
     strollOffset:ambientWalkers.length*6.25+2.5,
+    pauseCycle:16.5+Math.random()*12.0,
+    pauseOffset:Math.random()*9.0,
+    pauseLength:1.1+Math.random()*1.8,
+    browseSide:(ambientWalkers.length%2===0?1:-1),
+    laneWander:.012+Math.random()*.022,
     motionState:'walk',
     placeholderChildren,
     assetRoot:null,
@@ -6914,6 +6919,10 @@ function createTrafficCar(x,z,color,speed,assetVariant='primary'){
     baseX:x,
     assetVariant,
     motionPhase:Math.random()*Math.PI*2,
+    speedPhase:Math.random()*Math.PI*2,
+    speedCycle:8.5+Math.random()*7.5,
+    lanePhase:Math.random()*Math.PI*2,
+    laneWander:.018+Math.random()*.032,
     wheels,
     placeholderChildren,
     assetRoot:null,
@@ -7991,17 +8000,39 @@ function animate(){
   worldAssetMixers.forEach(mixer=>mixer.update(dt));
 
   movingTraffic.forEach((traffic,index)=>{
-    const drift=1+Math.sin(t*.19+traffic.motionPhase)*.028;
-    traffic.speed=traffic.baseSpeed*drift;
+    // City traffic should breathe instead of travelling at a perfect loop speed.
+    // Layered long-period waves create gentle accelerator/coast behaviour while
+    // preserving the overall direction and keeping cars from stalling.
+    const speedBreath=
+      Math.sin(t*(Math.PI*2/traffic.speedCycle)+traffic.speedPhase)*.055+
+      Math.sin(t*.083+traffic.motionPhase)*.020;
+    const targetSpeed=traffic.baseSpeed*(1+speedBreath);
+    traffic.speed=THREE.MathUtils.lerp(
+      traffic.speed,
+      targetSpeed,
+      1-Math.pow(.018,dt)
+    );
     traffic.group.position.z+=traffic.speed*dt;
-    traffic.group.position.x=traffic.baseX+Math.sin(t*.16+traffic.motionPhase)*.035;
+
+    const laneOffset=
+      Math.sin(t*.095+traffic.lanePhase)*traffic.laneWander+
+      Math.sin(t*.041+traffic.motionPhase)*traffic.laneWander*.45;
+    traffic.group.position.x=traffic.baseX+laneOffset;
+
     if(traffic.assetRoot){
-      traffic.assetRoot.position.y=traffic.assetBaseY+Math.sin(t*2.1+traffic.motionPhase)*.0022;
-      traffic.assetRoot.rotation.z=Math.sin(t*.31+traffic.motionPhase)*.0018;
+      traffic.assetRoot.position.y=traffic.assetBaseY+Math.sin(t*2.1+traffic.motionPhase)*.0015;
+      traffic.assetRoot.rotation.z=
+        Math.sin(t*.31+traffic.motionPhase)*.0010-
+        laneOffset*.008;
     }
+
+    // Imported vehicle wheels are intentionally not rotated because many GLBs
+    // use off-centre wheel pivots. Procedural fallback wheels remain safe to spin.
     const spin=traffic.speed*dt*2.8;
-    const rollingWheels=traffic.assetWheels?.length?traffic.assetWheels:traffic.wheels;
-    rollingWheels?.forEach(wheel=>wheel.rotation.x-=spin);
+    if(!traffic.assetRoot){
+      traffic.wheels?.forEach(wheel=>wheel.rotation.x-=spin);
+    }
+
     if(traffic.speed>0 && traffic.group.position.z>38) traffic.group.position.z=-38-index*5;
     if(traffic.speed<0 && traffic.group.position.z<-38) traffic.group.position.z=38+index*5;
   });
@@ -8018,16 +8049,17 @@ function animate(){
   });
 
   ambientWalkers.forEach((walker,index)=>{
-    const pace=1+Math.sin(t*.21+walker.pacePhase)*.038;
-    const cycleLength=18.5+index*2.35;
-    const cycle=(t+walker.strollOffset)%cycleLength;
+    const pace=
+      1+
+      Math.sin(t*.21+walker.pacePhase)*.032+
+      Math.sin(t*.071+walker.phase*.13)*.018;
+    const cycle=(t+walker.pauseOffset)%walker.pauseCycle;
     const farFromMira=Math.abs(walker.group.position.z-mira.position.z)>9.0;
-    const pauseDuration=1.45+(index%3)*.38;
     const shouldPause=Boolean(
       walker.assetRoot &&
       walker.idleAction &&
       farFromMira &&
-      cycle>cycleLength-pauseDuration
+      cycle>walker.pauseCycle-walker.pauseLength
     );
 
     setWalkerMotionState(walker,shouldPause?'idle':'walk');
@@ -8043,14 +8075,26 @@ function animate(){
 
     if(walker.assetRoot){
       walker.group.position.y=0;
-      walker.group.position.x=walker.baseX+Math.sin(t*.27+walker.pacePhase)*.020;
-      const idleYaw=walker.motionState==='idle'?walker.idleFacingBias:0;
+      const wander=
+        Math.sin(t*.19+walker.pacePhase)*walker.laneWander+
+        Math.sin(t*.061+walker.phase)*walker.laneWander*.45;
+      walker.group.position.x=walker.baseX+wander;
+
+      // Paused pedestrians don't simply freeze: they subtly turn toward the
+      // shopfront side, as if checking a window or reorienting before walking on.
+      const browseYaw=walker.motionState==='idle'
+        ? walker.idleFacingBias+walker.browseSide*(.14+index*.012)
+        : wander*.28;
       walker.group.rotation.y=THREE.MathUtils.lerp(
         walker.group.rotation.y,
-        idleYaw,
-        1-Math.pow(.12,dt)
+        browseYaw,
+        1-Math.pow(walker.motionState==='idle'?.045:.10,dt)
       );
-      walker.group.rotation.z=0;
+      walker.group.rotation.z=THREE.MathUtils.lerp(
+        walker.group.rotation.z,
+        walker.motionState==='idle'?walker.browseSide*.0025:0,
+        1-Math.pow(.08,dt)
+      );
       if(walker.walkAction && walker.motionState==='walk'){
         walker.walkAction.setEffectiveTimeScale(
           THREE.MathUtils.clamp(Math.max(.01,walker.speed)/.70,.68,.90)
@@ -8094,9 +8138,14 @@ function animate(){
 
   // When the player is far away, Mira remains part of the world: she gives the
   // café/street occasional attention instead of freezing on one heading.
+  const storefrontAttention=
+    Math.max(0,Math.sin(t*.071+1.15))*
+    Math.max(0,Math.sin(t*.033+2.35))*
+    (1-miraAttention);
   const ambientBodyLook=(
     Math.sin(t*.115+.7)*.034+
-    Math.sin(t*.043+2.2)*.020
+    Math.sin(t*.043+2.2)*.020+
+    storefrontAttention*.048
   )*(1-miraAttention);
   const miraYawTarget=
     THREE.MathUtils.lerp(miraBaseYaw,miraLookYaw,miraAttention)+ambientBodyLook;
@@ -8151,7 +8200,8 @@ function animate(){
     const relativePlayerYaw=THREE.MathUtils.clamp(miraLookYaw-mira.rotation.y,-.15,.15);
     const ambientHeadYaw=(
       Math.sin(t*.19+1.8)*.055+
-      Math.sin(t*.071+.2)*.030
+      Math.sin(t*.071+.2)*.030+
+      storefrontAttention*.070
     )*(1-miraAttention);
     const headYaw=relativePlayerYaw*miraAttention*.68+ambientHeadYaw;
     const headPitch=
