@@ -295,6 +295,35 @@ function makeNormalTextureFromHeight(canvas,strength=2.0){
   return texture;
 }
 
+function makeAOTextureFromHeight(canvas,strength=.72){
+  const w=canvas.width;
+  const h=canvas.height;
+  const source=canvas.getContext('2d').getImageData(0,0,w,h).data;
+  const out=document.createElement('canvas');
+  out.width=w;
+  out.height=h;
+  const og=out.getContext('2d');
+  const image=og.createImageData(w,h);
+  const dst=image.data;
+
+  for(let p=0;p<w*h;p++){
+    const height=source[p*4]/255;
+    const cavity=Math.max(0,.52-height);
+    const value=Math.round(
+      THREE.MathUtils.clamp(255-cavity*255*strength*2.2,172,255)
+    );
+    const o=p*4;
+    dst[o]=dst[o+1]=dst[o+2]=value;
+    dst[o+3]=255;
+  }
+
+  og.putImageData(image,0,0);
+  const texture=new THREE.CanvasTexture(out);
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.anisotropy=8;
+  return texture;
+}
+
 function makeMaterialTexture(kind,seed){
   const size=512;
   const colorCanvas=document.createElement('canvas');
@@ -504,8 +533,12 @@ function makeMaterialTexture(kind,seed){
     bumpCanvas,
     kind==='metal'?1.15:(kind==='wood'?1.55:(kind==='stone'?1.75:2.0))
   );
+  const ao=makeAOTextureFromHeight(
+    bumpCanvas,
+    kind==='metal'?.34:(kind==='wood'?.54:.72)
+  );
 
-  return {map,bump,roughness,normal};
+  return {map,bump,roughness,normal,ao};
 }
 
 function configureTexturePair(pair,repeatX,repeatY){
@@ -513,6 +546,7 @@ function configureTexturePair(pair,repeatX,repeatY){
   pair.bump.repeat.set(repeatX,repeatY);
   pair.roughness?.repeat.set(repeatX,repeatY);
   pair.normal?.repeat.set(repeatX,repeatY);
+  pair.ao?.repeat.set(repeatX,repeatY);
   return pair;
 }
 
@@ -573,10 +607,19 @@ const concreteSurface=configureTexturePair(makeMaterialTexture('concrete',0x327c
 const woodSurface=configureTexturePair(makeMaterialTexture('wood',0x78d0bc53),1.2,5.8);
 const metalSurface=configureTexturePair(makeMaterialTexture('metal',0x1165a2ef),5.5,1.2);
 
-const pavementMicroBump=makeMaterialTexture('concrete',0x4d84b271).bump;
-pavementMicroBump.repeat.set(8,34);
-const roadMicroBump=makeMaterialTexture('concrete',0x93c25f17).bump;
-roadMicroBump.repeat.set(9,42);
+const pavementDetailSurface=configureTexturePair(
+  makeMaterialTexture('concrete',0x4d84b271),
+  8,
+  34
+);
+const pavementMicroBump=pavementDetailSurface.bump;
+
+const roadDetailSurface=configureTexturePair(
+  makeMaterialTexture('concrete',0x93c25f17),
+  9,
+  42
+);
+const roadMicroBump=roadDetailSurface.bump;
 
 function makeOrganicTexture(kind,seed){
   const size=256;
@@ -864,9 +907,16 @@ const streetBannerTexture=new THREE.CanvasTexture(streetBannerCanvas);
 streetBannerTexture.colorSpace=THREE.SRGBColorSpace;
 streetBannerTexture.anisotropy=8;
 
+function ensureSecondaryUV(geometry){
+  if(geometry?.attributes?.uv && !geometry.attributes.uv2){
+    geometry.setAttribute('uv2',geometry.attributes.uv.clone());
+  }
+  return geometry;
+}
+
 function box(w, h, d, color, x, y, z, roughness=.72, metalness=.02) {
   const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(w,h,d),
+    ensureSecondaryUV(new THREE.BoxGeometry(w,h,d)),
     new THREE.MeshStandardMaterial({ color, roughness, metalness })
   );
   mesh.position.set(x,y,z);
@@ -878,7 +928,7 @@ function box(w, h, d, color, x, y, z, roughness=.72, metalness=.02) {
 
 function plane(w,h,color,x,y,z,rx=-Math.PI/2,ry=0,rz=0,roughness=.9){
   const mesh=new THREE.Mesh(
-    new THREE.PlaneGeometry(w,h),
+    ensureSecondaryUV(new THREE.PlaneGeometry(w,h)),
     new THREE.MeshStandardMaterial({color,roughness,metalness:0,side:THREE.DoubleSide})
   );
   mesh.position.set(x,y,z);
@@ -1258,6 +1308,10 @@ function addGlassEdgeDirt(w,h,x,y,z,ry=-Math.PI/2,opacity=.42){
 const cityGround=plane(52,92,0xc7c4b9,0,-.045,-4);
 cityGround.material.map=pavementTexture;
 cityGround.material.roughnessMap=pavementRoughness;
+cityGround.material.normalMap=pavementDetailSurface.normal;
+cityGround.material.normalScale.set(.11,.11);
+cityGround.material.aoMap=pavementDetailSurface.ao;
+cityGround.material.aoMapIntensity=.16;
 cityGround.material.bumpMap=pavementMicroBump;
 cityGround.material.bumpScale=.010;
 cityGround.material.roughness=.98;
@@ -1268,6 +1322,10 @@ cityGround.material.needsUpdate=true;
 const road=plane(15,92,0xffffff,-6.7,.004,-4);
 road.material.map=asphaltTexture;
 road.material.roughnessMap=asphaltRoughness;
+road.material.normalMap=roadDetailSurface.normal;
+road.material.normalScale.set(.085,.085);
+road.material.aoMap=roadDetailSurface.ao;
+road.material.aoMapIntensity=.10;
 road.material.bumpMap=roadMicroBump;
 road.material.bumpScale=.014;
 road.material.roughness=1.0;
@@ -1330,6 +1388,10 @@ scene.add(distantSidewalk);
 const sidewalk=plane(10.8,92,0xffffff,4.2,.014,-4);
 sidewalk.material.map=pavementTexture;
 sidewalk.material.roughnessMap=pavementRoughness;
+sidewalk.material.normalMap=pavementDetailSurface.normal;
+sidewalk.material.normalScale.set(.13,.13);
+sidewalk.material.aoMap=pavementDetailSurface.ao;
+sidewalk.material.aoMapIntensity=.18;
 sidewalk.material.bumpMap=pavementMicroBump;
 sidewalk.material.bumpScale=.011;
 sidewalk.material.roughness=.99;
@@ -1369,6 +1431,8 @@ curb.material.map=concreteSurface.map;
 curb.material.roughnessMap=concreteSurface.roughness;
 curb.material.normalMap=concreteSurface.normal;
 curb.material.normalScale.set(.20,.20);
+curb.material.aoMap=concreteSurface.ao;
+curb.material.aoMapIntensity=.20;
 curb.material.bumpMap=concreteSurface.bump;
 curb.material.bumpScale=.012;
 curb.material.needsUpdate=true;
@@ -1737,6 +1801,8 @@ rightFacade.material.map=facadeSurface.map;
 rightFacade.material.roughnessMap=facadeSurface.roughness;
 rightFacade.material.normalMap=facadeSurface.normal;
 rightFacade.material.normalScale.set(.18,.18);
+rightFacade.material.aoMap=facadeSurface.ao;
+rightFacade.material.aoMapIntensity=.24;
 rightFacade.material.bumpMap=facadeSurface.bump;
 rightFacade.material.bumpScale=.018;
 rightFacade.material.envMapIntensity=.10;
@@ -6283,7 +6349,7 @@ function animate(){
   dappleTexture.offset.x=Math.sin(t*.052)*.0022;
   dappleTexture.offset.y=Math.cos(t*.044)*.0015;
   sunHaze.material.opacity=.80+Math.sin(t*.11)*.018;
-  sun.intensity=3.03+Math.sin(t*.045)*.025;
+  sun.intensity=2.78+Math.sin(t*.045)*.018;
 
   skyClouds.forEach((cloud,index)=>{
     cloud.position.x+=dt*(.055+index*.018);
