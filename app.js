@@ -1961,6 +1961,7 @@ function createAmbientWalker(x,z,direction,color,speed=.58,assetVariant='primary
     assetVariant,
     baseX:x,
     headingBias:(ambientWalkers.length-1)*.018,
+    modelYawOffset:0,
     pacePhase:Math.random()*Math.PI*2,
     phase:Math.random()*Math.PI*2,
     placeholderChildren:[...group.children],
@@ -1969,9 +1970,9 @@ function createAmbientWalker(x,z,direction,color,speed=.58,assetVariant='primary
   });
 }
 
-createAmbientWalker(4.95,-15.8,1,0xa98f82,.56,'primary');
-createAmbientWalker(6.15,16.6,-1,0x718692,.62,'secondary');
-createAmbientWalker(5.45,13.5,-1,0x8d9a73,.52,'tertiary');
+createAmbientWalker(4.95,-15.8,1,0xa98f82,.53,'primary');
+createAmbientWalker(6.15,16.6,-1,0x718692,.59,'secondary');
+createAmbientWalker(5.45,13.5,-1,0x8d9a73,.50,'tertiary');
 
 const movingTraffic=[];
 function createTrafficCar(x,z,color,speed,assetVariant='primary'){
@@ -2162,9 +2163,11 @@ const WORLD_GLB_ASSETS={
   carPrimary:'https://cdn.jsdelivr.net/gh/halcyon-video/halcyon-video@57cb937f18bb162706c91d0a250258685928ec2a/public/models/car_sedan.glb',
   carSecondary:'https://cdn.jsdelivr.net/gh/halcyon-video/halcyon-video@57cb937f18bb162706c91d0a250258685928ec2a/public/models/car_hatchback.glb',
   carFallback:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/ferrari.glb',
-  pedestrianPrimary:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/Soldier.glb',
-  pedestrianSecondary:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/Michelle.glb',
-  pedestrianTertiary:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Assets@main/Models/CesiumMan/glTF-Binary/CesiumMan.glb',
+  // Quaternius civilian characters are CC0 and read as ordinary pedestrians,
+  // not armored / robotic demo characters.
+  pedestrianPrimary:'https://cdn.jsdelivr.net/gh/MrArun005/3D-Games-AmusementPark@2d827a479ef7a44938372ca07d24c0faffb43b1d/public/models/characters/civilian_man.glb',
+  pedestrianSecondary:'https://cdn.jsdelivr.net/gh/MrArun005/3D-Games-AmusementPark@2d827a479ef7a44938372ca07d24c0faffb43b1d/public/models/characters/civilian_casual.glb',
+  pedestrianTertiary:'https://cdn.jsdelivr.net/gh/MrArun005/3D-Games-AmusementPark@2d827a479ef7a44938372ca07d24c0faffb43b1d/public/models/characters/civilian_woman.glb',
   mira:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/Michelle.glb'
 };
 const worldAssetMixers=[];
@@ -2313,25 +2316,17 @@ function tuneVehicleAsset(root,bodyColor){
 }
 
 function tunePedestrianAsset(root,index=0){
-  const clothTints=[
-    new THREE.Color(0xa09082),
-    new THREE.Color(0x7f9091),
-    new THREE.Color(0x87947c),
-    new THREE.Color(0x8d7f79)
-  ];
   root.traverse(object=>{
     if(!object.isMesh) return;
     const materials=Array.isArray(object.material)?object.material:[object.material];
     materials.forEach(material=>{
-      if(!material?.color) return;
-      const key=((object.name||'')+' '+(material.name||'')).toLowerCase();
-      if(!material.map && !/skin|face|head|hand|eye|hair/.test(key)){
-        const hsl={h:0,s:0,l:0};
-        material.color.getHSL(hsl);
-        material.color.lerp(clothTints[index%clothTints.length],hsl.s>.25?.16:.07);
+      if(!material) return;
+      if('roughness' in material){
+        material.roughness=THREE.MathUtils.clamp(material.roughness ?? .78,.66,.92);
       }
-      if('roughness' in material) material.roughness=Math.max(material.roughness||0,.72);
-      if('metalness' in material) material.metalness=Math.min(material.metalness||0,.05);
+      if('metalness' in material){
+        material.metalness=Math.min(material.metalness ?? 0,.04);
+      }
       material.needsUpdate=true;
     });
   });
@@ -2359,9 +2354,9 @@ function attachCarAsset(entry,source,index=0,targetLength=3.85){
 function attachWalkerAsset(entry,source,animations,index){
   const root=cloneAssetScene(source);
   prepareImportedModel(root,.28);
-  normalizeHumanAsset(root,[1.68,1.75,1.71][index%3]);
+  normalizeHumanAsset(root,[1.74,1.69,1.66][index%3]);
   tunePedestrianAsset(root,index);
-  root.rotation.y=(entry.direction>0?0:Math.PI)+entry.headingBias;
+  root.rotation.y=(entry.direction>0?0:Math.PI)+entry.headingBias+(entry.modelYawOffset||0);
   entry.placeholderChildren?.forEach(child=>{child.visible=false;});
   entry.group.scale.setScalar(1);
   entry.group.add(root);
@@ -2370,7 +2365,10 @@ function attachWalkerAsset(entry,source,animations,index){
     entry.contactShadow=createAttachedContactShadow(entry.group,.48,.34,.072);
   }
 
-  const walkClip=animations.find(clip=>/walk/i.test(clip.name)) || animations[3] || animations[0];
+  const walkClip=
+    animations.find(clip=>/^(walk|walking)$/i.test(clip.name)) ||
+    animations.find(clip=>/walk/i.test(clip.name)) ||
+    (animations.length===1?animations[0]:null);
   if(walkClip){
     const mixer=new THREE.AnimationMixer(root);
     const action=mixer.clipAction(walkClip);
@@ -2380,6 +2378,9 @@ function attachWalkerAsset(entry,source,animations,index){
     entry.mixer=mixer;
     entry.walkAction=action;
     worldAssetMixers.push(mixer);
+  }else{
+    entry.speed=0;
+    entry.baseSpeed=0;
   }
 }
 
@@ -2685,17 +2686,17 @@ function animate(){
   });
 
   ambientWalkers.forEach((walker,index)=>{
-    const pace=1+Math.sin(t*.23+walker.pacePhase)*.055;
+    const pace=1+Math.sin(t*.21+walker.pacePhase)*.038;
     walker.speed=walker.baseSpeed*pace;
     walker.group.position.z+=walker.direction*walker.speed*dt;
     walker.phase+=dt*(3.8+index*.35)*pace;
     if(walker.assetRoot){
       walker.group.position.y=0;
-      walker.group.position.x=walker.baseX+Math.sin(t*.31+walker.pacePhase)*.045;
+      walker.group.position.x=walker.baseX+Math.sin(t*.27+walker.pacePhase)*.030;
       walker.group.rotation.z=0;
       if(walker.walkAction){
         walker.walkAction.setEffectiveTimeScale(
-          THREE.MathUtils.clamp(walker.speed/.72,.70,.96)
+          THREE.MathUtils.clamp(walker.speed/.70,.68,.90)
         );
       }
     }else{
