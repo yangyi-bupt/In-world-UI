@@ -140,6 +140,8 @@
     const rig=new THREE.Group();
     scene.add(rig);
 
+    const tabletDom=canvas.closest?.('.tablet')||null;
+
     const chassisRoughness=makeDeviceRoughnessTexture(0x4f8cb312,168,22,3);
     chassisRoughness.repeat.set(4.2,3.4);
     const edgeRoughness=makeDeviceRoughnessTexture(0x86c22f41,150,16,1);
@@ -251,6 +253,27 @@
     lensGlint.renderOrder=8;
     lensGlint.raycast=()=>{};
     rig.add(lensGlint);
+
+    // A very low-opacity reflection band lives above the physical bezel. It
+    // moves with view angle and creates a separate optical layer from the HTML
+    // display content underneath.
+    const glassSheenMat=new THREE.MeshBasicMaterial({
+      color:0xe8f4ff,
+      transparent:true,
+      opacity:0,
+      depthWrite:false,
+      toneMapped:false,
+      blending:THREE.AdditiveBlending
+    });
+    const glassSheen=new THREE.Mesh(
+      new THREE.PlaneGeometry(1.18,2.15),
+      glassSheenMat
+    );
+    glassSheen.position.set(-.56,.08,.118);
+    glassSheen.rotation.z=-.39;
+    glassSheen.renderOrder=7;
+    glassSheen.raycast=()=>{};
+    rig.add(glassSheen);
 
     // Power and volume buttons have their own highlight, so side-on views read as hardware.
     const power=new THREE.Mesh(new THREE.BoxGeometry(.38,.032,.058),edgeMetal);
@@ -755,6 +778,23 @@
       lensGlint.position.x=-.006+pointerX*.010;
       lensGlint.position.y=.900+pointerY*.006;
       lensGlintMat.opacity=(.22+.34*hold)*(1-Math.min(.45,Math.abs(pointerX)*.15))+Math.max(0,pressAmount)*.08;
+
+      const opticalX=THREE.MathUtils.clamp(pointerX+inertiaX*18+hapticYaw*6,-1,1);
+      const opticalY=THREE.MathUtils.clamp(pointerY+inertiaY*18+hapticPitch*6,-1,1);
+      glassSheen.position.x=-.56+opticalX*.32;
+      glassSheen.position.y=.08+opticalY*.16;
+      glassSheen.rotation.z=-.39+opticalX*.055;
+      glassSheenMat.opacity=(.012+.030*hold)*(1-Math.min(.62,Math.abs(opticalX)*.28+Math.abs(opticalY)*.20));
+
+      // Keep the live screen optically separate from the 3D shell. The movement
+      // is deliberately sub-pixel-to-few-pixel scale so UI targeting remains stable.
+      if(tabletDom){
+        tabletDom.style.setProperty('--screen-parallax-x',(opticalX*1.9).toFixed(2)+'px');
+        tabletDom.style.setProperty('--screen-parallax-y',(opticalY*1.25).toFixed(2)+'px');
+        tabletDom.style.setProperty('--glass-shift-x',(opticalX*11).toFixed(2)+'px');
+        tabletDom.style.setProperty('--glass-shift-y',(opticalY*7).toFixed(2)+'px');
+        tabletDom.style.setProperty('--glass-angle',(118+opticalX*3.8).toFixed(2)+'deg');
+      }
 
       // Real side-wall visibility changes with tilt: the edge opposite the
       // direction of travel opens up more strongly, while the other side
