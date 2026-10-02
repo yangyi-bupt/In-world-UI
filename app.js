@@ -473,7 +473,8 @@ rightFacade.castShadow=false;
 });
 
 for(let z=-31;z<=24;z+=7.2){
-  const bay=box(.42,5.6,5.35,0xbab6ad,8.64,3.22,z,.62);
+  const bayTone=z<-7?0xc2c9c2:(z>10?0xd8cabc:0xc9c1b5);
+  const bay=box(.42,5.6,5.35,bayTone,8.64,3.22,z,.66);
   bay.castShadow=false;
 
   const glass=glassPanel(5.0,4.65,8.41,3.35,z,-Math.PI/2,0xc2d9da);
@@ -491,7 +492,8 @@ for(let z=-31;z<=24;z+=7.2){
 
   // dark sill + pale canopy creates the cafe / mixed-use street rhythm.
   box(.38,.16,5.2,0x565c5d,8.34,.62,z,.55,.18);
-  const canopy=box(1.15,.12,5.35,0xe9e0cf,7.95,3.02,z,.66);
+  const canopyTone=z<-7?0xe2e8df:(z>10?0xe6d8cb:0xeee6d8);
+  const canopy=box(1.15,.12,5.35,canopyTone,7.95,3.02,z,.70);
   canopy.castShadow=true;
 
   const ledge=box(.28,.07,5.05,0xcfc9bd,8.18,5.70,z,.74);
@@ -511,41 +513,82 @@ for(let z=-31;z<=24;z+=7.2){
   step.castShadow=true;
 });
 
+function createStorePlaque(label,z,bg,fg){
+  const c=document.createElement('canvas');
+  c.width=384;
+  c.height=128;
+  const g=c.getContext('2d');
+  g.fillStyle=bg;
+  g.fillRect(0,0,384,128);
+  g.fillStyle=fg;
+  g.font='600 42px Inter, sans-serif';
+  g.textAlign='center';
+  g.textBaseline='middle';
+  g.fillText(label,192,64);
+  const texture=new THREE.CanvasTexture(c);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.anisotropy=4;
+  const plaque=new THREE.Mesh(
+    new THREE.PlaneGeometry(2.15,.54),
+    new THREE.MeshBasicMaterial({map:texture,toneMapped:false})
+  );
+  plaque.position.set(7.68,2.55,z);
+  plaque.rotation.y=-Math.PI/2;
+  scene.add(plaque);
+}
+createStorePlaque('MORI',-10.6,'#e7e8df','#58625d');
+createStorePlaque('ATELIER',13.8,'#eee4d8','#63574d');
+
 // Ground-floor cafe corner.
-const cafeFrame=box(.48,3.0,8.5,0xb49778,8.33,1.55,4.8,.68);
+const cafeFrame=box(.48,3.0,8.5,0xb58e70,8.33,1.55,4.8,.72);
 cafeFrame.castShadow=false;
-const cafeGlass=glassPanel(7.75,2.55,8.05,1.62,4.8,-Math.PI/2,0x9fc8cf);
-cafeGlass.material.opacity=.58;
+const cafeGlass=glassPanel(7.75,2.55,8.05,1.62,4.8,-Math.PI/2,0xc3d8d7);
+cafeGlass.material.opacity=.48;
+cafeGlass.material.roughness=.31;
 
 const signCanvas=document.createElement('canvas');
 signCanvas.width=512;
 signCanvas.height=128;
 const signCtx=signCanvas.getContext('2d');
-signCtx.fillStyle='#efe8dc';
+signCtx.fillStyle='#f3eee5';
 signCtx.fillRect(0,0,512,128);
-signCtx.fillStyle='#4e463d';
-signCtx.font='600 54px Inter, sans-serif';
+signCtx.fillStyle='#514b43';
+signCtx.font='600 48px Inter, sans-serif';
 signCtx.textAlign='center';
 signCtx.textBaseline='middle';
 signCtx.fillText('NOVA CAFÉ',256,65);
 const signTexture=new THREE.CanvasTexture(signCanvas);
 signTexture.colorSpace=THREE.SRGBColorSpace;
 const cafeSign=new THREE.Mesh(
-  new THREE.PlaneGeometry(3.35,.84),
+  new THREE.PlaneGeometry(2.78,.64),
   new THREE.MeshBasicMaterial({map:signTexture,toneMapped:false})
 );
-cafeSign.position.set(7.77,3.48,4.8);
+cafeSign.position.set(7.77,3.42,4.8);
 cafeSign.rotation.y=-Math.PI/2;
 scene.add(cafeSign);
 
-const cafeAwning=new THREE.Mesh(
-  new THREE.BoxGeometry(1.55,.10,5.2),
-  new THREE.MeshStandardMaterial({color:0xd8a77f,roughness:.72})
-);
-cafeAwning.position.set(7.58,2.78,4.8);
-cafeAwning.rotation.z=-.08;
-cafeAwning.castShadow=true;
-scene.add(cafeAwning);
+const awningCream=new THREE.MeshStandardMaterial({color:0xf0e5d3,roughness:.78});
+const awningApricot=new THREE.MeshStandardMaterial({color:0xd8aa86,roughness:.76});
+const awningDepth=5.18/7;
+for(let i=0;i<7;i++){
+  const slat=new THREE.Mesh(
+    new THREE.BoxGeometry(1.55,.10,awningDepth+.012),
+    i%2?awningApricot:awningCream
+  );
+  slat.position.set(7.58,2.78,2.21+awningDepth*(i+.5));
+  slat.rotation.z=-.08;
+  slat.castShadow=true;
+  scene.add(slat);
+
+  const valance=new THREE.Mesh(
+    new THREE.BoxGeometry(.055,.19,awningDepth-.025),
+    i%2?awningApricot:awningCream
+  );
+  valance.position.set(6.82,2.67,2.21+awningDepth*(i+.5));
+  valance.rotation.z=-.08;
+  valance.castShadow=true;
+  scene.add(valance);
+}
 
 const cafeInteriorMat=new THREE.MeshStandardMaterial({
   color:0xf0c38f,
@@ -559,9 +602,21 @@ for(let z=2.4;z<=7.2;z+=2.4){
   scene.add(pendant);
 }
 
+const cafeInteriorWood=new THREE.MeshStandardMaterial({color:0xb79473,roughness:.80});
+const cafeInteriorWarm=new THREE.MeshStandardMaterial({color:0xe8d9c5,roughness:.88});
+const cafeCounter=new THREE.Mesh(new THREE.BoxGeometry(.32,.86,5.30),cafeInteriorWood);
+cafeCounter.position.set(8.18,.72,4.85);
+cafeCounter.castShadow=true;
+scene.add(cafeCounter);
+for(let z=2.95;z<=6.75;z+=1.90){
+  const shelf=new THREE.Mesh(new THREE.BoxGeometry(.10,.065,1.15),cafeInteriorWarm);
+  shelf.position.set(8.23,1.62,z);
+  scene.add(shelf);
+}
+
 // Buildings across the road give the boulevard depth but stay light enough for
 // the AI character to remain the visual focus.
-const farBuildingColors=[0xd2d5d2,0xc5d0d3,0xe1d7ca,0xbfc9cc];
+const farBuildingColors=[0xd8dbd7,0xd0d9d9,0xe3ddd4,0xcbd4d4];
 for(let i=0;i<10;i++){
   const z=-36+i*8.3;
   const h=5.2+(i%4)*1.6;
@@ -573,7 +628,7 @@ for(let i=0;i<10;i++){
     const win=new THREE.Mesh(
       new THREE.PlaneGeometry(3.45,.66),
       new THREE.MeshStandardMaterial({
-        color:[0x91aeb8,0x9bb8c0,0x86a3ad][windowTone],
+        color:[0xaabec3,0xb2c4c7,0xa1b7bc][windowTone],
         roughness:.30,
         metalness:.10
       })
@@ -641,7 +696,7 @@ const streetTreeCrowns=[];
 function createStreetTree(x,z,scale=1){
   const pit=new THREE.Mesh(
     new THREE.PlaneGeometry(1.18*scale,1.18*scale),
-    new THREE.MeshStandardMaterial({color:0x7f715d,roughness:1})
+    new THREE.MeshStandardMaterial({color:0x897a66,roughness:1})
   );
   pit.rotation.x=-Math.PI/2;
   pit.position.set(x,.041,z);
@@ -650,56 +705,69 @@ function createStreetTree(x,z,scale=1){
 
   const grate=new THREE.Mesh(
     new THREE.RingGeometry(.32*scale,.50*scale,20),
-    new THREE.MeshStandardMaterial({color:0x4f5b59,roughness:.62,metalness:.42,side:THREE.DoubleSide})
+    new THREE.MeshStandardMaterial({color:0x626b67,roughness:.66,metalness:.32,side:THREE.DoubleSide})
   );
   grate.rotation.x=-Math.PI/2;
   grate.position.set(x,.046,z);
   scene.add(grate);
 
   const trunk=new THREE.Mesh(
-    new THREE.CylinderGeometry(.13*scale,.18*scale,2.3*scale,12),
-    new THREE.MeshStandardMaterial({color:0x80654f,roughness:.95})
+    new THREE.CylinderGeometry(.10*scale,.145*scale,2.55*scale,12),
+    new THREE.MeshStandardMaterial({color:0x8c735d,roughness:.96})
   );
-  trunk.position.set(x,1.15*scale,z);
+  trunk.position.set(x,1.275*scale,z);
   trunk.castShadow=true;
   scene.add(trunk);
 
   const crown=new THREE.Group();
   const leafMats=[
-    new THREE.MeshStandardMaterial({color:0x6f9c65,roughness:.92}),
-    new THREE.MeshStandardMaterial({color:0x7eaa72,roughness:.90}),
-    new THREE.MeshStandardMaterial({color:0x628c5e,roughness:.94})
+    new THREE.MeshStandardMaterial({color:0x7ba56f,roughness:.94}),
+    new THREE.MeshStandardMaterial({color:0x91b77e,roughness:.92}),
+    new THREE.MeshStandardMaterial({color:0x6f9765,roughness:.95})
   ];
   [
-    [0,0,0,1.02],
-    [-.42,.03,.10,.72],
-    [.38,.10,-.05,.78],
-    [0,.35,.04,.70]
-  ].forEach(([ox,oy,oz,r],index)=>{
+    [0,.02,0,.86,1.08,.92],
+    [-.42,.02,.06,.62,1.12,.88],
+    [.40,.10,-.06,.68,1.06,.90],
+    [-.18,.46,-.02,.60,1.14,.86],
+    [.24,.50,.04,.57,1.12,.88],
+    [0,.82,0,.49,1.16,.84]
+  ].forEach(([ox,oy,oz,r,sy,sz],index)=>{
     const leaf=new THREE.Mesh(new THREE.IcosahedronGeometry(r*scale,2),leafMats[index%leafMats.length]);
     leaf.position.set(ox*scale,oy*scale,oz*scale);
+    leaf.scale.set(1,sy,sz);
     leaf.castShadow=true;
     leaf.receiveShadow=true;
     crown.add(leaf);
   });
-  crown.position.set(x,2.72*scale,z);
+  crown.position.set(x,3.0*scale,z);
   scene.add(crown);
   streetTreeCrowns.push(crown);
 }
 
-[-13,-4.8,4.2,13.2].forEach((z,i)=>createStreetTree(1.0,z,i%2?.94:1.04));
+[-13.2,-6.4,10.8,16.2].forEach((z,i)=>createStreetTree(1.0,z,i%2?.94:1.04));
 [-18,0,18].forEach((z,i)=>createStreetTree(-12.1,z,.88+i*.04));
 
 function createPlanter(x,z,w=1.8){
-  box(w,.42,.72,0xb7aa95,x,.22,z,.90);
-  const greenMat=new THREE.MeshStandardMaterial({color:0x6f9e65,roughness:.95});
-  for(let i=0;i<5;i++){
-    const shrub=new THREE.Mesh(new THREE.SphereGeometry(.24+(i%2)*.05,12,9),greenMat);
-    shrub.scale.set(1.2,.82,1);
-    shrub.position.set(x-w*.35+i*(w*.70/4),.55,z);
+  box(w,.42,.72,0xbcb09d,x,.22,z,.92);
+  const greens=[
+    new THREE.MeshStandardMaterial({color:0x789d70,roughness:.96}),
+    new THREE.MeshStandardMaterial({color:0x88aa7b,roughness:.95})
+  ];
+  const offsets=[
+    [-.34,-.05,.94],
+    [-.18,.04,1.08],
+    [0,-.03,.98],
+    [.19,.05,1.12],
+    [.35,-.02,.92]
+  ];
+  offsets.forEach(([nx,nz,ss],i)=>{
+    const shrub=new THREE.Mesh(new THREE.SphereGeometry(.25,12,9),greens[i%2]);
+    shrub.scale.set(1.14*ss,.76*ss,.94*ss);
+    shrub.position.set(x+w*nx,.54+(i%2)*.035,z+nz);
     shrub.castShadow=true;
     scene.add(shrub);
-  }
+  });
 }
 createPlanter(6.6,-8.3,2.2);
 createPlanter(6.6,11.8,2.5);
@@ -710,7 +778,7 @@ hedgeBed.castShadow=false;
 for(let i=0;i<9;i++){
   const shrub=new THREE.Mesh(new THREE.SphereGeometry(.24+(i%3)*.025,12,9),lowHedgeMat);
   shrub.scale.set(1.12,.72,1);
-  shrub.position.set(4.20+i*.36,.43,-13.0+(i%2)*.05);
+  shrub.position.set(4.20+i*.36,.42+(i%3)*.018,-13.0+([-.06,.03,.08][i%3]));
   shrub.castShadow=true;
   scene.add(shrub);
 }
@@ -917,24 +985,37 @@ for(let i=0;i<3;i++){
 
 // Small outdoor cafe setup turns the building edge into a believable place,
 // not just a facade.
+const cafeTerrace=new THREE.Mesh(
+  new THREE.PlaneGeometry(3.25,6.15),
+  new THREE.MeshStandardMaterial({color:0xe9e1d5,roughness:.96})
+);
+cafeTerrace.rotation.x=-Math.PI/2;
+cafeTerrace.position.set(5.95,.046,6.95);
+cafeTerrace.receiveShadow=true;
+scene.add(cafeTerrace);
+
+const cafeTableWood=new THREE.MeshStandardMaterial({color:0xc39b78,roughness:.84});
+const cafeTableMetal=new THREE.MeshStandardMaterial({color:0x7f8783,roughness:.58,metalness:.30});
+const cafeSeatMat=new THREE.MeshStandardMaterial({color:0xe5ddd0,roughness:.88});
+
 function createCafeTable(x,z){
-  const top=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.055,24),benchWood);
+  const top=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.055,24),cafeTableWood);
   top.position.set(x,.72,z);
   top.castShadow=true;
   scene.add(top);
 
-  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.035,.05,.68,10),benchMetal);
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.035,.05,.68,10),cafeTableMetal);
   stem.position.set(x,.36,z);
   stem.castShadow=true;
   scene.add(stem);
 
   [-.52,.52].forEach(side=>{
-    const seat=new THREE.Mesh(new THREE.BoxGeometry(.34,.055,.34),benchWood);
+    const seat=new THREE.Mesh(new THREE.BoxGeometry(.34,.06,.34),cafeSeatMat);
     seat.position.set(x+side,.46,z);
     seat.castShadow=true;
     scene.add(seat);
 
-    const leg=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,.43,8),benchMetal);
+    const leg=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,.43,8),cafeTableMetal);
     leg.position.set(x+side,.23,z);
     leg.castShadow=true;
     scene.add(leg);
@@ -942,6 +1023,23 @@ function createCafeTable(x,z){
 }
 createCafeTable(5.9,5.7);
 createCafeTable(5.9,8.2);
+
+const terracePot=new THREE.Mesh(
+  new THREE.CylinderGeometry(.15,.12,.22,14),
+  new THREE.MeshStandardMaterial({color:0xb98f76,roughness:.88})
+);
+terracePot.position.set(6.72,.16,7.05);
+terracePot.castShadow=true;
+scene.add(terracePot);
+const terracePlantMat=new THREE.MeshStandardMaterial({color:0x789b70,roughness:.95});
+for(let i=0;i<4;i++){
+  const leaf=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),terracePlantMat);
+  leaf.scale.set(.75,1.25,.55);
+  leaf.position.set(6.72+(i-1.5)*.055,.34+(i%2)*.045,7.05+(i%2?-.03:.03));
+  leaf.rotation.z=(i-1.5)*.34;
+  leaf.castShadow=true;
+  scene.add(leaf);
+}
 
 const cupMat=new THREE.MeshStandardMaterial({color:0xf0ece2,roughness:.72});
 [
