@@ -35,7 +35,9 @@
       pointerY:height*.5,
       pointerVisible:false,
       pointerAlpha:0,
-      appHover:[0,0,0,0]
+      appHover:[0,0,0,0],
+      appDepthX:0,
+      appDepthY:0
     };
 
     const apps=[
@@ -271,10 +273,36 @@
       lower.addColorStop(1,'rgba(0,0,0,.16)');
       ctx.fillStyle=lower;
       roundedRect(45,594,934,67,0,true);
+
+      // A narrow cover-glass streak travels across the shell with pointer depth.
+      // It stays near the upper chrome so text remains untouched.
+      const streakX=512+state.appDepthX*250;
+      const streak=ctx.createLinearGradient(streakX-120,0,streakX+120,0);
+      streak.addColorStop(0,'rgba(255,255,255,0)');
+      streak.addColorStop(.46,'rgba(255,255,255,.010)');
+      streak.addColorStop(.50,'rgba(255,255,255,.032)');
+      streak.addColorStop(.54,'rgba(255,255,255,.010)');
+      streak.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=streak;
+      roundedRect(90,199,844,18,9,true);
+
+      // Opposing inner-edge light/shadow makes the app surface feel inset under glass.
+      const edgeGain=.020+Math.abs(state.appDepthX)*.018+Math.abs(state.appDepthY)*.012;
+      ctx.fillStyle='rgba('+rgb+','+edgeGain.toFixed(3)+')';
+      if(state.appDepthX>=0) roundedRect(45,238,2,356,1,true);
+      else roundedRect(977,238,2,356,1,true);
+
+      ctx.fillStyle='rgba(0,0,0,'+(.08+Math.abs(state.appDepthX)*.05).toFixed(3)+')';
+      if(state.appDepthX>=0) roundedRect(976,238,3,356,1,true);
+      else roundedRect(45,238,3,356,1,true);
     }
 
     function drawAppBackdrop(appId,accent,rgb){
       ctx.save();
+
+      // Ambient chrome floats behind content and drifts more than text.
+      // This creates depth without moving any readable UI.
+      ctx.translate(state.appDepthX*7,state.appDepthY*4.5);
       ctx.globalAlpha=.34;
       ctx.strokeStyle='rgba('+rgb+',.10)';
       ctx.fillStyle='rgba('+rgb+',.055)';
@@ -355,10 +383,12 @@
       roundedRect(70,308,884,1,1,true);
 
       if(appId){
+        const puckX=812-state.appDepthX*2.4;
+        const puckY=210-state.appDepthY*1.4;
         ctx.fillStyle='rgba(255,255,255,.030)';
-        roundedRect(812,210,42,42,14,true);
-        strokeRoundRect(812,210,42,42,14,'rgba(255,255,255,.055)',1);
-        appIcon(appId,833,231,21,accent,.14);
+        roundedRect(puckX,puckY,42,42,14,true);
+        strokeRoundRect(puckX,puckY,42,42,14,'rgba(255,255,255,.055)',1);
+        appIcon(appId,puckX+21,puckY+21,21,accent,.14);
       }
 
       ctx.fillStyle='rgba(255,255,255,.035)';
@@ -706,14 +736,19 @@
 
     function drawBack(){
       const hovered=isHover(backRect.key);
-      ctx.fillStyle=hovered?'rgba(127,214,255,.09)':'rgba(255,255,255,.035)';
-      roundedRect(backRect.x,backRect.y,backRect.w,backRect.h,18,true);
+      const pressed=isPressed(backRect.key);
+      const bx=backRect.x+(hovered?state.appDepthX*1.8:0);
+      const by=backRect.y+(pressed?1:0)+(hovered?state.appDepthY*.8:0);
+      ctx.fillStyle=pressed
+        ? 'rgba(127,214,255,.13)'
+        : (hovered?'rgba(127,214,255,.09)':'rgba(255,255,255,.035)');
+      roundedRect(bx,by,backRect.w,backRect.h,18,true);
       strokeRoundRect(
-        backRect.x,backRect.y,backRect.w,backRect.h,18,
+        bx,by,backRect.w,backRect.h,18,
         hovered?'rgba(127,214,255,.24)':'rgba(255,255,255,.06)',1
       );
-      text('‹',82,160,27,'500',hovered?'#dff4ff':'#91a1b8');
-      text('HOME',108,156,12,'800',hovered?'#dff4ff':'#91a1b8');
+      text('‹',82+(bx-backRect.x),160+(by-backRect.y),27,'500',hovered?'#dff4ff':'#91a1b8');
+      text('HOME',108+(bx-backRect.x),156+(by-backRect.y),12,'800',hovered?'#dff4ff':'#91a1b8');
     }
 
     function drawMessages(){
@@ -1339,6 +1374,16 @@
         const target=state.hoverKey==='app:'+apps[i].id ? 1 : 0;
         state.appHover[i]=THREE.MathUtils.lerp(value,target,hoverFollow);
       });
+
+      const depthTargetX=state.activeApp && state.pointerVisible
+        ? THREE.MathUtils.clamp((state.pointerX-width*.5)/(width*.5),-1,1)
+        : 0;
+      const depthTargetY=state.activeApp && state.pointerVisible
+        ? THREE.MathUtils.clamp((state.pointerY-height*.5)/(height*.5),-1,1)
+        : 0;
+      const depthFollow=1-Math.pow(.0012,Math.max(.001,dt));
+      state.appDepthX=THREE.MathUtils.lerp(state.appDepthX,depthTargetX,depthFollow);
+      state.appDepthY=THREE.MathUtils.lerp(state.appDepthY,depthTargetY,depthFollow);
 
       if(state.messageReplyPending){
         state.messageReplyTimer+=dt;
