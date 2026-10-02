@@ -244,6 +244,7 @@
     let pressTarget=0;
     let pressAmount=0;
     let pressVelocity=0;
+    let interactionEnergy=0;
     let holdAmount=0;
     let lastRenderTime=0;
 
@@ -295,6 +296,17 @@
       pressAmount+=pressVelocity*dt;
       pressAmount=THREE.MathUtils.clamp(pressAmount,-.10,1.08);
 
+      // Quiet hands never freeze completely, but active interaction should
+      // stabilize the tablet. Blend a tiny multi-frequency sway in only when
+      // pointer velocity and press energy are low.
+      const activityTarget=THREE.MathUtils.clamp(
+        Math.hypot(pointerVelocityX,pointerVelocityY)*.030+
+        Math.max(0,pressAmount)*.78,
+        0,1
+      );
+      const activityFollow=1-Math.pow(.0009,dt);
+      interactionEnergy=THREE.MathUtils.lerp(interactionEnergy,activityTarget,activityFollow);
+
       holdAmount=THREE.MathUtils.lerp(holdAmount,open?1:0,holdFollow);
 
       const hold=holdAmount*holdAmount*(3-2*holdAmount);
@@ -306,12 +318,21 @@
       const impact=Math.max(0,pressAmount);
       const impactX=impact*pointerX;
       const impactY=impact*pointerY;
+      const steady=1-interactionEnergy;
 
-      rig.rotation.x=-.032 + hidden*.075 + Math.sin(t*.72)*.004*hold - pointerY*.010*hold + inertiaY*hold + impact*(.0045+pointerY*.0035);
-      rig.rotation.y=.018 - hidden*.018 + Math.sin(t*.53)*.010*hold + pointerX*.013*hold + inertiaX*hold + impactX*.0065;
-      rig.rotation.z=hidden*.012 + Math.sin(t*.41)*.0026*hold - pointerX*.0025*hold - inertiaX*.18*hold - impactX*.0028;
-      rig.position.x=pointerX*.010*hold + inertiaX*.22*hold + impactX*.0025;
-      rig.position.y=hidden*.115 + Math.sin(t*.83)*.006*hold - pointerY*.006*hold + inertiaY*.16*hold - impact*.0035 + impactY*.0015;
+      // Human-held idle motion: layered frequencies avoid a perfect sine-wave
+      // float. It fades quickly during interaction so aiming/clicking stays crisp.
+      const swayPitch=(Math.sin(t*.46)+Math.sin(t*1.13+.8)*.36)*.0022*hold*steady;
+      const swayYaw=(Math.sin(t*.39+1.2)+Math.sin(t*.97)*.31)*.0028*hold*steady;
+      const swayRoll=(Math.sin(t*.31+.5)+Math.sin(t*1.37+2.1)*.24)*.00125*hold*steady;
+      const swayX=(Math.sin(t*.43+.9)+Math.sin(t*1.07)*.28)*.0019*hold*steady;
+      const swayY=(Math.sin(t*.61)+Math.sin(t*1.29+1.6)*.22)*.0027*hold*steady;
+
+      rig.rotation.x=-.032 + hidden*.075 + swayPitch - pointerY*.010*hold + inertiaY*hold + impact*(.0045+pointerY*.0035);
+      rig.rotation.y=.018 - hidden*.018 + swayYaw + pointerX*.013*hold + inertiaX*hold + impactX*.0065;
+      rig.rotation.z=hidden*.012 + swayRoll - pointerX*.0025*hold - inertiaX*.18*hold - impactX*.0028;
+      rig.position.x=swayX + pointerX*.010*hold + inertiaX*.22*hold + impactX*.0025;
+      rig.position.y=hidden*.115 + swayY - pointerY*.006*hold + inertiaY*.16*hold - impact*.0035 + impactY*.0015;
       rig.position.z=-hidden*.055-impact*.014;
 
       leftHand.rotation.z=-pointerX*.004*hold-inertiaX*.11*hold;
@@ -329,8 +350,8 @@
       const verticalBias=THREE.MathUtils.clamp(pointerY*.10+inertiaY*4,-.14,.14);
       const leftSupport=.5-supportBias;
       const rightSupport=.5+supportBias;
-      const leftBreath=Math.sin(t*.67+.4)*.0011*hold;
-      const rightBreath=Math.sin(t*.67+2.6)*.0011*hold;
+      const leftBreath=(Math.sin(t*.67+.4)+Math.sin(t*1.41)*.18)*.0010*hold*(.45+.55*steady);
+      const rightBreath=(Math.sin(t*.67+2.6)+Math.sin(t*1.33+1.7)*.18)*.0010*hold*(.45+.55*steady);
 
       leftHand.position.x=leftSide*.042*hidden-leftSide*(leftLoad*.005+leftSupport*.0018);
       rightHand.position.x=rightSide*.042*hidden-rightSide*(rightLoad*.005+rightSupport*.0018);
