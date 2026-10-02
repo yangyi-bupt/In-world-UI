@@ -3345,13 +3345,47 @@ wayfindingCtx.fillStyle='rgba(242,239,230,.78)';
 wayfindingCtx.fillText('CAFÉ  •  PARK',20,82);
 const wayfindingTexture=new THREE.CanvasTexture(wayfindingCanvas);
 wayfindingTexture.colorSpace=THREE.SRGBColorSpace;
+const wayfindingSignFrame=new THREE.Mesh(
+  new THREE.BoxGeometry(.055,.56,1.05),
+  new THREE.MeshStandardMaterial({
+    color:0x6d7875,
+    roughness:.44,
+    metalness:.44,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.003,
+    envMapIntensity:.88
+  })
+);
+wayfindingSignFrame.position.set(.635,1.80,-16.1);
+wayfindingSignFrame.castShadow=true;
+scene.add(wayfindingSignFrame);
+
 const wayfindingSign=new THREE.Mesh(
   new THREE.PlaneGeometry(.96,.48),
-  new THREE.MeshBasicMaterial({map:wayfindingTexture,toneMapped:false,side:THREE.DoubleSide})
+  new THREE.MeshStandardMaterial({
+    map:wayfindingTexture,
+    roughness:.62,
+    metalness:.03,
+    side:THREE.DoubleSide,
+    toneMapped:false
+  })
 );
-wayfindingSign.position.set(.66,1.80,-16.1);
+wayfindingSign.position.set(.607,1.80,-16.1);
 wayfindingSign.rotation.y=Math.PI/2;
 scene.add(wayfindingSign);
+
+const wayfindingCap=new THREE.Mesh(
+  new THREE.CylinderGeometry(.075,.075,.035,12),
+  new THREE.MeshStandardMaterial({
+    color:0x808986,
+    roughness:.40,
+    metalness:.46,
+    envMapIntensity:.88
+  })
+);
+wayfindingCap.position.set(.48,2.275,-16.1);
+scene.add(wayfindingCap);
 
 // A bench and bike rack near the cafe create readable points of interest for
 // future Scanner/Map interactions.
@@ -3763,38 +3797,100 @@ const cupMat=new THREE.MeshStandardMaterial({color:0xf0ece2,roughness:.72});
 });
 
 [-9.5,8.7].forEach(z=>{
-  const bollard=new THREE.Mesh(
-    new THREE.CylinderGeometry(.065,.075,.72,12),
-    new THREE.MeshStandardMaterial({
-      color:0x596266,
-      roughness:.42,
-      metalness:.54,
-      map:metalWearTexture,
-      bumpMap:metalSurface.bump,
-      bumpScale:.0035,
-      envMapIntensity:.90
-    })
-  );
-  bollard.position.set(.35,.36,z);
-  bollard.castShadow=true;
-  scene.add(bollard);
-});
-
-const bin=new THREE.Mesh(
-  new THREE.CylinderGeometry(.20,.23,.72,14),
-  new THREE.MeshStandardMaterial({
-    color:0x4f5a58,
-    roughness:.58,
-    metalness:.30,
+  const bollardMat=new THREE.MeshStandardMaterial({
+    color:0x596266,
+    roughness:.42,
+    metalness:.54,
     map:metalWearTexture,
     bumpMap:metalSurface.bump,
-    bumpScale:.004,
-    envMapIntensity:.72
-  })
+    bumpScale:.0035,
+    envMapIntensity:.90
+  });
+  const bollard=new THREE.Mesh(
+    new THREE.CylinderGeometry(.065,.075,.64,12),
+    bollardMat
+  );
+  bollard.position.set(.35,.37,z);
+  bollard.castShadow=true;
+  scene.add(bollard);
+
+  const base=new THREE.Mesh(
+    new THREE.CylinderGeometry(.12,.14,.06,14),
+    bollardMat
+  );
+  base.position.set(.35,.03,z);
+  base.castShadow=true;
+  scene.add(base);
+
+  const cap=new THREE.Mesh(
+    new THREE.SphereGeometry(.072,12,8,0,Math.PI*2,0,Math.PI*.48),
+    bollardMat
+  );
+  cap.position.set(.35,.70,z);
+  cap.castShadow=true;
+  scene.add(cap);
+
+  const reflector=new THREE.Mesh(
+    new THREE.RingGeometry(.058,.066,16),
+    new THREE.MeshBasicMaterial({
+      color:0xe2d6a7,
+      transparent:true,
+      opacity:.46,
+      side:THREE.DoubleSide,
+      toneMapped:false
+    })
+  );
+  reflector.rotation.x=-Math.PI/2;
+  reflector.position.set(.35,.655,z);
+  scene.add(reflector);
+});
+
+const binMat=new THREE.MeshStandardMaterial({
+  color:0x4f5a58,
+  roughness:.58,
+  metalness:.30,
+  map:metalWearTexture,
+  bumpMap:metalSurface.bump,
+  bumpScale:.004,
+  envMapIntensity:.72
+});
+const bin=new THREE.Mesh(
+  new THREE.CylinderGeometry(.20,.23,.64,16),
+  binMat
 );
-bin.position.set(6.85,.36,-7.0);
+bin.position.set(6.85,.35,-7.0);
 bin.castShadow=true;
 scene.add(bin);
+
+const binRim=new THREE.Mesh(
+  new THREE.TorusGeometry(.205,.018,8,24),
+  binMat
+);
+binRim.rotation.x=Math.PI/2;
+binRim.position.set(6.85,.68,-7.0);
+binRim.castShadow=true;
+scene.add(binRim);
+
+const binOpening=new THREE.Mesh(
+  new THREE.CircleGeometry(.172,24),
+  new THREE.MeshBasicMaterial({color:0x252b2a,side:THREE.DoubleSide})
+);
+binOpening.rotation.x=-Math.PI/2;
+binOpening.position.set(6.85,.687,-7.0);
+scene.add(binOpening);
+
+const binBand=new THREE.Mesh(
+  new THREE.TorusGeometry(.222,.012,8,24),
+  new THREE.MeshStandardMaterial({
+    color:0x79827f,
+    roughness:.38,
+    metalness:.48,
+    envMapIntensity:.82
+  })
+);
+binBand.rotation.x=Math.PI/2;
+binBand.position.set(6.85,.23,-7.0);
+scene.add(binBand);
 
 function createAttachedContactShadow(parent,w,d,opacity=.08){
   const c=document.createElement('canvas');
