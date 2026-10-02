@@ -203,6 +203,26 @@ function makeSurfaceTexture(kind){
       g.fillRect(rnd()*size,rnd()*size,r,r);
     }
 
+    // Mineral chips break the "grey rubber sheet" look. Most stay dark; a few
+    // warmer quartz/stone grains catch daylight differently from the binder.
+    for(let i=0;i<230;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const rx=.45+rnd()*1.65;
+      const ry=.35+rnd()*1.20;
+      const family=Math.floor(rnd()*4);
+      const tones=[
+        [112,116,113],
+        [92,99,100],
+        [126,113,96],
+        [142,138,126]
+      ][family];
+      g.fillStyle='rgba('+tones[0]+','+tones[1]+','+tones[2]+','+(.045+rnd()*.090).toFixed(3)+')';
+      g.beginPath();
+      g.ellipse(x,y,rx,ry,rnd()*Math.PI,0,Math.PI*2);
+      g.fill();
+    }
+
     for(let i=0;i<18;i++){
       g.strokeStyle='rgba(40,46,47,'+(.020+rnd()*.026).toFixed(3)+')';
       g.lineWidth=.35+rnd()*.65;
@@ -737,6 +757,20 @@ function makeGroundRoughnessTexture(kind,seed){
     g.fillStyle='rgba('+v+','+v+','+v+','+(.08+rnd()*.22).toFixed(3)+')';
     const rr=.35+rnd()*1.3;
     g.fillRect(rnd()*size,rnd()*size,rr,rr);
+  }
+
+  if(asphalt){
+    for(let i=0;i<520;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const rx=.55+rnd()*1.8;
+      const ry=.40+rnd()*1.25;
+      const v=132+Math.floor(rnd()*54);
+      g.fillStyle='rgba('+v+','+v+','+v+','+(.18+rnd()*.24).toFixed(3)+')';
+      g.beginPath();
+      g.ellipse(x,y,rx,ry,rnd()*Math.PI,0,Math.PI*2);
+      g.fill();
+    }
   }
 
   const texture=new THREE.CanvasTexture(canvas);
@@ -3554,14 +3588,14 @@ function createWindowDisplay(z,kind='mori'){
   scene.add(ceiling);
   const objectMats=warm
     ? [
-        new THREE.MeshStandardMaterial({color:0xd6b39a,roughness:.76}),
-        new THREE.MeshStandardMaterial({color:0x8a6f62,roughness:.82}),
-        new THREE.MeshStandardMaterial({color:0xe4d7c5,roughness:.86})
+        makeDisplayMaterial('ceramic',0xd6b39a),
+        makeDisplayMaterial('leather',0x8a6f62),
+        makeDisplayMaterial('paper',0xe4d7c5)
       ]
     : [
-        new THREE.MeshStandardMaterial({color:0x829a86,roughness:.84}),
-        new THREE.MeshStandardMaterial({color:0xd9d7c9,roughness:.88}),
-        new THREE.MeshStandardMaterial({color:0x66746d,roughness:.80})
+        makeDisplayMaterial('ceramic',0x829a86),
+        makeDisplayMaterial('paper',0xd9d7c9),
+        makeDisplayMaterial('leather',0x66746d)
       ];
 
   [.90,1.38].forEach((y,shelfIndex)=>{
@@ -4169,7 +4203,7 @@ const cafeCounterToe=new THREE.Mesh(
 cafeCounterToe.position.set(8.00,.17,4.85);
 scene.add(cafeCounterToe);
 
-const cafeBenchMat=new THREE.MeshStandardMaterial({
+const cafeBenchMat=new THREE.MeshPhysicalMaterial({
   color:0xb69b82,
   roughness:.90,
   map:woodSurface.map,
@@ -4177,7 +4211,10 @@ const cafeBenchMat=new THREE.MeshStandardMaterial({
   normalMap:woodSurface.normal,
   normalScale:new THREE.Vector2(.20,.20),
   bumpMap:woodSurface.bump,
-  bumpScale:.017
+  bumpScale:.017,
+  clearcoat:.045,
+  clearcoatRoughness:.80,
+  envMapIntensity:.09
 });
 const cafeBench=new THREE.Mesh(new THREE.BoxGeometry(.34,.40,2.60),cafeBenchMat);
 cafeBench.position.set(8.18,.42,6.25);
@@ -4212,7 +4249,7 @@ cafeBenchCushion.position.set(8.00,.66,6.25);
 cafeBenchCushion.castShadow=true;
 scene.add(cafeBenchCushion);
 
-const cafeSmallTableMat=new THREE.MeshStandardMaterial({
+const cafeSmallTableMat=new THREE.MeshPhysicalMaterial({
   color:0xc9aa88,
   roughness:.88,
   map:woodSurface.map,
@@ -4220,7 +4257,10 @@ const cafeSmallTableMat=new THREE.MeshStandardMaterial({
   normalMap:woodSurface.normal,
   normalScale:new THREE.Vector2(.20,.20),
   bumpMap:woodSurface.bump,
-  bumpScale:.017
+  bumpScale:.017,
+  clearcoat:.075,
+  clearcoatRoughness:.68,
+  envMapIntensity:.12
 });
 [3.45,5.05,6.65].forEach((z,tableIndex)=>{
   const top=new THREE.Mesh(new THREE.CylinderGeometry(.20,.20,.035,20),cafeSmallTableMat);
@@ -5561,7 +5601,7 @@ const benchWoodNormal=woodSurface.normal.clone();
 benchWoodNormal.rotation=Math.PI/2;
 benchWoodNormal.center.set(.5,.5);
 benchWoodNormal.needsUpdate=true;
-const benchWood=new THREE.MeshStandardMaterial({
+const benchWood=new THREE.MeshPhysicalMaterial({
   color:0xb09073,
   roughness:.90,
   map:benchWoodMap,
@@ -5570,7 +5610,9 @@ const benchWood=new THREE.MeshStandardMaterial({
   normalScale:new THREE.Vector2(.16,.16),
   bumpMap:benchWoodBump,
   bumpScale:.020,
-  envMapIntensity:.12
+  clearcoat:.055,
+  clearcoatRoughness:.76,
+  envMapIntensity:.10
 });
 const benchEndMat=new THREE.MeshStandardMaterial({
   color:0xb48765,
