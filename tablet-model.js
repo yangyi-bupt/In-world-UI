@@ -235,6 +235,12 @@
     let pointerTargetY=0;
     let pointerX=0;
     let pointerY=0;
+    let previousPointerX=0;
+    let previousPointerY=0;
+    let inertiaX=0;
+    let inertiaY=0;
+    let inertiaVelocityX=0;
+    let inertiaVelocityY=0;
     let pressTarget=0;
     let pressAmount=0;
     let pressVelocity=0;
@@ -264,6 +270,24 @@
       pointerX=THREE.MathUtils.lerp(pointerX,pointerTargetX,follow);
       pointerY=THREE.MathUtils.lerp(pointerY,pointerTargetY,follow);
 
+      // A second, slower spring reacts to pointer velocity rather than pointer
+      // position. It makes the held tablet briefly lag behind a quick hand move,
+      // then settle, which reads as mass without making the UI hard to target.
+      const pointerVelocityX=(pointerX-previousPointerX)/dt;
+      const pointerVelocityY=(pointerY-previousPointerY)/dt;
+      previousPointerX=pointerX;
+      previousPointerY=pointerY;
+
+      const inertiaTargetX=THREE.MathUtils.clamp(-pointerVelocityX*.00115,-.014,.014);
+      const inertiaTargetY=THREE.MathUtils.clamp(-pointerVelocityY*.00095,-.011,.011);
+
+      inertiaVelocityX+=(inertiaTargetX-inertiaX)*120*dt;
+      inertiaVelocityY+=(inertiaTargetY-inertiaY)*120*dt;
+      inertiaVelocityX*=Math.exp(-11.5*dt);
+      inertiaVelocityY*=Math.exp(-11.5*dt);
+      inertiaX+=inertiaVelocityX*dt;
+      inertiaY+=inertiaVelocityY*dt;
+
       // A lightly under-damped spring gives pointer-down a weighted compression
       // and pointer-up a tiny forward overshoot instead of a simple lerp.
       pressVelocity+=(pressTarget-pressAmount)*185*dt;
@@ -283,15 +307,15 @@
       const impactX=impact*pointerX;
       const impactY=impact*pointerY;
 
-      rig.rotation.x=-.032 + hidden*.075 + Math.sin(t*.72)*.004*hold - pointerY*.010*hold + impact*(.0045+pointerY*.0035);
-      rig.rotation.y=.018 - hidden*.018 + Math.sin(t*.53)*.010*hold + pointerX*.013*hold + impactX*.0065;
-      rig.rotation.z=hidden*.012 + Math.sin(t*.41)*.0026*hold - pointerX*.0025*hold - impactX*.0028;
-      rig.position.x=pointerX*.010*hold + impactX*.0025;
-      rig.position.y=hidden*.115 + Math.sin(t*.83)*.006*hold - pointerY*.006*hold - impact*.0035 + impactY*.0015;
+      rig.rotation.x=-.032 + hidden*.075 + Math.sin(t*.72)*.004*hold - pointerY*.010*hold + inertiaY*hold + impact*(.0045+pointerY*.0035);
+      rig.rotation.y=.018 - hidden*.018 + Math.sin(t*.53)*.010*hold + pointerX*.013*hold + inertiaX*hold + impactX*.0065;
+      rig.rotation.z=hidden*.012 + Math.sin(t*.41)*.0026*hold - pointerX*.0025*hold - inertiaX*.18*hold - impactX*.0028;
+      rig.position.x=pointerX*.010*hold + inertiaX*.22*hold + impactX*.0025;
+      rig.position.y=hidden*.115 + Math.sin(t*.83)*.006*hold - pointerY*.006*hold + inertiaY*.16*hold - impact*.0035 + impactY*.0015;
       rig.position.z=-hidden*.055-impact*.014;
 
-      leftHand.rotation.z=-pointerX*.004*hold;
-      rightHand.rotation.z=-pointerX*.004*hold;
+      leftHand.rotation.z=-pointerX*.004*hold-inertiaX*.11*hold;
+      rightHand.rotation.z=-pointerX*.004*hold-inertiaX*.11*hold;
 
       const leftSide=leftHand.userData.side;
       const rightSide=rightHand.userData.side;

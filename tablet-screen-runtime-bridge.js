@@ -31,6 +31,7 @@
         let glare=null;
         let edgeGlow=null;
         let chassisGlow=null;
+        let cornerGlow=null;
 
         if(screen){
           screen.position.z=.102;
@@ -124,6 +125,50 @@
             part.raycast=()=>{};
             capturedRig.add(part);
           });
+
+          // Small bezel-corner glints create a Fresnel-like edge response while
+          // leaving the entire reading area untouched.
+          const cornerCanvas=document.createElement('canvas');
+          cornerCanvas.width=96;
+          cornerCanvas.height=96;
+          const cornerCtx=cornerCanvas.getContext('2d');
+          const cornerGradient=cornerCtx.createRadialGradient(48,48,2,48,48,46);
+          cornerGradient.addColorStop(0,'rgba(230,247,255,.82)');
+          cornerGradient.addColorStop(.18,'rgba(166,220,255,.36)');
+          cornerGradient.addColorStop(.52,'rgba(120,190,255,.08)');
+          cornerGradient.addColorStop(1,'rgba(120,190,255,0)');
+          cornerCtx.fillStyle=cornerGradient;
+          cornerCtx.fillRect(0,0,96,96);
+
+          const cornerTexture=new THREE.CanvasTexture(cornerCanvas);
+          cornerTexture.colorSpace=THREE.SRGBColorSpace;
+          const cornerMaterial=()=>new THREE.MeshBasicMaterial({
+            map:cornerTexture,
+            transparent:true,
+            opacity:0,
+            depthTest:false,
+            depthWrite:false,
+            toneMapped:false,
+            blending:THREE.AdditiveBlending
+          });
+
+          cornerGlow={
+            tl:new THREE.Mesh(new THREE.PlaneGeometry(.18,.18),cornerMaterial()),
+            tr:new THREE.Mesh(new THREE.PlaneGeometry(.18,.18),cornerMaterial()),
+            bl:new THREE.Mesh(new THREE.PlaneGeometry(.18,.18),cornerMaterial()),
+            br:new THREE.Mesh(new THREE.PlaneGeometry(.18,.18),cornerMaterial())
+          };
+
+          cornerGlow.tl.position.set(-1.315,.895,.122);
+          cornerGlow.tr.position.set(1.315,.895,.122);
+          cornerGlow.bl.position.set(-1.315,-.895,.122);
+          cornerGlow.br.position.set(1.315,-.895,.122);
+
+          Object.values(cornerGlow).forEach(part=>{
+            part.renderOrder=14;
+            part.raycast=()=>{};
+            capturedRig.add(part);
+          });
         }
 
         controller.screenTexture=textureController;
@@ -131,6 +176,7 @@
         controller.screenGlare=glare;
         controller.screenEdgeGlow=edgeGlow;
         controller.chassisGlow=chassisGlow;
+        controller.cornerGlow=cornerGlow;
 
         const pointerCanvas=controller.renderer?.domElement ||
           (canvas && typeof canvas.getContext==='function' ? canvas : canvas?.querySelector?.('canvas'));
@@ -150,12 +196,18 @@
           let metalMotion=0;
           let lastGlassX=0;
           let lastGlassY=0;
+          let uiPulseUntil=0;
           let lastFxTime=0;
 
           const onTabletOpenFx=()=>{
             powerSweepUntil=performance.now()+920;
           };
+          const onUiPulse=()=>{
+            uiPulseUntil=performance.now()+320;
+          };
           window.addEventListener('tablet-open',onTabletOpenFx);
+          window.addEventListener('tablet-app-open',onUiPulse);
+          window.addEventListener('tablet-app-close',onUiPulse);
 
           const baseSetPointer=controller.setInteractionPointer?.bind(controller);
           const baseClearPointer=controller.clearInteractionPointer?.bind(controller);
@@ -211,6 +263,10 @@
               const sweepRemaining=Math.max(0,powerSweepUntil-now);
               const sweepProgress=sweepRemaining>0 ? 1-sweepRemaining/920 : 1;
               const sweepEnvelope=sweepRemaining>0 ? Math.sin(Math.PI*sweepProgress) : 0;
+
+              const uiPulseRemaining=Math.max(0,uiPulseUntil-now);
+              const uiPulseProgress=uiPulseRemaining>0 ? 1-uiPulseRemaining/320 : 1;
+              const uiPulse=uiPulseRemaining>0 ? Math.sin(Math.PI*uiPulseProgress) : 0;
 
               if(glare){
                 // Keep the idle reflection off the reading area. The brighter
@@ -268,6 +324,23 @@
                   metalBase+Math.max(0,-glassY)*.075+angleX*.028+pressFlash*.7+
                   motionFlash*Math.max(.2,.45-Math.min(0,motionY))+
                   sweepEnvelope*.035;
+              }
+
+              if(cornerGlow){
+                const baseCorner=open?.018:0;
+                const motionCorner=metalMotion*.055;
+                const pressCorner=Math.max(0,screenPress)*.045;
+                const uiCorner=uiPulse*.085;
+
+                const left=Math.max(0,-glassX);
+                const right=Math.max(0,glassX);
+                const top=Math.max(0,glassY);
+                const bottom=Math.max(0,-glassY);
+
+                cornerGlow.tl.material.opacity=baseCorner+(left+top)*.055+motionCorner+pressCorner+uiCorner;
+                cornerGlow.tr.material.opacity=baseCorner+(right+top)*.055+motionCorner+pressCorner+uiCorner;
+                cornerGlow.bl.material.opacity=baseCorner+(left+bottom)*.055+motionCorner+pressCorner+uiCorner;
+                cornerGlow.br.material.opacity=baseCorner+(right+bottom)*.055+motionCorner+pressCorner+uiCorner;
               }
 
               textureController.update?.(t,open);
@@ -376,6 +449,8 @@
             pointerCanvas.removeEventListener('pointerleave',onPointerLeave);
             pointerCanvas.removeEventListener('pointercancel',onPointerLeave);
             window.removeEventListener('tablet-open',onTabletOpenFx);
+            window.removeEventListener('tablet-app-open',onUiPulse);
+            window.removeEventListener('tablet-app-close',onUiPulse);
           };
         }
       }
