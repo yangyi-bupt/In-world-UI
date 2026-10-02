@@ -472,6 +472,66 @@ const vehiclePaintMicroBump=makeMicroBump(0x26a4bd73,10);
 const rubberMicroBump=makeMicroBump(0x9f4c713a,6);
 const fabricMicroBump=makeMicroBump(0xc72e5b91,18);
 
+function makeFabricColorTexture(seed){
+  const size=256;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='#f1efe9';
+  g.fillRect(0,0,size,size);
+
+  for(let y=0;y<size;y+=3){
+    g.fillStyle='rgba(92,85,78,'+(.010+(y%9===0?.012:0)).toFixed(3)+')';
+    g.fillRect(0,y,size,1);
+  }
+  for(let x=0;x<size;x+=4){
+    g.fillStyle='rgba(255,255,255,.010)';
+    g.fillRect(x,0,1,size);
+  }
+
+  for(let i=0;i<95;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const rx=2+rnd()*12;
+    const ry=1+rnd()*5;
+    const grad=g.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+    grad.addColorStop(
+      0,
+      rnd()>.5
+        ? 'rgba(110,94,81,'+(.006+rnd()*.018).toFixed(3)+')'
+        : 'rgba(255,250,240,'+(.008+rnd()*.018).toFixed(3)+')'
+    );
+    grad.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=grad;
+    g.fillRect(x-rx,y-ry,rx*2,ry*2);
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(2.4,1.2);
+  texture.anisotropy=8;
+  return texture;
+}
+const fabricColorTexture=makeFabricColorTexture(0x52a9ce31);
+
+function cloneTextureVariant(texture,offsetX,offsetY,repeatScaleX=1,repeatScaleY=1,rotation=0){
+  const clone=texture.clone();
+  clone.wrapS=THREE.RepeatWrapping;
+  clone.wrapT=THREE.RepeatWrapping;
+  clone.offset.set(offsetX,offsetY);
+  clone.repeat.set(
+    texture.repeat.x*repeatScaleX,
+    texture.repeat.y*repeatScaleY
+  );
+  clone.center.set(.5,.5);
+  clone.rotation=rotation;
+  clone.needsUpdate=true;
+  return clone;
+}
+
 const glassReflectionCanvas=document.createElement('canvas');
 glassReflectionCanvas.width=128;
 glassReflectionCanvas.height=256;
@@ -1487,7 +1547,13 @@ const facadeRibMat=new THREE.MeshStandardMaterial({
   scene.add(rib);
 });
 
-const balconyStone=new THREE.MeshStandardMaterial({color:0xd8cfc2,roughness:.86});
+const balconyStone=new THREE.MeshStandardMaterial({
+  color:0xd8cfc2,
+  roughness:.90,
+  map:concreteSurface.map,
+  bumpMap:concreteSurface.bump,
+  bumpScale:.010
+});
 const balconyGreenMats=[
   new THREE.MeshStandardMaterial({
     color:0x789a70,roughness:.93,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
@@ -1503,7 +1569,14 @@ const balconyGreenMats=[
   slab.receiveShadow=true;
   scene.add(slab);
 
-  const railMat=new THREE.MeshStandardMaterial({color:0x9aa29e,roughness:.48,metalness:.28});
+  const railMat=new THREE.MeshStandardMaterial({
+    color:0x9aa29e,
+    roughness:.46,
+    metalness:.30,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.0035
+  });
   const rail=new THREE.Mesh(new THREE.BoxGeometry(.045,.50,3.05),railMat);
   rail.position.set(7.58,5.86,z);
   rail.castShadow=true;
@@ -1512,7 +1585,13 @@ const balconyGreenMats=[
   [-1.00,-.50,0,.50,1.00].forEach((oz,i)=>{
     const planter=new THREE.Mesh(
       new THREE.BoxGeometry(.28,.20,.38),
-      new THREE.MeshStandardMaterial({color:0xb9aa96,roughness:.92})
+      new THREE.MeshStandardMaterial({
+        color:0xb9aa96,
+        roughness:.94,
+        map:concreteSurface.map,
+        bumpMap:concreteSurface.bump,
+        bumpScale:.010
+      })
     );
     planter.position.set(7.72,5.72,z+oz);
     planter.castShadow=true;
@@ -1563,8 +1642,26 @@ const facadeBayDepths=[5.00,5.55,5.12,5.62,5.08,5.82,5.18,5.52];
 facadeBayCenters.forEach((z,bayIndex)=>{
   const bayDepth=facadeBayDepths[bayIndex];
   const bayTone=z<-7?0xc2c9c2:(z>10?0xd8cabc:0xc9c1b5);
-  const bay=box(.42,5.6,bayDepth,bayTone,8.64,3.22,z,.66);
+  const bay=box(.42,5.6,bayDepth,bayTone,8.64,3.22,z,.82);
   bay.castShadow=false;
+  bay.material.map=cloneTextureVariant(
+    facadeSurface.map,
+    (bayIndex*.173)%1,
+    (bayIndex*.091)%1,
+    .92+(bayIndex%3)*.06,
+    .94+((bayIndex+1)%3)*.04,
+    (bayIndex%2?.004:-.004)
+  );
+  bay.material.bumpMap=cloneTextureVariant(
+    facadeSurface.bump,
+    (bayIndex*.173)%1,
+    (bayIndex*.091)%1,
+    .92+(bayIndex%3)*.06,
+    .94+((bayIndex+1)%3)*.04,
+    (bayIndex%2?.004:-.004)
+  );
+  bay.material.bumpScale=.010;
+  bay.material.needsUpdate=true;
 
   const glassTint=z<-7?0xc6dad8:(z>10?0xd2d5cd:0xc2d9da);
   const glass=glassPanel(bayDepth-.34,4.65,8.41,3.35,z,-Math.PI/2,glassTint);
@@ -1612,12 +1709,24 @@ facadeBayCenters.forEach((z,bayIndex)=>{
   ledge.castShadow=true;
 });
 
-const portalStoneMat=new THREE.MeshStandardMaterial({color:0xd8d0c4,roughness:.86});
+const portalStoneMat=new THREE.MeshStandardMaterial({
+  color:0xd8d0c4,
+  roughness:.90,
+  map:facadeSurface.map,
+  bumpMap:facadeSurface.bump,
+  bumpScale:.011
+});
 [
   [-4.55,3.45,0xded6c9],
   [10.55,3.10,0xd2d7cf]
-].forEach(([z,width,color])=>{
-  const mat=new THREE.MeshStandardMaterial({color,roughness:.86});
+].forEach(([z,width,color],portalIndex)=>{
+  const mat=new THREE.MeshStandardMaterial({
+    color,
+    roughness:.90,
+    map:cloneTextureVariant(facadeSurface.map,portalIndex*.31,.14+portalIndex*.17,.88,1.04),
+    bumpMap:cloneTextureVariant(facadeSurface.bump,portalIndex*.31,.14+portalIndex*.17,.88,1.04),
+    bumpScale:.011
+  });
   [-width*.5,width*.5].forEach(oz=>{
     const jamb=new THREE.Mesh(new THREE.BoxGeometry(.36,3.05,.24),mat);
     jamb.position.set(7.98,1.57,z+oz);
@@ -1633,11 +1742,19 @@ const portalStoneMat=new THREE.MeshStandardMaterial({color:0xd8d0c4,roughness:.8
 // A few recessed ground-floor entries keep the frontage from feeling like one
 // repeated office wall.
 [-18.8,-10.6,13.8].forEach((z,i)=>{
-  const inset=box(.72,2.55,4.3,[0xa99b89,0x9daaa8,0xb3a08c][i],8.10,1.31,z,.72);
+  const inset=box(.72,2.55,4.3,[0xa99b89,0x9daaa8,0xb3a08c][i],8.10,1.31,z,.86);
   inset.castShadow=false;
+  inset.material.map=cloneTextureVariant(concreteSurface.map,i*.22,.12+i*.19,.95,1.08);
+  inset.material.bumpMap=cloneTextureVariant(concreteSurface.bump,i*.22,.12+i*.19,.95,1.08);
+  inset.material.bumpScale=.010;
+  inset.material.needsUpdate=true;
 
-  const reveal=box(.16,2.34,3.94,0x8e877d,7.80,1.30,z,.82);
+  const reveal=box(.16,2.34,3.94,0x8e877d,7.80,1.30,z,.88);
   reveal.castShadow=false;
+  reveal.material.map=cloneTextureVariant(concreteSurface.map,.13+i*.21,.27+i*.11,.84,1.12);
+  reveal.material.bumpMap=cloneTextureVariant(concreteSurface.bump,.13+i*.21,.27+i*.11,.84,1.12);
+  reveal.material.bumpScale=.009;
+  reveal.material.needsUpdate=true;
 
   const door=glassPanel(2.10,2.22,7.70,1.34,z,-Math.PI/2,0xb9ced0);
   door.material.opacity=.50;
@@ -1645,7 +1762,14 @@ const portalStoneMat=new THREE.MeshStandardMaterial({color:0xd8d0c4,roughness:.8
 
   const handle=new THREE.Mesh(
     new THREE.CylinderGeometry(.018,.018,.48,10),
-    new THREE.MeshStandardMaterial({color:0x8c9692,roughness:.42,metalness:.54})
+    new THREE.MeshStandardMaterial({
+      color:0x8c9692,
+      roughness:.36,
+      metalness:.58,
+      map:metalWearTexture,
+      bumpMap:metalSurface.bump,
+      bumpScale:.0025
+    })
   );
   handle.rotation.z=Math.PI/2;
   handle.position.set(7.64,1.36,z+.34);
@@ -1870,7 +1994,14 @@ const cafeMullionMat=new THREE.MeshStandardMaterial({
   scene.add(mullion);
 });
 
-const cafeDoorFrame=new THREE.MeshStandardMaterial({color:0x8e8378,roughness:.58,metalness:.16});
+const cafeDoorFrame=new THREE.MeshStandardMaterial({
+  color:0x8e8378,
+  roughness:.52,
+  metalness:.22,
+  map:metalWearTexture,
+  bumpMap:metalSurface.bump,
+  bumpScale:.004
+});
 [
   [7.88,1.58,1.73,.055,2.42,.055],
   [7.88,1.58,2.67,.055,2.42,.055],
@@ -1889,7 +2020,14 @@ addGlassEdgeDirt(.88,2.28,7.904,1.58,2.20,-Math.PI/2,.30);
 
 const cafeDoorHandle=new THREE.Mesh(
   new THREE.CylinderGeometry(.018,.018,.42,10),
-  new THREE.MeshStandardMaterial({color:0x9ba29f,roughness:.40,metalness:.48})
+  new THREE.MeshStandardMaterial({
+    color:0x9ba29f,
+    roughness:.34,
+    metalness:.58,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.0025
+  })
 );
 cafeDoorHandle.rotation.z=Math.PI/2;
 cafeDoorHandle.position.set(7.84,1.52,2.48);
@@ -1950,13 +2088,16 @@ scene.add(cafeSign);
 
 const awningCream=new THREE.MeshStandardMaterial({
   color:0xf0e5d3,
-  roughness:.84,
+  roughness:.87,
+  map:fabricColorTexture,
   bumpMap:fabricMicroBump,
   bumpScale:.007
 });
+const awningApricotMap=cloneTextureVariant(fabricColorTexture,.16,.04,1.03,.98);
 const awningApricot=new THREE.MeshStandardMaterial({
   color:0xd8aa86,
-  roughness:.82,
+  roughness:.85,
+  map:awningApricotMap,
   bumpMap:fabricMicroBump,
   bumpScale:.007
 });
