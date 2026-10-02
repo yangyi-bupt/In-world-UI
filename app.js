@@ -2732,19 +2732,72 @@ for(let i=0;i<10;i++){
   b.material.bumpScale=i%2?.008:.010;
   b.material.needsUpdate=true;
 
+  const parapetMat=new THREE.MeshStandardMaterial({
+    color:[0xc8d0cc,0xcbd3d1,0xd8d2c8][i%3],
+    roughness:.91,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.007,
+    envMapIntensity:.05
+  });
   const parapet=new THREE.Mesh(
     new THREE.BoxGeometry(3.92,.12,6.52),
-    new THREE.MeshStandardMaterial({
-      color:[0xc8d0cc,0xcbd3d1,0xd8d2c8][i%3],
-      roughness:.91,
-      map:concreteSurface.map,
-      bumpMap:concreteSurface.bump,
-      bumpScale:.007
-    })
+    parapetMat
   );
   parapet.position.set(-15.2,h+.06,z);
   parapet.castShadow=false;
   scene.add(parapet);
+
+  // Vary the roofline so the opposite side of the boulevard does not read as
+  // ten identical shoeboxes. Small setbacks and service cores are enough at
+  // this distance to create a believable city silhouette.
+  if(i%3!==1){
+    const setbackW=2.3+(i%2)*.45;
+    const setbackD=3.0+((i+1)%3)*.55;
+    const setbackH=.48+(i%3)*.22;
+    const setback=new THREE.Mesh(
+      new THREE.BoxGeometry(setbackW,setbackH,setbackD),
+      new THREE.MeshStandardMaterial({
+        color:[0xcbd0cc,0xd7d3ca,0xbfc9c8][i%3],
+        roughness:.89,
+        map:i%2?concreteSurface.map:facadeSurface.map,
+        bumpMap:i%2?concreteSurface.bump:facadeSurface.bump,
+        bumpScale:.006,
+        envMapIntensity:.045
+      })
+    );
+    setback.position.set(
+      -15.2+(i%2?.24:-.18),
+      h+setbackH*.5+.13,
+      z+(i%3-1)*.28
+    );
+    setback.castShadow=false;
+    scene.add(setback);
+  }
+
+  if(i%4===0 || i%4===3){
+    const serviceBox=new THREE.Mesh(
+      new THREE.BoxGeometry(.92,.42,1.15),
+      new THREE.MeshStandardMaterial({
+        color:0x929b99,
+        roughness:.68,
+        metalness:.18,
+        map:metalWearTexture,
+        bumpMap:metalSurface.bump,
+        bumpScale:.003,
+        envMapIntensity:.45
+      })
+    );
+    serviceBox.position.set(-15.38,h+.37,z+(i%2?.72:-.65));
+    scene.add(serviceBox);
+
+    const ventCap=new THREE.Mesh(
+      new THREE.BoxGeometry(1.02,.055,1.25),
+      parapetMat
+    );
+    ventCap.position.set(-15.38,h+.61,z+(i%2?.72:-.65));
+    scene.add(ventCap);
+  }
 
   for(let level=.9;level<h-.6;level+=1.22){
     const windowTone=(Math.floor(level*10)+i)%3;
@@ -2822,12 +2875,52 @@ function createGlassTower(x,z,w,d,h,tint){
     scene.add(v);
   });
 
+  const roofMat=new THREE.MeshStandardMaterial({
+    color:0xaeb8b9,
+    roughness:.58,
+    metalness:.14,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.003,
+    envMapIntensity:.58
+  });
   const roof=new THREE.Mesh(
     new THREE.BoxGeometry(w+.20,.16,d+.20),
-    new THREE.MeshStandardMaterial({color:0xaeb8b9,roughness:.64,metalness:.08})
+    roofMat
   );
   roof.position.set(x,h+.08,z);
   scene.add(roof);
+
+  const rooftopCore=new THREE.Mesh(
+    new THREE.BoxGeometry(w*.42,.62,d*.36),
+    new THREE.MeshStandardMaterial({
+      color:0xbfc6c4,
+      roughness:.78,
+      metalness:.08,
+      map:concreteSurface.map,
+      bumpMap:concreteSurface.bump,
+      bumpScale:.005,
+      envMapIntensity:.08
+    })
+  );
+  rooftopCore.position.set(x+.18,h+.39,z-.16);
+  scene.add(rooftopCore);
+
+  const crownFrame=new THREE.Mesh(
+    new THREE.BoxGeometry(w*.48,.06,d*.42),
+    roofMat
+  );
+  crownFrame.position.set(x+.18,h+.72,z-.16);
+  scene.add(crownFrame);
+
+  [-.30,.30].forEach(side=>{
+    const fin=new THREE.Mesh(
+      new THREE.BoxGeometry(.035,.72,d*.72),
+      mullionMat
+    );
+    fin.position.set(x+side*w*.46,h-.55,z);
+    scene.add(fin);
+  });
 }
 
 createGlassTower(-17.8,-4.8,4.4,7.0,12.4,0xa8c8d2);
@@ -2836,7 +2929,9 @@ createGlassTower(-19.2,16.2,4.8,6.4,10.6,0xb7ccd2);
 // Soft skyline silhouettes keep the horizon bright and city-like.
 for(let i=0;i<9;i++){
   const h=9+(i%5)*2.4;
-  const tower=box(5.0,h,5.0,[0xc3cdcf,0xd0d5d3,0xb8c6c8][i%3],-19-i*1.3,h/2,-36+i*8.8,.89);
+  const x=-19-i*1.3;
+  const z=-36+i*8.8;
+  const tower=box(5.0,h,5.0,[0xc3cdcf,0xd0d5d3,0xb8c6c8][i%3],x,h/2,z,.89);
   tower.castShadow=false;
   const skylineBase=i%3===1?facadeSurface:concreteSurface;
   const sx=(i*.191)%1;
@@ -2859,6 +2954,57 @@ for(let i=0;i<9;i++){
   );
   tower.material.bumpScale=.006;
   tower.material.needsUpdate=true;
+
+  if(i%3===0){
+    const crown=new THREE.Mesh(
+      new THREE.BoxGeometry(3.3,.65,3.5),
+      new THREE.MeshStandardMaterial({
+        color:0xb8c0bd,
+        roughness:.84,
+        map:concreteSurface.map,
+        bumpMap:concreteSurface.bump,
+        bumpScale:.004,
+        envMapIntensity:.05
+      })
+    );
+    crown.position.set(x+.18,h+.325,z-.10);
+    scene.add(crown);
+  }else if(i%3===1){
+    const cap=new THREE.Mesh(
+      new THREE.CylinderGeometry(1.15,1.35,.48,6),
+      new THREE.MeshStandardMaterial({
+        color:0xaeb9b8,
+        roughness:.66,
+        metalness:.12,
+        map:metalWearTexture,
+        bumpMap:metalSurface.bump,
+        bumpScale:.002,
+        envMapIntensity:.36
+      })
+    );
+    cap.position.set(x,h+.24,z);
+    cap.rotation.y=Math.PI/6;
+    scene.add(cap);
+  }else{
+    const twinA=new THREE.Mesh(
+      new THREE.BoxGeometry(1.35,.52,2.8),
+      new THREE.MeshStandardMaterial({
+        color:0xc8c5bd,
+        roughness:.86,
+        map:facadeSurface.map,
+        bumpMap:facadeSurface.bump,
+        bumpScale:.004,
+        envMapIntensity:.05
+      })
+    );
+    twinA.position.set(x-.85,h+.26,z);
+    scene.add(twinA);
+    const twinB=twinA.clone();
+    twinB.position.x=x+.85;
+    twinB.scale.y=.72;
+    twinB.position.y=h+.19;
+    scene.add(twinB);
+  }
 }
 
 // Trees, planters and street furniture make this feel like somewhere Mira
