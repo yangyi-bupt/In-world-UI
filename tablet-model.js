@@ -267,6 +267,12 @@
     let pointerY=0;
     let previousPointerX=0;
     let previousPointerY=0;
+    let previousVelocityX=0;
+    let previousVelocityY=0;
+    let previousSpeed=0;
+    let catchAmount=0;
+    let catchDirectionX=0;
+    let catchDirectionY=0;
     let inertiaX=0;
     let inertiaY=0;
     let inertiaVelocityX=0;
@@ -327,6 +333,23 @@
       const pointerVelocityY=(pointerY-previousPointerY)/dt;
       previousPointerX=pointerX;
       previousPointerY=pointerY;
+
+      // A sudden reduction in hand speed creates a short "catch" phase:
+      // the wrists brace and the device tucks back a few millimeters before
+      // returning to neutral. Direction is captured from the previous frame
+      // so stopping after a fast sweep still has a readable physical response.
+      const pointerSpeed=Math.min(1,Math.hypot(pointerVelocityX,pointerVelocityY)*.030);
+      const stopImpulse=Math.max(0,previousSpeed-pointerSpeed);
+      if(stopImpulse>.018){
+        const previousMagnitude=Math.max(.0001,Math.hypot(previousVelocityX,previousVelocityY));
+        catchDirectionX=previousVelocityX/previousMagnitude;
+        catchDirectionY=previousVelocityY/previousMagnitude;
+        catchAmount=Math.max(catchAmount,THREE.MathUtils.clamp(stopImpulse*2.8,0,.72));
+      }
+      catchAmount*=Math.exp(-8.4*dt);
+      previousSpeed=pointerSpeed;
+      previousVelocityX=pointerVelocityX;
+      previousVelocityY=pointerVelocityY;
 
       const inertiaTargetX=THREE.MathUtils.clamp(-pointerVelocityX*.00115,-.014,.014);
       const inertiaTargetY=THREE.MathUtils.clamp(-pointerVelocityY*.00095,-.011,.011);
@@ -389,12 +412,16 @@
       const swayX=(Math.sin(t*.43+.9)+Math.sin(t*1.07)*.28)*.0019*hold*steady;
       const swayY=(Math.sin(t*.61)+Math.sin(t*1.29+1.6)*.22)*.0027*hold*steady;
 
-      rig.rotation.x=-.032 + hidden*.075 + swayPitch - pointerY*.010*hold + inertiaY*hold + hapticPitch*hold + impact*(.0045+pointerY*.0035);
-      rig.rotation.y=.018 - hidden*.018 + swayYaw + pointerX*.013*hold + inertiaX*hold + hapticYaw*hold + impactX*.0065;
-      rig.rotation.z=hidden*.012 + swayRoll - pointerX*.0025*hold - inertiaX*.18*hold + hapticRoll*hold - impactX*.0028;
-      rig.position.x=swayX + pointerX*.010*hold + inertiaX*.22*hold + impactX*.0025;
-      rig.position.y=hidden*.115 + swayY - pointerY*.006*hold + inertiaY*.16*hold - impact*.0035 + impactY*.0015;
-      rig.position.z=-hidden*.055-impact*.014;
+      const catchPitch=-catchDirectionY*catchAmount*.0021*hold;
+      const catchYaw=-catchDirectionX*catchAmount*.0026*hold;
+      const catchRoll=-catchDirectionX*catchAmount*.0012*hold;
+
+      rig.rotation.x=-.032 + hidden*.075 + swayPitch - pointerY*.010*hold + inertiaY*hold + hapticPitch*hold + catchPitch + impact*(.0045+pointerY*.0035);
+      rig.rotation.y=.018 - hidden*.018 + swayYaw + pointerX*.013*hold + inertiaX*hold + hapticYaw*hold + catchYaw + impactX*.0065;
+      rig.rotation.z=hidden*.012 + swayRoll - pointerX*.0025*hold - inertiaX*.18*hold + hapticRoll*hold + catchRoll - impactX*.0028;
+      rig.position.x=swayX + pointerX*.010*hold + inertiaX*.22*hold - catchDirectionX*catchAmount*.0012*hold + impactX*.0025;
+      rig.position.y=hidden*.115 + swayY - pointerY*.006*hold + inertiaY*.16*hold - catchDirectionY*catchAmount*.0010*hold - impact*.0035 + impactY*.0015;
+      rig.position.z=-hidden*.055-impact*.014-catchAmount*.0065*hold;
 
       leftHand.rotation.z=-pointerX*.004*hold-inertiaX*.11*hold;
       rightHand.rotation.z=-pointerX*.004*hold-inertiaX*.11*hold;
@@ -414,8 +441,9 @@
       const leftBreath=(Math.sin(t*.67+.4)+Math.sin(t*1.41)*.18)*.0010*hold*(.45+.55*steady);
       const rightBreath=(Math.sin(t*.67+2.6)+Math.sin(t*1.33+1.7)*.18)*.0010*hold*(.45+.55*steady);
 
-      leftHand.position.x=leftSide*.042*hidden-leftSide*(leftLoad*.005+leftSupport*.0018);
-      rightHand.position.x=rightSide*.042*hidden-rightSide*(rightLoad*.005+rightSupport*.0018);
+      const catchGrip=catchAmount*.0028*hold;
+      leftHand.position.x=leftSide*.042*hidden-leftSide*(leftLoad*.005+leftSupport*.0018+catchGrip);
+      rightHand.position.x=rightSide*.042*hidden-rightSide*(rightLoad*.005+rightSupport*.0018+catchGrip);
       leftHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-leftLoad*.0022+leftBreath-verticalBias*.0022;
       rightHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-rightLoad*.0022+rightBreath+verticalBias*.0022;
 
@@ -431,8 +459,8 @@
       leftHand.userData.thumbRoot.rotation.z=leftSide*(.18+leftSupport*.020+leftLoad*.018);
       rightHand.userData.thumbRoot.rotation.z=rightSide*(.18+rightSupport*.020+rightLoad*.018);
 
-      leftHand.userData.thumb.rotation.x=.28+.06*hold+leftLoad*.055+leftSupport*.010;
-      rightHand.userData.thumb.rotation.x=.28+.06*hold+rightLoad*.055+rightSupport*.010;
+      leftHand.userData.thumb.rotation.x=.28+.06*hold+leftLoad*.055+leftSupport*.010+catchAmount*.018;
+      rightHand.userData.thumb.rotation.x=.28+.06*hold+rightLoad*.055+rightSupport*.010+catchAmount*.018;
       leftHand.userData.thumb.rotation.z=leftSide*(.76+.08*hold+leftLoad*.042+leftSupport*.012);
       rightHand.userData.thumb.rotation.z=rightSide*(.76+.08*hold+rightLoad*.042+rightSupport*.012);
 
@@ -448,7 +476,7 @@
       // direction of travel opens up more strongly, while the other side
       // almost disappears. Inertia and haptic release add a brief metal flash.
       const railMotion=Math.min(.08,Math.hypot(inertiaX,inertiaY)*2.7);
-      const railHaptic=Math.min(.045,Math.abs(hapticPitch)*2.1+Math.abs(hapticYaw)*1.8);
+      const railHaptic=Math.min(.055,Math.abs(hapticPitch)*2.1+Math.abs(hapticYaw)*1.8+catchAmount*.038);
       const railBase=.008*hold;
       railSheen.left.material.opacity=
         railBase+Math.max(0,pointerX)*.060+Math.max(0,inertiaX)*1.8+railMotion+railHaptic;
