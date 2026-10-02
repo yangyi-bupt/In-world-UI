@@ -1892,12 +1892,8 @@ const facadePlanterMat=new THREE.MeshStandardMaterial({
   bumpScale:.014
 });
 const facadeLeafMats=[
-  new THREE.MeshStandardMaterial({
-    color:0x78986f,roughness:.93,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
-  }),
-  new THREE.MeshStandardMaterial({
-    color:0x91ad80,roughness:.91,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
-  })
+  makeFoliageMaterial(0x78986f,.93,.008,.014),
+  makeFoliageMaterial(0x91ad80,.90,.008,.021)
 ];
 [-10.6,13.8].forEach((z,groupIndex)=>{
   const interiorWash=new THREE.Mesh(
@@ -2412,8 +2408,9 @@ function createGlassTower(x,z,w,d,h,tint){
       transparent:true,
       opacity:.50,
       transmission:.10,
-      clearcoat:.30,
-      clearcoatRoughness:.24
+      clearcoat:.34,
+      clearcoatRoughness:.20,
+      envMapIntensity:.82
     })
   );
   body.position.set(x,h/2,z);
@@ -2799,10 +2796,11 @@ for(let dz=-.48;dz<=.48;dz+=.24){
 
 const seatStone=new THREE.MeshStandardMaterial({
   color:0xc0b6a6,
-  roughness:.94,
+  roughness:.95,
   map:concreteSurface.map,
   bumpMap:concreteSurface.bump,
-  bumpScale:.014
+  bumpScale:.014,
+  envMapIntensity:.07
 });
 const pocketSeat=new THREE.Mesh(new THREE.BoxGeometry(2.35,.34,.48),seatStone);
 pocketSeat.position.set(6.25,.20,-1.70);
@@ -2833,12 +2831,8 @@ pocketCup.castShadow=true;
 scene.add(pocketCup);
 
 const pocketGreenMats=[
-  new THREE.MeshStandardMaterial({
-    color:0x789a70,roughness:.92,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.009
-  }),
-  new THREE.MeshStandardMaterial({
-    color:0x86a879,roughness:.90,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
-  })
+  makeFoliageMaterial(0x789a70,.92,.009,.016),
+  makeFoliageMaterial(0x86a879,.89,.008,.022)
 ];
 for(let i=0;i<7;i++){
   const shrub=new THREE.Mesh(
@@ -2870,10 +2864,11 @@ const focalPlanterBase=new THREE.Mesh(
   new THREE.BoxGeometry(1.95,.34,.58),
   new THREE.MeshStandardMaterial({
     color:0xc3b6a3,
-    roughness:.95,
+    roughness:.96,
     map:concreteSurface.map,
     bumpMap:concreteSurface.bump,
-    bumpScale:.014
+    bumpScale:.014,
+    envMapIntensity:.065
   })
 );
 focalPlanterBase.position.set(4.95,.18,-4.72);
@@ -2882,12 +2877,8 @@ focalPlanterBase.receiveShadow=true;
 scene.add(focalPlanterBase);
 
 const focalPlantMats=[
-  new THREE.MeshStandardMaterial({
-    color:0x7d9f72,roughness:.92,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.009
-  }),
-  new THREE.MeshStandardMaterial({
-    color:0x91ad7e,roughness:.90,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
-  })
+  makeFoliageMaterial(0x7d9f72,.92,.009,.016),
+  makeFoliageMaterial(0x91ad7e,.89,.008,.024)
 ];
 [
   [-.70,.00,.92],
@@ -2920,11 +2911,12 @@ const focalBloomMats=[
 function createLampPost(x,z,withBanner=true){
   const metal=new THREE.MeshStandardMaterial({
     color:0x687170,
-    roughness:.54,
-    metalness:.40,
+    roughness:.45,
+    metalness:.48,
     map:metalWearTexture,
     bumpMap:metalSurface.bump,
-    bumpScale:.004
+    bumpScale:.004,
+    envMapIntensity:.94
   });
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,3.2,10),metal);
   pole.position.set(x,1.6,z);
@@ -2965,11 +2957,12 @@ const wayfindingPole=new THREE.Mesh(
   new THREE.CylinderGeometry(.045,.055,2.25,10),
   new THREE.MeshStandardMaterial({
     color:0x66716e,
-    roughness:.56,
-    metalness:.32,
+    roughness:.47,
+    metalness:.42,
     map:metalWearTexture,
     bumpMap:metalSurface.bump,
-    bumpScale:.004
+    bumpScale:.004,
+    envMapIntensity:.90
   })
 );
 wayfindingPole.position.set(.48,1.13,-16.1);
@@ -3010,18 +3003,20 @@ benchWoodBump.center.set(.5,.5);
 benchWoodBump.needsUpdate=true;
 const benchWood=new THREE.MeshStandardMaterial({
   color:0xb09073,
-  roughness:.86,
+  roughness:.88,
   map:benchWoodMap,
   bumpMap:benchWoodBump,
-  bumpScale:.020
+  bumpScale:.020,
+  envMapIntensity:.18
 });
 const benchMetal=new THREE.MeshStandardMaterial({
   color:0x707875,
-  roughness:.54,
-  metalness:.34,
+  roughness:.44,
+  metalness:.46,
   map:metalSurface.map,
   bumpMap:metalSurface.bump,
-  bumpScale:.005
+  bumpScale:.005,
+  envMapIntensity:.92
 });
 const benchSeat=new THREE.Mesh(new THREE.BoxGeometry(1.75,.10,.48),benchWood);
 benchSeat.position.set(6.15,.54,-5.55);benchSeat.castShadow=true;scene.add(benchSeat);
