@@ -11,7 +11,52 @@ renderer.physicallyCorrectLights = true;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xc8e3f4);
-scene.fog = new THREE.Fog(0xc8e3f4, 24, 78);
+scene.fog = new THREE.Fog(0xd7eaf2, 28, 86);
+
+const skyCanvas=document.createElement('canvas');
+skyCanvas.width=32;
+skyCanvas.height=512;
+const skyCtx=skyCanvas.getContext('2d');
+const skyGradient=skyCtx.createLinearGradient(0,0,0,512);
+skyGradient.addColorStop(0,'#78b9e4');
+skyGradient.addColorStop(.42,'#a9d3ec');
+skyGradient.addColorStop(.72,'#d9edf4');
+skyGradient.addColorStop(1,'#f1eee6');
+skyCtx.fillStyle=skyGradient;
+skyCtx.fillRect(0,0,32,512);
+const skyTexture=new THREE.CanvasTexture(skyCanvas);
+skyTexture.colorSpace=THREE.SRGBColorSpace;
+const skyDome=new THREE.Mesh(
+  new THREE.SphereGeometry(88,32,20),
+  new THREE.MeshBasicMaterial({map:skyTexture,side:THREE.BackSide,depthWrite:false,toneMapped:false})
+);
+skyDome.position.y=3;
+scene.add(skyDome);
+
+const sunCanvas=document.createElement('canvas');
+sunCanvas.width=256;
+sunCanvas.height=256;
+const sunCtx=sunCanvas.getContext('2d');
+const sunGlow=sunCtx.createRadialGradient(128,128,5,128,128,126);
+sunGlow.addColorStop(0,'rgba(255,250,225,.98)');
+sunGlow.addColorStop(.10,'rgba(255,246,215,.82)');
+sunGlow.addColorStop(.34,'rgba(255,238,198,.20)');
+sunGlow.addColorStop(1,'rgba(255,238,198,0)');
+sunCtx.fillStyle=sunGlow;
+sunCtx.fillRect(0,0,256,256);
+const sunTexture=new THREE.CanvasTexture(sunCanvas);
+sunTexture.colorSpace=THREE.SRGBColorSpace;
+const sunHaze=new THREE.Sprite(new THREE.SpriteMaterial({
+  map:sunTexture,
+  transparent:true,
+  depthTest:false,
+  depthWrite:false,
+  toneMapped:false,
+  opacity:.84
+}));
+sunHaze.position.set(-34,34,-46);
+sunHaze.scale.set(18,18,1);
+scene.add(sunHaze);
 
 const camera = new THREE.PerspectiveCamera(74, window.innerWidth / window.innerHeight, 0.08, 120);
 camera.position.set(1.4, 1.68, 7.8);
@@ -119,6 +164,33 @@ for(let x=.8;x<=8.6;x+=1.95){
   scene.add(seam);
 }
 
+// Tactile strip and quiet pavement variation make the foreground read much
+// closer to a real pedestrian street without introducing external textures.
+const tactileMat=new THREE.MeshStandardMaterial({color:0xd4bd72,roughness:.90});
+const tactile=new THREE.Mesh(new THREE.PlaneGeometry(.34,82),tactileMat);
+tactile.rotation.x=-Math.PI/2;
+tactile.position.set(.78,.038,-4);
+tactile.receiveShadow=true;
+scene.add(tactile);
+
+const patchMat=new THREE.MeshBasicMaterial({
+  color:0xffffff,
+  transparent:true,
+  opacity:.035,
+  depthWrite:false
+});
+[
+  [3.1,-13.4,2.8,.75],
+  [6.4,-5.8,1.6,.55],
+  [3.8,6.2,2.1,.65],
+  [6.7,14.6,1.8,.50]
+].forEach(([x,z,w,h])=>{
+  const patch=new THREE.Mesh(new THREE.PlaneGeometry(w,h),patchMat);
+  patch.rotation.x=-Math.PI/2;
+  patch.position.set(x,.039,z);
+  scene.add(patch);
+});
+
 // Road lane markings and a distant crossing make the street continue beyond
 // the playable slice.
 const stripeMat=new THREE.MeshBasicMaterial({color:0xe8e8dc,transparent:true,opacity:.82});
@@ -150,6 +222,16 @@ for(let z=-31;z<=24;z+=7.2){
 
   const glass=glassPanel(5.0,4.65,8.41,3.35,z,-Math.PI/2,0xaed1df);
   glass.material.opacity=.42;
+
+  // Mullions prevent large glazing bays from reading as flat placeholder planes.
+  [-1.62,0,1.62].forEach(offset=>{
+    const mullion=box(.045,4.62,.035,0x788589,8.35,3.35,z+offset,.42,.34);
+    mullion.castShadow=false;
+  });
+  [2.05,3.35,4.65].forEach(y=>{
+    const mullion=box(.045,.035,4.96,0x7f8c90,8.35,y,z,.42,.34);
+    mullion.castShadow=false;
+  });
 
   // dark sill + pale canopy creates the cafe / mixed-use street rhythm.
   box(.38,.16,5.2,0x565c5d,8.34,.62,z,.55,.18);
@@ -183,6 +265,27 @@ cafeSign.position.set(7.77,3.48,4.8);
 cafeSign.rotation.y=-Math.PI/2;
 scene.add(cafeSign);
 
+const cafeAwning=new THREE.Mesh(
+  new THREE.BoxGeometry(1.55,.10,5.2),
+  new THREE.MeshStandardMaterial({color:0xd8a77f,roughness:.72})
+);
+cafeAwning.position.set(7.58,2.78,4.8);
+cafeAwning.rotation.z=-.08;
+cafeAwning.castShadow=true;
+scene.add(cafeAwning);
+
+const cafeInteriorMat=new THREE.MeshStandardMaterial({
+  color:0xf0c38f,
+  emissive:0xc8783a,
+  emissiveIntensity:.10,
+  roughness:.82
+});
+for(let z=2.4;z<=7.2;z+=2.4){
+  const pendant=new THREE.Mesh(new THREE.SphereGeometry(.10,12,8),cafeInteriorMat);
+  pendant.position.set(7.72,2.05,z);
+  scene.add(pendant);
+}
+
 // Buildings across the road give the boulevard depth but stay light enough for
 // the AI character to remain the visual focus.
 const farBuildingColors=[0xd2d5d2,0xc5d0d3,0xe1d7ca,0xbfc9cc];
@@ -214,6 +317,23 @@ for(let i=0;i<9;i++){
 // actually spends time instead of a sterile tech showcase.
 const streetTreeCrowns=[];
 function createStreetTree(x,z,scale=1){
+  const pit=new THREE.Mesh(
+    new THREE.PlaneGeometry(1.18*scale,1.18*scale),
+    new THREE.MeshStandardMaterial({color:0x7f715d,roughness:1})
+  );
+  pit.rotation.x=-Math.PI/2;
+  pit.position.set(x,.041,z);
+  pit.receiveShadow=true;
+  scene.add(pit);
+
+  const grate=new THREE.Mesh(
+    new THREE.RingGeometry(.32*scale,.50*scale,20),
+    new THREE.MeshStandardMaterial({color:0x4f5b59,roughness:.62,metalness:.42,side:THREE.DoubleSide})
+  );
+  grate.rotation.x=-Math.PI/2;
+  grate.position.set(x,.046,z);
+  scene.add(grate);
+
   const trunk=new THREE.Mesh(
     new THREE.CylinderGeometry(.13*scale,.18*scale,2.3*scale,12),
     new THREE.MeshStandardMaterial({color:0x80654f,roughness:.95})
@@ -299,6 +419,91 @@ for(let i=0;i<3;i++){
   rack.castShadow=true;
   scene.add(rack);
 }
+
+// Small outdoor cafe setup turns the building edge into a believable place,
+// not just a facade.
+function createCafeTable(x,z){
+  const top=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.055,24),benchWood);
+  top.position.set(x,.72,z);
+  top.castShadow=true;
+  scene.add(top);
+
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.035,.05,.68,10),benchMetal);
+  stem.position.set(x,.36,z);
+  stem.castShadow=true;
+  scene.add(stem);
+
+  [-.52,.52].forEach(side=>{
+    const seat=new THREE.Mesh(new THREE.BoxGeometry(.34,.055,.34),benchWood);
+    seat.position.set(x+side,.46,z);
+    seat.castShadow=true;
+    scene.add(seat);
+
+    const leg=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,.43,8),benchMetal);
+    leg.position.set(x+side,.23,z);
+    leg.castShadow=true;
+    scene.add(leg);
+  });
+}
+createCafeTable(5.9,5.7);
+createCafeTable(5.9,8.2);
+
+[-9.5,-6.5,8.7].forEach(z=>{
+  const bollard=new THREE.Mesh(
+    new THREE.CylinderGeometry(.065,.075,.72,12),
+    new THREE.MeshStandardMaterial({color:0x596266,roughness:.50,metalness:.48})
+  );
+  bollard.position.set(.35,.36,z);
+  bollard.castShadow=true;
+  scene.add(bollard);
+});
+
+const bin=new THREE.Mesh(
+  new THREE.CylinderGeometry(.20,.23,.72,14),
+  new THREE.MeshStandardMaterial({color:0x4f5a58,roughness:.66,metalness:.22})
+);
+bin.position.set(6.85,.36,-.2);
+bin.castShadow=true;
+scene.add(bin);
+
+function createParkedCar(x,z,color){
+  const bodyMat=new THREE.MeshStandardMaterial({color,roughness:.40,metalness:.18});
+  const glassMat=new THREE.MeshStandardMaterial({color:0x58727b,roughness:.18,metalness:.30});
+  const rubberMat=new THREE.MeshStandardMaterial({color:0x232629,roughness:.88});
+
+  const group=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.62,.42,3.30),bodyMat);
+  body.position.y=.45;
+  body.castShadow=true;
+  body.receiveShadow=true;
+  group.add(body);
+
+  const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.40,.48,1.72),glassMat);
+  cabin.position.set(0,.84,-.12);
+  cabin.castShadow=true;
+  group.add(cabin);
+
+  const hood=new THREE.Mesh(new THREE.BoxGeometry(1.48,.15,.82),bodyMat);
+  hood.position.set(0,.68,1.18);
+  hood.castShadow=true;
+  group.add(hood);
+
+  [-.86,.86].forEach(wx=>{
+    [-1.04,1.04].forEach(wz=>{
+      const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.14,18),rubberMat);
+      wheel.rotation.z=Math.PI/2;
+      wheel.position.set(wx,.27,wz);
+      wheel.castShadow=true;
+      group.add(wheel);
+    });
+  });
+
+  group.position.set(x,0,z);
+  scene.add(group);
+  return group;
+}
+createParkedCar(-3.55,-8.5,0x8fa0aa);
+createParkedCar(-3.55,8.1,0xc7b8a6);
 
 // Small flower dots keep the palette warm without becoming decorative noise.
 const flowerMat=new THREE.MeshStandardMaterial({color:0xf0eee2,roughness:.8});
@@ -575,6 +780,7 @@ function animate(){
     crown.rotation.z=Math.sin(t*.34+i*.9)*.006;
     crown.rotation.x=Math.sin(t*.27+i*1.4)*.004;
   });
+  sunHaze.material.opacity=.80+Math.sin(t*.11)*.025;
 
   // Human idle: breathing, tiny weight shift and occasional attention toward player.
   const idleBreath=Math.sin(t*1.55);
