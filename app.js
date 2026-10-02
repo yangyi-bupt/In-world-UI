@@ -10,40 +10,50 @@ renderer.toneMappingExposure = 1.12;
 renderer.physicallyCorrectLights = true;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0b0e12);
-scene.fog = new THREE.FogExp2(0x0b0e12, 0.033);
+scene.background = new THREE.Color(0xc8e3f4);
+scene.fog = new THREE.Fog(0xc8e3f4, 24, 78);
 
-const camera = new THREE.PerspectiveCamera(78, window.innerWidth / window.innerHeight, 0.08, 80);
-camera.position.set(0, 1.68, 5.3);
+const camera = new THREE.PerspectiveCamera(74, window.innerWidth / window.innerHeight, 0.08, 120);
+camera.position.set(1.4, 1.68, 7.8);
 camera.rotation.order = 'YXZ';
 
 // A slightly wider field of view + subtle camera inertia makes the flat-screen
 // prototype feel closer to looking through a headset without requiring WebXR.
-let cameraFovTarget = 78;
+let cameraFovTarget = 74;
 
-// ---------- lights ----------
-scene.add(new THREE.HemisphereLight(0x8fa2b5, 0x18130f, 0.78));
+// ---------- daylight ----------
+renderer.toneMappingExposure = 1.02;
 
-const warm = new THREE.PointLight(0xffbd82, 42, 10.5, 2);
-warm.position.set(-3.55, 2.85, 0.65);
-warm.castShadow = true;
-warm.shadow.mapSize.set(1024, 1024);
-warm.shadow.bias = -0.0005;
-scene.add(warm);
+const skyLight = new THREE.HemisphereLight(0xeaf7ff, 0xb7ad94, 1.7);
+scene.add(skyLight);
 
-const cool = new THREE.PointLight(0x78b7ff, 20, 12, 2);
-cool.position.set(3.7, 2.8, -4.7);
-scene.add(cool);
+const sun = new THREE.DirectionalLight(0xfff0d3, 3.2);
+sun.position.set(-9, 16, 8);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -18;
+sun.shadow.camera.right = 18;
+sun.shadow.camera.top = 22;
+sun.shadow.camera.bottom = -18;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 52;
+sun.shadow.bias = -0.00035;
+sun.shadow.normalBias = .018;
+scene.add(sun);
 
-const faceLight = new THREE.SpotLight(0xffd6bd, 24, 8, Math.PI * .24, .55, 1.6);
-faceLight.position.set(0.4, 3.1, 1.5);
-faceLight.target.position.set(1.7, 1.5, -2.25);
+const daylightFill = new THREE.DirectionalLight(0xb9d9ff, .58);
+daylightFill.position.set(10, 8, -12);
+scene.add(daylightFill);
+
+const faceLight = new THREE.SpotLight(0xffe2c8, 12, 9, Math.PI * .22, .72, 1.5);
+faceLight.position.set(1.1, 3.8, 3.2);
+faceLight.target.position.set(2.0, 1.45, -1.6);
 scene.add(faceLight, faceLight.target);
 
-function box(w, h, d, color, x, y, z, roughness=.72) {
+function box(w, h, d, color, x, y, z, roughness=.72, metalness=.02) {
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(w,h,d),
-    new THREE.MeshStandardMaterial({ color, roughness, metalness: .02 })
+    new THREE.MeshStandardMaterial({ color, roughness, metalness })
   );
   mesh.position.set(x,y,z);
   mesh.castShadow = true;
@@ -52,48 +62,255 @@ function box(w, h, d, color, x, y, z, roughness=.72) {
   return mesh;
 }
 
-// ---------- room ----------
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(16, 16),
-  new THREE.MeshStandardMaterial({ color: 0x252422, roughness: .92 })
+function plane(w,h,color,x,y,z,rx=-Math.PI/2,ry=0,rz=0,roughness=.9){
+  const mesh=new THREE.Mesh(
+    new THREE.PlaneGeometry(w,h),
+    new THREE.MeshStandardMaterial({color,roughness,metalness:0,side:THREE.DoubleSide})
+  );
+  mesh.position.set(x,y,z);
+  mesh.rotation.set(rx,ry,rz);
+  mesh.receiveShadow=true;
+  scene.add(mesh);
+  return mesh;
+}
+
+function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x9fc7d6){
+  const panel=new THREE.Mesh(
+    new THREE.PlaneGeometry(w,h),
+    new THREE.MeshPhysicalMaterial({
+      color:tint,
+      roughness:.16,
+      metalness:.08,
+      transparent:true,
+      opacity:.48,
+      transmission:.12,
+      side:THREE.DoubleSide
+    })
+  );
+  panel.position.set(x,y,z);
+  panel.rotation.y=ry;
+  panel.receiveShadow=true;
+  scene.add(panel);
+  return panel;
+}
+
+// ---------- daytime city block ----------
+// Ground is deliberately split into road, curb and pedestrian zones so the
+// player immediately reads this as a real street rather than a generic floor.
+const cityGround=plane(52,92,0xc7c4b9,0,-.045,-4);
+const road=plane(15,92,0x50575b,-6.7,.004,-4);
+const sidewalk=plane(10.8,92,0xd7d4c9,4.2,.014,-4);
+
+const curb=box(.30,.18,92,0xb8b4a8,.05,.08,-4,.92);
+const curbCap=box(.09,.035,92,0xe7e2d6,.18,.185,-4,.86);
+
+// Fine sidewalk seams add scale without relying on image textures.
+const seamMat=new THREE.MeshBasicMaterial({color:0xb7b4aa,transparent:true,opacity:.34,depthWrite:false});
+for(let z=-44;z<=40;z+=2.35){
+  const seam=new THREE.Mesh(new THREE.PlaneGeometry(9.9,.018),seamMat);
+  seam.rotation.x=-Math.PI/2;
+  seam.position.set(4.75,.031,z);
+  scene.add(seam);
+}
+for(let x=.8;x<=8.6;x+=1.95){
+  const seam=new THREE.Mesh(new THREE.PlaneGeometry(.018,84),seamMat);
+  seam.rotation.x=-Math.PI/2;
+  seam.position.set(x,.032,-4);
+  scene.add(seam);
+}
+
+// Road lane markings and a distant crossing make the street continue beyond
+// the playable slice.
+const stripeMat=new THREE.MeshBasicMaterial({color:0xe8e8dc,transparent:true,opacity:.82});
+for(let z=-40;z<40;z+=5.8){
+  const stripe=new THREE.Mesh(new THREE.PlaneGeometry(.13,2.9),stripeMat);
+  stripe.rotation.x=-Math.PI/2;
+  stripe.position.set(-6.5,.022,z);
+  scene.add(stripe);
+}
+const edgeLine=new THREE.Mesh(new THREE.PlaneGeometry(.11,86),new THREE.MeshBasicMaterial({color:0xe7d46b}));
+edgeLine.rotation.x=-Math.PI/2;
+edgeLine.position.set(-.45,.025,-4);
+scene.add(edgeLine);
+
+for(let x=-12.6;x<-1.0;x+=1.45){
+  const cross=new THREE.Mesh(new THREE.PlaneGeometry(.62,3.1),stripeMat);
+  cross.rotation.x=-Math.PI/2;
+  cross.position.set(x,.024,-17.2);
+  scene.add(cross);
+}
+
+// Street-facing buildings: warm stone + glass + shaded shopfronts.
+const rightFacade=box(3.4,7.6,66,0xd8d2c5,10.15,3.75,-5,.76);
+rightFacade.castShadow=false;
+
+for(let z=-31;z<=24;z+=7.2){
+  const bay=box(.42,5.6,5.35,0xbab6ad,8.64,3.22,z,.62);
+  bay.castShadow=false;
+
+  const glass=glassPanel(5.0,4.65,8.41,3.35,z,-Math.PI/2,0xaed1df);
+  glass.material.opacity=.42;
+
+  // dark sill + pale canopy creates the cafe / mixed-use street rhythm.
+  box(.38,.16,5.2,0x565c5d,8.34,.62,z,.55,.18);
+  box(1.15,.12,5.35,0xe9e0cf,7.95,3.02,z,.66);
+}
+
+// Ground-floor cafe corner.
+const cafeFrame=box(.48,3.0,8.5,0xb49778,8.33,1.55,4.8,.68);
+cafeFrame.castShadow=false;
+const cafeGlass=glassPanel(7.75,2.55,8.05,1.62,4.8,-Math.PI/2,0x9fc8cf);
+cafeGlass.material.opacity=.58;
+
+const signCanvas=document.createElement('canvas');
+signCanvas.width=512;
+signCanvas.height=128;
+const signCtx=signCanvas.getContext('2d');
+signCtx.fillStyle='#efe8dc';
+signCtx.fillRect(0,0,512,128);
+signCtx.fillStyle='#4e463d';
+signCtx.font='600 54px Inter, sans-serif';
+signCtx.textAlign='center';
+signCtx.textBaseline='middle';
+signCtx.fillText('NOVA CAFÉ',256,65);
+const signTexture=new THREE.CanvasTexture(signCanvas);
+signTexture.colorSpace=THREE.SRGBColorSpace;
+const cafeSign=new THREE.Mesh(
+  new THREE.PlaneGeometry(3.35,.84),
+  new THREE.MeshBasicMaterial({map:signTexture,toneMapped:false})
 );
-floor.rotation.x = -Math.PI/2;
-floor.receiveShadow = true;
-scene.add(floor);
+cafeSign.position.set(7.77,3.48,4.8);
+cafeSign.rotation.y=-Math.PI/2;
+scene.add(cafeSign);
 
-box(16, 5, .25, 0x20252a, 0, 2.5, -6.7);
-box(.25, 5, 13.5, 0x1a1e22, -7.9, 2.5, 0);
-box(.25, 5, 13.5, 0x24272a, 7.9, 2.5, 0);
+// Buildings across the road give the boulevard depth but stay light enough for
+// the AI character to remain the visual focus.
+const farBuildingColors=[0xd2d5d2,0xc5d0d3,0xe1d7ca,0xbfc9cc];
+for(let i=0;i<10;i++){
+  const z=-36+i*8.3;
+  const h=5.2+(i%4)*1.6;
+  const b=box(3.8,h,6.4,farBuildingColors[i%farBuildingColors.length],-15.2,h/2-.02,z,.72);
+  b.castShadow=false;
 
-// Window wall + skyline
-const windowFrame = box(6.2, 3.1, .16, 0x171a1d, 2.3, 2.8, -6.48);
-const glass = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 2.55), new THREE.MeshPhysicalMaterial({color:0x324b62,transparent:true,opacity:.27,roughness:.12,metalness:.12,transmission:.12}));
-glass.position.set(2.3,2.8,-6.32);scene.add(glass);
-for(let i=0;i<22;i++){
-  const h=.4+Math.random()*2.2;
-  const b=box(.25+Math.random()*.5,h,.35,0x111823,-.3+i*.29, h/2+.1,-6.55);
-  if(Math.random()>.45){
-    const wm=new THREE.Mesh(new THREE.PlaneGeometry(.08,.08),new THREE.MeshBasicMaterial({color:Math.random()>.5?0xffcf7d:0x81bfff}));
-    wm.position.set(b.position.x,b.position.y,b.position.z+.19);scene.add(wm);
+  for(let level=.9;level<h-.6;level+=1.22){
+    const win=new THREE.Mesh(
+      new THREE.PlaneGeometry(3.45,.66),
+      new THREE.MeshStandardMaterial({color:0x8eaeb9,roughness:.24,metalness:.15})
+    );
+    win.position.set(-13.27,level,z);
+    win.rotation.y=Math.PI/2;
+    scene.add(win);
   }
 }
 
-// Rug, sofa, table
-const rug = new THREE.Mesh(new THREE.PlaneGeometry(5.5,3.8),new THREE.MeshStandardMaterial({color:0x433d39,roughness:1}));
-rug.rotation.x=-Math.PI/2;rug.position.set(-.5,.012,-1.2);scene.add(rug);
-box(3.6,.6,1.05,0x403b3a,-2.6,.43,-2.6);box(3.6,.9,.28,0x373334,-2.6,1,-3.03);box(.28,.78,1.05,0x383334,-4.38,.56,-2.6);box(.28,.78,1.05,0x383334,-.82,.56,-2.6);
-box(2.1,.12,1.0,0x211d1a,-.1,.65,-.9);box(.12,.62,.12,0x151312,-.88,.33,-1.25);box(.12,.62,.12,0x151312,.68,.33,-1.25);box(.12,.62,.12,0x151312,-.88,.33,-.55);box(.12,.62,.12,0x151312,.68,.33,-.55);
+// Soft skyline silhouettes keep the horizon bright and city-like.
+for(let i=0;i<9;i++){
+  const h=9+(i%5)*2.4;
+  const tower=box(5.0,h,5.0,[0xaebbc1,0xc0c8c8,0x9fafb6][i%3],-19-i*1.3,h/2,-36+i*8.8,.82);
+  tower.castShadow=false;
+}
 
-// Shelf
-box(2.8,2.7,.35,0x1c1917,-5.9,1.36,1.8);for(let y=0;y<4;y++) box(2.65,.08,.55,0x2a2520,-5.9,.35+y*.72,1.62);
-for(let i=0;i<11;i++) box(.08+Math.random()*.12,.25+Math.random()*.32,.3,[0x6e5f55,0x394c52,0x6b3f3f,0x4d5840][i%4],-6.95+i*.2,.55+(i%3)*.72,1.38);
+// Trees, planters and street furniture make this feel like somewhere Mira
+// actually spends time instead of a sterile tech showcase.
+const streetTreeCrowns=[];
+function createStreetTree(x,z,scale=1){
+  const trunk=new THREE.Mesh(
+    new THREE.CylinderGeometry(.13*scale,.18*scale,2.3*scale,12),
+    new THREE.MeshStandardMaterial({color:0x80654f,roughness:.95})
+  );
+  trunk.position.set(x,1.15*scale,z);
+  trunk.castShadow=true;
+  scene.add(trunk);
 
-// Lamp
-box(.06,1.7,.06,0x262322,-3.8,.9,.8); const shade = new THREE.Mesh(new THREE.ConeGeometry(.42,.52,24,1,true),new THREE.MeshStandardMaterial({color:0xc9a077,side:THREE.DoubleSide,roughness:.85}));shade.position.set(-3.8,1.84,.8);scene.add(shade);
+  const crown=new THREE.Group();
+  const leafMat=new THREE.MeshStandardMaterial({color:0x6f9c65,roughness:.92});
+  [
+    [0,0,0,1.02],
+    [-.42,.03,.10,.72],
+    [.38,.10,-.05,.78],
+    [0,.35,.04,.70]
+  ].forEach(([ox,oy,oz,r])=>{
+    const leaf=new THREE.Mesh(new THREE.IcosahedronGeometry(r*scale,2),leafMat);
+    leaf.position.set(ox*scale,oy*scale,oz*scale);
+    leaf.castShadow=true;
+    leaf.receiveShadow=true;
+    crown.add(leaf);
+  });
+  crown.position.set(x,2.72*scale,z);
+  scene.add(crown);
+  streetTreeCrowns.push(crown);
+}
 
-// Plant
-box(.72,.48,.72,0x3d3027,4.9,.24,-1.2); const stemMat=new THREE.MeshStandardMaterial({color:0x37503a});
-for(let i=0;i<8;i++){const leaf=new THREE.Mesh(new THREE.SphereGeometry(.18,12,8),stemMat);leaf.scale.set(1,2.3,.5);leaf.position.set(4.9+(Math.random()-.5)*.55,.7+Math.random()*1.2,-1.2+(Math.random()-.5)*.5);leaf.rotation.z=(Math.random()-.5)*1.4;scene.add(leaf)}
+[-13,-4.8,4.2,13.2].forEach((z,i)=>createStreetTree(1.0,z,i%2?.94:1.04));
+[-18,0,18].forEach((z,i)=>createStreetTree(-12.1,z,.88+i*.04));
+
+function createPlanter(x,z,w=1.8){
+  box(w,.42,.72,0xb7aa95,x,.22,z,.90);
+  const greenMat=new THREE.MeshStandardMaterial({color:0x6f9e65,roughness:.95});
+  for(let i=0;i<5;i++){
+    const shrub=new THREE.Mesh(new THREE.SphereGeometry(.24+(i%2)*.05,12,9),greenMat);
+    shrub.scale.set(1.2,.82,1);
+    shrub.position.set(x-w*.35+i*(w*.70/4),.55,z);
+    shrub.castShadow=true;
+    scene.add(shrub);
+  }
+}
+createPlanter(6.6,-8.3,2.2);
+createPlanter(6.6,11.8,2.5);
+
+function createLampPost(x,z){
+  const metal=new THREE.MeshStandardMaterial({color:0x3f494b,roughness:.48,metalness:.62});
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,3.2,10),metal);
+  pole.position.set(x,1.6,z);
+  pole.castShadow=true;
+  scene.add(pole);
+
+  const arm=new THREE.Mesh(new THREE.BoxGeometry(.65,.055,.055),metal);
+  arm.position.set(x-.27,3.16,z);
+  scene.add(arm);
+
+  const lamp=new THREE.Mesh(
+    new THREE.BoxGeometry(.34,.11,.18),
+    new THREE.MeshStandardMaterial({color:0xe9efe6,roughness:.34,emissive:0xe9efe6,emissiveIntensity:.06})
+  );
+  lamp.position.set(x-.59,3.11,z);
+  scene.add(lamp);
+}
+[-11,2,15].forEach(z=>createLampPost(.45,z));
+
+// A bench and bike rack near the cafe create readable points of interest for
+// future Scanner/Map interactions.
+const benchWood=new THREE.MeshStandardMaterial({color:0x9b795d,roughness:.82});
+const benchMetal=new THREE.MeshStandardMaterial({color:0x454d4e,roughness:.55,metalness:.45});
+const benchSeat=new THREE.Mesh(new THREE.BoxGeometry(1.75,.10,.48),benchWood);
+benchSeat.position.set(5.1,.54,1.9);benchSeat.castShadow=true;scene.add(benchSeat);
+const benchBack=new THREE.Mesh(new THREE.BoxGeometry(1.75,.48,.08),benchWood);
+benchBack.position.set(5.1,.82,2.10);benchBack.rotation.x=-.12;benchBack.castShadow=true;scene.add(benchBack);
+[-.70,.70].forEach(offset=>{
+  const leg=new THREE.Mesh(new THREE.BoxGeometry(.08,.52,.08),benchMetal);
+  leg.position.set(5.1+offset,.27,1.9);leg.castShadow=true;scene.add(leg);
+});
+
+for(let i=0;i<3;i++){
+  const rack=new THREE.Mesh(new THREE.TorusGeometry(.27,.025,8,24,Math.PI),benchMetal);
+  rack.rotation.x=Math.PI/2;
+  rack.rotation.z=Math.PI/2;
+  rack.position.set(6.0+i*.55,.35,-2.6);
+  rack.castShadow=true;
+  scene.add(rack);
+}
+
+// Small flower dots keep the palette warm without becoming decorative noise.
+const flowerMat=new THREE.MeshStandardMaterial({color:0xf0eee2,roughness:.8});
+for(let i=0;i<14;i++){
+  const bloom=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),flowerMat);
+  bloom.position.set(
+    6.0+(i%7)*.22,
+    .73+(i%3)*.035,
+    -8.55+Math.floor(i/7)*.32
+  );
+  scene.add(bloom);
+}
 
 // NPC: Mira — articulated human silhouette rather than a capsule mannequin
 const mira = new THREE.Group();
@@ -166,8 +383,8 @@ const rFore=capsule(.074,.39,skinMat);rFore.position.set(.40,.94,.08);rFore.rota
 const lHand=new THREE.Mesh(new THREE.SphereGeometry(.09,16,12),skinMat);lHand.scale.set(.72,1.08,.55);lHand.position.set(-.42,.71,.10);miraRig.add(lHand);
 const rHand=lHand.clone();rHand.position.x=.42;miraRig.add(rHand);
 
-mira.position.set(1.7,0,-2.25);
-mira.rotation.y=-.52;
+mira.position.set(2.0,0,-1.6);
+mira.rotation.y=-.16;
 mira.scale.setScalar(1.02);
 scene.add(mira);
 
@@ -218,12 +435,6 @@ window.addEventListener('tablet-message-reply',()=>{
   miraReplyMotionUntil=performance.now()+1200;
 });
 
-// Art panels
-for (let i=0;i<3;i++) {
-  const art=box(.9,1.25,.06,[0x2d3f46,0x4a3437,0x3e4334][i],-6.5+i*1.25,2.55,-6.5);
-  art.material.emissive=new THREE.Color([0x081115,0x130a0c,0x0a1008][i]);art.material.emissiveIntensity=.55;
-}
-
 // ---------- player controls ----------
 const keys = new Set();
 let yaw=0, pitch=0, targetYaw=0, targetPitch=0, turnImpulse=0;
@@ -231,7 +442,7 @@ let tabletOpen=false, started=false;
 const velocity=new THREE.Vector3();
 const dir=new THREE.Vector3();
 const baseEyeHeight=1.68;
-const roomBounds={x:7.1,z:5.9};
+const worldBounds={xMin:-6.3,xMax:7.15,zMin:-18,zMax:19};
 
 document.addEventListener('keydown',e=>{
   keys.add(e.code);
@@ -279,7 +490,7 @@ function openTablet(){
 function closeTablet(){
   if(!tabletOpen) return;
 
-  tabletOpen=false; cameraFovTarget=78;
+  tabletOpen=false; cameraFovTarget=74;
   tabletLayer?.classList.add('closing');
   tabletLayer?.setAttribute('aria-hidden','true');
   window.dispatchEvent(new CustomEvent('tablet-close'));
@@ -339,8 +550,8 @@ function animate(){
       velocity.z*=Math.pow(.001,dt);
     }
     camera.position.x+=velocity.x*dt;camera.position.z+=velocity.z*dt;
-    camera.position.x=THREE.MathUtils.clamp(camera.position.x,-roomBounds.x,roomBounds.x);
-    camera.position.z=THREE.MathUtils.clamp(camera.position.z,-roomBounds.z,roomBounds.z);
+    camera.position.x=THREE.MathUtils.clamp(camera.position.x,worldBounds.xMin,worldBounds.xMax);
+    camera.position.z=THREE.MathUtils.clamp(camera.position.z,worldBounds.zMin,worldBounds.zMax);
   } else {
     velocity.multiplyScalar(Math.pow(.003,dt));
   }
@@ -359,6 +570,11 @@ function animate(){
   // Smooth field-of-view shift when focusing on the near tablet.
   camera.fov=THREE.MathUtils.lerp(camera.fov,cameraFovTarget,1-Math.pow(.001,dt));
   camera.updateProjectionMatrix();
+
+  streetTreeCrowns.forEach((crown,i)=>{
+    crown.rotation.z=Math.sin(t*.34+i*.9)*.006;
+    crown.rotation.x=Math.sin(t*.27+i*1.4)*.004;
+  });
 
   // Human idle: breathing, tiny weight shift and occasional attention toward player.
   const idleBreath=Math.sin(t*1.55);
