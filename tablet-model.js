@@ -793,6 +793,8 @@
         tabletDom.style.setProperty('--screen-parallax-y',(opticalY*1.25).toFixed(2)+'px');
         tabletDom.style.setProperty('--glass-shift-x',(opticalX*11).toFixed(2)+'px');
         tabletDom.style.setProperty('--glass-shift-y',(opticalY*7).toFixed(2)+'px');
+        tabletDom.style.setProperty('--glass-counter-x',(-opticalX*3.85).toFixed(2)+'px');
+        tabletDom.style.setProperty('--glass-counter-y',(-opticalY*2.45).toFixed(2)+'px');
         tabletDom.style.setProperty('--glass-angle',(118+opticalX*3.8).toFixed(2)+'deg');
       }
 
