@@ -261,6 +261,8 @@
           let screenFlexVelocityY=0;
           let refractionX=0;
           let refractionY=0;
+          let refractionVelocityX=0;
+          let refractionVelocityY=0;
           let metalMotion=0;
           let lastGlassX=0;
           let lastGlassY=0;
@@ -313,11 +315,21 @@
               lastGlassX=glassX;
               lastGlassY=glassY;
 
-              // The LCD layer appears to sit under the cover glass: content
-              // drifts a few millimeters with pointer angle, while press uses
-              // a spring so release carries a visible but restrained overshoot.
-              refractionX=THREE.MathUtils.lerp(refractionX,glassX*.0065,1-Math.pow(.0005,dt));
-              refractionY=THREE.MathUtils.lerp(refractionY,glassY*.0042,1-Math.pow(.0005,dt));
+              // Optical parallax under the cover glass. Static tilt gives a
+              // small offset, while fast motion briefly leaves the LCD image
+              // behind before it catches up. The spring is deliberately tiny
+              // so text stays readable but the display gains physical depth.
+              const opticalLagX=THREE.MathUtils.clamp(-vx*.00016,-.0034,.0034);
+              const opticalLagY=THREE.MathUtils.clamp(-vy*.00012,-.0025,.0025);
+              const refractionTargetX=glassX*.0065+opticalLagX;
+              const refractionTargetY=glassY*.0042+opticalLagY;
+
+              refractionVelocityX+=(refractionTargetX-refractionX)*145*dt;
+              refractionVelocityY+=(refractionTargetY-refractionY)*145*dt;
+              refractionVelocityX*=Math.exp(-12.8*dt);
+              refractionVelocityY*=Math.exp(-12.8*dt);
+              refractionX+=refractionVelocityX*dt;
+              refractionY+=refractionVelocityY*dt;
 
               screenPressVelocity+=((glassPressed?1:0)-screenPress)*235*dt;
               screenPressVelocity*=Math.exp(-17*dt);
@@ -437,15 +449,21 @@
                 const pressDepth=Math.max(0,screenPress)*.028;
                 const flexShadowX=Math.abs(screenFlexY)*11;
                 const flexShadowY=Math.abs(screenFlexX)*11;
+                const opticalShadowX=Math.min(.018,Math.abs(refractionVelocityX)*.35);
+                const opticalShadowY=Math.min(.014,Math.abs(refractionVelocityY)*.35);
 
                 innerShadow.left.material.opacity=
-                  shadowBase+Math.max(0,glassX)*.050+pressDepth+Math.max(0,screenFlexY)*18+flexShadowX*.12;
+                  shadowBase+Math.max(0,glassX)*.050+pressDepth+Math.max(0,screenFlexY)*18+flexShadowX*.12+
+                  (refractionVelocityX>0?opticalShadowX:0);
                 innerShadow.right.material.opacity=
-                  shadowBase+Math.max(0,-glassX)*.050+pressDepth+Math.max(0,-screenFlexY)*18+flexShadowX*.12;
+                  shadowBase+Math.max(0,-glassX)*.050+pressDepth+Math.max(0,-screenFlexY)*18+flexShadowX*.12+
+                  (refractionVelocityX<0?opticalShadowX:0);
                 innerShadow.top.material.opacity=
-                  shadowBase+Math.max(0,-glassY)*.042+pressDepth*.8+Math.max(0,-screenFlexX)*16+flexShadowY*.10;
+                  shadowBase+Math.max(0,-glassY)*.042+pressDepth*.8+Math.max(0,-screenFlexX)*16+flexShadowY*.10+
+                  (refractionVelocityY<0?opticalShadowY:0);
                 innerShadow.bottom.material.opacity=
-                  shadowBase+Math.max(0,glassY)*.042+pressDepth*.8+Math.max(0,screenFlexX)*16+flexShadowY*.10;
+                  shadowBase+Math.max(0,glassY)*.042+pressDepth*.8+Math.max(0,screenFlexX)*16+flexShadowY*.10+
+                  (refractionVelocityY>0?opticalShadowY:0);
 
                 innerShadow.left.scale.x=1+Math.max(0,glassX)*.35+pressDepth*2;
                 innerShadow.right.scale.x=1+Math.max(0,-glassX)*.35+pressDepth*2;
