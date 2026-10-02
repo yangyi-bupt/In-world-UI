@@ -197,6 +197,9 @@
           let lastGlassX=0;
           let lastGlassY=0;
           let uiPulseUntil=0;
+          let tapWaveStart=0;
+          let tapWaveX=0;
+          let tapWaveY=0;
           let lastFxTime=0;
 
           const onTabletOpenFx=()=>{
@@ -268,6 +271,25 @@
               const uiPulseProgress=uiPulseRemaining>0 ? 1-uiPulseRemaining/320 : 1;
               const uiPulse=uiPulseRemaining>0 ? Math.sin(Math.PI*uiPulseProgress) : 0;
 
+              const tapWaveAge=tapWaveStart?now-tapWaveStart:9999;
+              const tapWaveProgress=THREE.MathUtils.clamp(tapWaveAge/420,0,1);
+              const edgeWave=(edgeX,edgeY)=>{
+                if(tapWaveProgress>=1) return 0;
+                const distance=Math.hypot(edgeX-tapWaveX,edgeY-tapWaveY)/2.82;
+                const delay=Math.min(.42,distance*.34);
+                const local=THREE.MathUtils.clamp((tapWaveProgress-delay)/(1-delay),0,1);
+                return local>0 && local<1 ? Math.sin(Math.PI*local)*(1-distance*.34) : 0;
+              };
+
+              const waveLeft=edgeWave(-1,0);
+              const waveRight=edgeWave(1,0);
+              const waveTop=edgeWave(0,1);
+              const waveBottom=edgeWave(0,-1);
+              const waveTL=edgeWave(-1,1);
+              const waveTR=edgeWave(1,1);
+              const waveBL=edgeWave(-1,-1);
+              const waveBR=edgeWave(1,-1);
+
               if(glare){
                 // Keep the idle reflection off the reading area. The brighter
                 // sweep only crosses the display briefly when the tablet wakes.
@@ -290,10 +312,10 @@
                 const base=open?.055:.008;
                 const clickBoost=Math.max(0,screenPress)*.12;
                 const sweepBoost=sweepEnvelope*.22;
-                edgeGlow.left.material.opacity=base+Math.max(0,-glassX)*.065+clickBoost+sweepBoost*(1-sweepProgress);
-                edgeGlow.right.material.opacity=base+Math.max(0,glassX)*.065+clickBoost+sweepBoost*sweepProgress;
-                edgeGlow.top.material.opacity=base+Math.max(0,glassY)*.045+clickBoost*.65+sweepBoost*.55;
-                edgeGlow.bottom.material.opacity=base+Math.max(0,-glassY)*.045+clickBoost*.65+sweepBoost*.35;
+                edgeGlow.left.material.opacity=base+Math.max(0,-glassX)*.065+clickBoost+sweepBoost*(1-sweepProgress)+waveLeft*.10;
+                edgeGlow.right.material.opacity=base+Math.max(0,glassX)*.065+clickBoost+sweepBoost*sweepProgress+waveRight*.10;
+                edgeGlow.top.material.opacity=base+Math.max(0,glassY)*.045+clickBoost*.65+sweepBoost*.55+waveTop*.085;
+                edgeGlow.bottom.material.opacity=base+Math.max(0,-glassY)*.045+clickBoost*.65+sweepBoost*.35+waveBottom*.085;
               }
 
               if(chassisGlow){
@@ -308,22 +330,22 @@
                 chassisGlow.left.material.opacity=
                   metalBase+Math.max(0,-glassX)*.11+angleY*.025+pressFlash+
                   motionFlash*Math.max(.25,.55-Math.max(0,motionX))+
-                  sweepEnvelope*.07*(1-sweepProgress);
+                  sweepEnvelope*.07*(1-sweepProgress)+waveLeft*.035;
 
                 chassisGlow.right.material.opacity=
                   metalBase+Math.max(0,glassX)*.11+angleY*.025+pressFlash+
                   motionFlash*Math.max(.25,.55+Math.min(0,motionX))+
-                  sweepEnvelope*.07*sweepProgress;
+                  sweepEnvelope*.07*sweepProgress+waveRight*.035;
 
                 chassisGlow.top.material.opacity=
                   metalBase+Math.max(0,glassY)*.075+angleX*.028+pressFlash*.7+
                   motionFlash*Math.max(.2,.45+Math.max(0,motionY))+
-                  sweepEnvelope*.045;
+                  sweepEnvelope*.045+waveTop*.03;
 
                 chassisGlow.bottom.material.opacity=
                   metalBase+Math.max(0,-glassY)*.075+angleX*.028+pressFlash*.7+
                   motionFlash*Math.max(.2,.45-Math.min(0,motionY))+
-                  sweepEnvelope*.035;
+                  sweepEnvelope*.035+waveBottom*.03;
               }
 
               if(cornerGlow){
@@ -337,10 +359,10 @@
                 const top=Math.max(0,glassY);
                 const bottom=Math.max(0,-glassY);
 
-                cornerGlow.tl.material.opacity=baseCorner+(left+top)*.055+motionCorner+pressCorner+uiCorner;
-                cornerGlow.tr.material.opacity=baseCorner+(right+top)*.055+motionCorner+pressCorner+uiCorner;
-                cornerGlow.bl.material.opacity=baseCorner+(left+bottom)*.055+motionCorner+pressCorner+uiCorner;
-                cornerGlow.br.material.opacity=baseCorner+(right+bottom)*.055+motionCorner+pressCorner+uiCorner;
+                cornerGlow.tl.material.opacity=baseCorner+(left+top)*.055+motionCorner+pressCorner+uiCorner+waveTL*.12;
+                cornerGlow.tr.material.opacity=baseCorner+(right+top)*.055+motionCorner+pressCorner+uiCorner+waveTR*.12;
+                cornerGlow.bl.material.opacity=baseCorner+(left+bottom)*.055+motionCorner+pressCorner+uiCorner+waveBL*.12;
+                cornerGlow.br.material.opacity=baseCorner+(right+bottom)*.055+motionCorner+pressCorner+uiCorner+waveBR*.12;
               }
 
               textureController.update?.(t,open);
@@ -396,6 +418,9 @@
             controller.setInteractionPointer?.(nx,ny,Boolean(target));
 
             if(target){
+              tapWaveX=THREE.MathUtils.clamp(nx,-1,1);
+              tapWaveY=THREE.MathUtils.clamp(ny,-1,1);
+              tapWaveStart=performance.now();
               textureController.pulseUv?.(uv);
               pointerCanvas.setPointerCapture?.(event.pointerId);
               event.preventDefault();
