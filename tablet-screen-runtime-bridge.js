@@ -32,6 +32,7 @@
         let edgeGlow=null;
         let chassisGlow=null;
         let cornerGlow=null;
+        let bezelGlint=null;
 
         if(screen){
           screen.position.z=.102;
@@ -169,6 +170,36 @@
             part.raycast=()=>{};
             capturedRig.add(part);
           });
+
+          const glintCanvas=document.createElement('canvas');
+          glintCanvas.width=128;
+          glintCanvas.height=24;
+          const glintCtx=glintCanvas.getContext('2d');
+          const glintGradient=glintCtx.createLinearGradient(0,0,128,0);
+          glintGradient.addColorStop(0,'rgba(220,244,255,0)');
+          glintGradient.addColorStop(.34,'rgba(220,244,255,.06)');
+          glintGradient.addColorStop(.50,'rgba(240,250,255,.42)');
+          glintGradient.addColorStop(.66,'rgba(180,224,255,.08)');
+          glintGradient.addColorStop(1,'rgba(220,244,255,0)');
+          glintCtx.fillStyle=glintGradient;
+          glintCtx.fillRect(0,0,128,24);
+
+          const glintTexture=new THREE.CanvasTexture(glintCanvas);
+          glintTexture.colorSpace=THREE.SRGBColorSpace;
+          const glintMaterial=new THREE.MeshBasicMaterial({
+            map:glintTexture,
+            transparent:true,
+            opacity:0,
+            depthTest:false,
+            depthWrite:false,
+            toneMapped:false,
+            blending:THREE.AdditiveBlending
+          });
+          bezelGlint=new THREE.Mesh(new THREE.PlaneGeometry(.40,.028),glintMaterial);
+          bezelGlint.position.set(0,.848,.124);
+          bezelGlint.renderOrder=16;
+          bezelGlint.raycast=()=>{};
+          capturedRig.add(bezelGlint);
         }
 
         controller.screenTexture=textureController;
@@ -177,6 +208,7 @@
         controller.screenEdgeGlow=edgeGlow;
         controller.chassisGlow=chassisGlow;
         controller.cornerGlow=cornerGlow;
+        controller.bezelGlint=bezelGlint;
 
         const pointerCanvas=controller.renderer?.domElement ||
           (canvas && typeof canvas.getContext==='function' ? canvas : canvas?.querySelector?.('canvas'));
@@ -346,6 +378,28 @@
                   metalBase+Math.max(0,-glassY)*.075+angleX*.028+pressFlash*.7+
                   motionFlash*Math.max(.2,.45-Math.min(0,motionY))+
                   sweepEnvelope*.035+waveBottom*.03;
+              }
+
+              if(bezelGlint){
+                const ax=Math.abs(glassX);
+                const ay=Math.abs(glassY);
+                const horizontal=ay>=ax;
+
+                if(horizontal){
+                  bezelGlint.rotation.z=0;
+                  bezelGlint.position.x=glassX*.92;
+                  bezelGlint.position.y=glassY>=0?.848:-.848;
+                  bezelGlint.scale.set(1,1,1);
+                }else{
+                  bezelGlint.rotation.z=Math.PI*.5;
+                  bezelGlint.position.x=glassX>=0?1.248:-1.248;
+                  bezelGlint.position.y=glassY*.60;
+                  bezelGlint.scale.set(.82,1,1);
+                }
+
+                const edgeAmount=horizontal?ay:ax;
+                const glintOpacity=.018+edgeAmount*.065+metalMotion*.11+Math.max(0,screenPress)*.055;
+                bezelGlint.material.opacity=open?Math.min(.17,glintOpacity):0;
               }
 
               if(cornerGlow){
