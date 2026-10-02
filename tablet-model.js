@@ -197,6 +197,24 @@
     body.receiveShadow=true;
     rig.add(body);
 
+    // A shallow rear shell layer makes the chassis thickness readable when the
+    // tablet pitches forward instead of collapsing into one extruded slab.
+    const rearShell=new THREE.Mesh(
+      extrudedRounded(2.77,1.95,.042,.162,.010),
+      new THREE.MeshPhysicalMaterial({
+        color:0x565b60,
+        metalness:.90,
+        roughness:.31,
+        roughnessMap:chassisRoughness,
+        clearcoat:.08,
+        clearcoatRoughness:.38,
+        envMapIntensity:.56
+      })
+    );
+    rearShell.position.z=-.088;
+    rearShell.castShadow=true;
+    rig.add(rearShell);
+
     // A slightly raised front glass/bezel plane. The live HTML screen is placed
     // over its center, leaving this material visible as the physical bezel.
     const bezel=new THREE.Mesh(
@@ -244,6 +262,28 @@
       b.position.set(1.433,y,.0);
       rig.add(b);
     });
+
+    // Speaker perforations, a small charging port, and antenna seams add
+    // hardware-scale detail that becomes visible in the lower-angle hand pose.
+    const portMat=new THREE.MeshStandardMaterial({
+      color:0x060708,
+      roughness:.66,
+      metalness:.18
+    });
+    const chargePort=new THREE.Mesh(
+      new THREE.BoxGeometry(.26,.035,.036),
+      portMat
+    );
+    chargePort.position.set(0,-1.010,-.012);
+    chargePort.rotation.x=.04;
+    rig.add(chargePort);
+
+    const portInner=new THREE.Mesh(
+      new THREE.BoxGeometry(.15,.012,.039),
+      new THREE.MeshStandardMaterial({color:0x22272a,roughness:.44,metalness:.36})
+    );
+    portInner.position.set(0,-1.014,.009);
+    rig.add(portInner);
 
     // Speaker perforations and antenna seams.
     for(const side of [-1,1]){
@@ -337,13 +377,27 @@
       // Keep almost the whole hand behind the tablet, but let a thin crescent
       // of palm + thumb base show beyond the side rail. This gives a readable
       // grip silhouette without ever crossing onto the display surface.
-      const palm=new THREE.Mesh(new THREE.SphereGeometry(.18,20,14),handPalmSkin);
-      palm.scale.set(.72,.98,.50);
+      const palm=new THREE.Mesh(new THREE.SphereGeometry(.18,24,18),handPalmSkin);
+      palm.scale.set(.70,1.02,.48);
       palm.position.set(s*1.47,-.765,-.105);
       palm.rotation.z=s*.09;
       hand.add(palm);
 
-      const thumbRoot=new THREE.Mesh(new THREE.SphereGeometry(.075,16,12),handFingerSkin);
+      // Heel + knuckle volumes break the single-sphere silhouette and make the
+      // visible outside edge read as a compressed human grip around the chassis.
+      const palmHeel=new THREE.Mesh(new THREE.SphereGeometry(.115,20,14),handPalmSkin);
+      palmHeel.scale.set(.76,.70,.52);
+      palmHeel.position.set(s*1.515,-.865,-.135);
+      palmHeel.rotation.z=s*.18;
+      hand.add(palmHeel);
+
+      const knucklePad=new THREE.Mesh(new THREE.SphereGeometry(.090,18,12),handFingerSkin);
+      knucklePad.scale.set(.62,.88,.48);
+      knucklePad.position.set(s*1.455,-.645,-.125);
+      knucklePad.rotation.z=s*.10;
+      hand.add(knucklePad);
+
+      const thumbRoot=new THREE.Mesh(new THREE.SphereGeometry(.075,18,14),handFingerSkin);
       thumbRoot.scale.set(.62,.82,.52);
       thumbRoot.position.set(s*1.455,-.755,-.07);
       thumbRoot.rotation.z=s*.18;
@@ -364,8 +418,28 @@
       nail.rotation.x=.34;
       hand.add(nail);
 
-      // Front-facing finger geometry remains hidden until a skinned hand model
-      // can bend around the rear shell without clipping through the screen.
+      // Three rear fingers are visible only as slim side crescents. They sit
+      // behind the display plane and sell the wraparound grip without covering UI.
+      const rearFingers=[];
+      [
+        [-.925,.012,.145],
+        [-.850,.010,.152],
+        [-.775,.008,.146]
+      ].forEach(([y,z,length],fingerIndex)=>{
+        const finger=new THREE.Mesh(
+          new THREE.CapsuleGeometry(.027-fingerIndex*.0015,length,8,12),
+          handFingerSkin
+        );
+        finger.position.set(s*(1.438+fingerIndex*.006),y,-.128+z);
+        finger.rotation.z=s*(.055+fingerIndex*.020);
+        finger.rotation.x=.30+fingerIndex*.055;
+        finger.scale.z=.86;
+        hand.add(finger);
+        rearFingers.push(finger);
+      });
+
+      // The front-facing index finger stays hidden: showing it across the glass
+      // would interfere with the HTML interaction layer.
       const indexFinger=new THREE.Mesh(new THREE.CapsuleGeometry(.026,.14,8,12),handFingerSkin);
       indexFinger.position.set(s*1.43,-.92,-.11);
       indexFinger.rotation.z=s*.12;
@@ -373,13 +447,32 @@
       indexFinger.visible=false;
       hand.add(indexFinger);
 
+      const wristSkin=new THREE.Mesh(new THREE.CapsuleGeometry(.080,.18,8,12),handPalmSkin);
+      wristSkin.position.set(s*1.61,-.955,-.155);
+      wristSkin.rotation.z=s*.72;
+      wristSkin.rotation.x=-.10;
+      hand.add(wristSkin);
+
       const forearm=new THREE.Mesh(new THREE.CapsuleGeometry(.092,.46,8,14),sleeveMat);
       forearm.position.set(s*1.73,-1.035,-.18);
       forearm.rotation.z=s*.75;
       forearm.rotation.x=-.10;
       hand.add(forearm);
 
-      hand.userData={side:s,palm,thumbRoot,thumb,nail,indexFinger,forearm,baseY:hand.position.y};
+      hand.userData={
+        side:s,
+        palm,
+        palmHeel,
+        knucklePad,
+        thumbRoot,
+        thumb,
+        nail,
+        rearFingers,
+        indexFinger,
+        wristSkin,
+        forearm,
+        baseY:hand.position.y
+      };
       rig.add(hand);
       return hand;
     }
@@ -607,8 +700,21 @@
 
       leftHand.userData.palm.rotation.z=leftSide*(.09+leftSupport*.010+impact*.006);
       rightHand.userData.palm.rotation.z=rightSide*(.09+rightSupport*.010+impact*.006);
+      leftHand.userData.palmHeel.rotation.z=leftSide*(.18+leftSupport*.012+leftLoad*.010);
+      rightHand.userData.palmHeel.rotation.z=rightSide*(.18+rightSupport*.012+rightLoad*.010);
+      leftHand.userData.knucklePad.scale.y=1-leftLoad*.035-catchAmount*.016;
+      rightHand.userData.knucklePad.scale.y=1-rightLoad*.035-catchAmount*.016;
       leftHand.userData.thumbRoot.rotation.z=leftSide*(.18+leftSupport*.020+leftLoad*.018);
       rightHand.userData.thumbRoot.rotation.z=rightSide*(.18+rightSupport*.020+rightLoad*.018);
+
+      leftHand.userData.rearFingers.forEach((finger,index)=>{
+        finger.rotation.x=.30+index*.055+leftLoad*(.028+index*.005)+catchAmount*.010;
+        finger.position.x=leftSide*(1.438+index*.006-leftLoad*.0022);
+      });
+      rightHand.userData.rearFingers.forEach((finger,index)=>{
+        finger.rotation.x=.30+index*.055+rightLoad*(.028+index*.005)+catchAmount*.010;
+        finger.position.x=rightSide*(1.438+index*.006-rightLoad*.0022);
+      });
 
       leftHand.userData.thumb.rotation.x=.28+.06*hold+leftLoad*.055+leftSupport*.010+catchAmount*.018;
       rightHand.userData.thumb.rotation.x=.28+.06*hold+rightLoad*.055+rightSupport*.010+catchAmount*.018;
