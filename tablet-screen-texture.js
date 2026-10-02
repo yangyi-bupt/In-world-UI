@@ -47,8 +47,8 @@
     const appRects=[];
     const taskRects=[];
     const messageRects=[
-      {x:70,y:505,w:420,h:56,key:'message:0',type:'message-action',index:0,label:'On my way.'},
-      {x:510,y:505,w:444,h:56,key:'message:1',type:'message-action',index:1,label:'Meet me by the window.'}
+      {x:70,y:568,w:420,h:56,key:'message:0',type:'message-action',index:0,label:'On my way.'},
+      {x:510,y:568,w:444,h:56,key:'message:1',type:'message-action',index:1,label:'Meet me by the window.'}
     ];
     const backRect={x:58,y:122,w:154,h:58,key:'back',type:'back'};
     const scannerRect={x:330,y:580,w:364,h:64,key:'scanner-action',type:'scanner-action'};
@@ -135,24 +135,93 @@
       ctx.restore();
     }
 
-    function pill(label,x,y,accent='rgba(255,255,255,.10)',fg='#b9c7db'){
+    function pill(...args){
+      let x,y,w,h,label,accent,active=false,fg;
+
+      if(typeof args[0]==='string'){
+        label=args[0];
+        x=args[1];
+        y=args[2];
+        accent=args[3] || 'rgba(255,255,255,.10)';
+        fg=args[4] || '#b9c7db';
+
+        ctx.save();
+        ctx.font='700 11px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        w=Math.ceil(ctx.measureText(label).width)+22;
+        h=26;
+        ctx.restore();
+      }else{
+        x=args[0];
+        y=args[1];
+        w=args[2];
+        h=args[3];
+        label=args[4];
+        accent=args[5] || '#8fc5ff';
+        active=Boolean(args[6]);
+        fg=active?'#081018':accent;
+      }
+
       ctx.save();
-      ctx.font='700 11px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-      const w=Math.ceil(ctx.measureText(label).width)+22;
-      ctx.fillStyle=accent;
-      roundedRect(x,y,w,26,13,true);
-      strokeRoundRect(x,y,w,26,13,'rgba(255,255,255,.065)',1);
-      text(label,x+11,y+17,11,'700',fg);
+      ctx.fillStyle=active?accent:'rgba(255,255,255,.040)';
+      roundedRect(x,y,w,h,h/2,true);
+      strokeRoundRect(
+        x,y,w,h,h/2,
+        active?'rgba(255,255,255,.18)':accent,
+        active?1.2:.8
+      );
+
+      ctx.font='700 '+(h>=32?12:11)+'px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      const tw=ctx.measureText(String(label)).width;
+      text(String(label),x+(w-tw)/2,y+h*.64,h>=32?12:11,'700',fg);
       ctx.restore();
       return w;
     }
 
+    function appShell(accent='#8fc5ff'){
+      ctx.fillStyle='rgba(7,11,18,.58)';
+      roundedRect(44,194,936,468,34,true);
+      strokeRoundRect(44,194,936,468,34,'rgba(255,255,255,.055)',1);
+
+      const glow=ctx.createLinearGradient(44,194,980,194);
+      glow.addColorStop(0,'rgba(255,255,255,0)');
+      glow.addColorStop(.10,accent);
+      glow.addColorStop(.22,'rgba(255,255,255,.025)');
+      glow.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.globalAlpha=.18;
+      ctx.fillStyle=glow;
+      roundedRect(74,194,340,1.5,.75,true);
+      ctx.globalAlpha=1;
+    }
+
+    function drawSystemFooter(context='HOME'){
+      text(context.toUpperCase(),62,684,10,'800','#56667d');
+
+      ctx.fillStyle='rgba(255,255,255,.050)';
+      roundedRect(438,681,148,4,2,true);
+
+      text('POINTER',864,684,10,'650','#56667d');
+      ctx.fillStyle='rgba(127,214,255,.30)';
+      ctx.beginPath();
+      ctx.arc(945,680,3,0,Math.PI*2);
+      ctx.fill();
+    }
+
     function appHeader(title,subtitle,accent='#8fc5ff'){
-      text(title.toUpperCase(),70,212,12,'750',accent);
-      text(subtitle,70,241,15,'500','#70809a');
-      text(title,70,286,42,'680','#f5f8ff');
-      ctx.fillStyle='rgba(255,255,255,.055)';
-      roundedRect(70,307,884,1,1,true);
+      text(title.toUpperCase(),70,220,11,'800',accent);
+      text(subtitle,70,246,14,'520','#70809a');
+      text(title,70,289,40,'690','#f5f8ff');
+
+      ctx.fillStyle='rgba(255,255,255,.050)';
+      roundedRect(70,308,884,1,1,true);
+
+      ctx.fillStyle='rgba(255,255,255,.035)';
+      roundedRect(866,214,88,30,15,true);
+      strokeRoundRect(866,214,88,30,15,'rgba(255,255,255,.060)',1);
+      ctx.fillStyle=accent;
+      ctx.beginPath();
+      ctx.arc(883,229,3.2,0,Math.PI*2);
+      ctx.fill();
+      text('READY',894,233,10,'800','#8192aa');
     }
 
     function isHover(key){return state.hoverKey===key;}
@@ -352,16 +421,9 @@
         ctx.restore();
       });
 
-      // Bottom hardware-like gesture rail / context hint.
-      ctx.fillStyle='rgba(255,255,255,.055)';
-      roundedRect(431,681,162,4,2,true);
-      text('E',62,684,11,'800','#95a8c1');
-      text('CLOSE PAD',81,684,11,'650','#5f7088');
-      text('POINTER',867,684,11,'650','#5f7088');
-      ctx.fillStyle='rgba(127,214,255,.30)';
-      ctx.beginPath();
-      ctx.arc(945,680,3,0,Math.PI*2);
-      ctx.fill();
+      text('E',62,662,10,'800','#91a5be');
+      text('CLOSE PAD',80,662,10,'650','#596a82');
+      drawSystemFooter('WORLD DECK');
     }
 
     function drawBack(){
@@ -407,7 +469,7 @@
       text('I am checking the room now.',390,489,20,'550','#dceaff');
 
       if(state.messageChoice===null){
-        text('QUICK REPLY',72,556,12,'750','#667995');
+        text('QUICK REPLY',72,550,12,'750','#667995');
         messageRects.forEach((rect,i)=>{
           const selected=isHover(rect.key)||isPressed(rect.key);
           card(rect.x,rect.y,rect.w,rect.h,18,rect.key,'rgba(255,255,255,.045)');
@@ -417,18 +479,18 @@
       }else{
         const selected=messageRects[state.messageChoice];
         ctx.fillStyle='rgba(89,158,255,.16)';
-        roundedRect(410,548,544,58,20,true);
-        strokeRoundRect(410,548,544,58,20,'rgba(127,214,255,.14)',1);
-        text(selected.label,436,584,18,'550','#e2ecff');
+        roundedRect(410,548,544,54,19,true);
+        strokeRoundRect(410,548,544,54,19,'rgba(127,214,255,.14)',1);
+        text(selected.label,436,581,17,'550','#e2ecff');
 
         if(state.messageReplyPending){
           ctx.fillStyle='rgba(255,255,255,.050)';
-          roundedRect(70,620,260,48,18,true);
-          text('Mira is typing'+'.'.repeat(1+Math.floor(state.uiTime*3)%3),92,651,15,'550','#8193ad');
+          roundedRect(70,616,260,40,16,true);
+          text('Mira is typing'+'.'.repeat(1+Math.floor(state.uiTime*3)%3),92,642,14,'550','#8193ad');
         }else if(state.messageReply){
           ctx.fillStyle='rgba(255,255,255,.060)';
-          roundedRect(70,620,630,48,18,true);
-          text(state.messageReply,94,651,16,'550','#d9e2ef');
+          roundedRect(70,616,630,40,16,true);
+          text(state.messageReply,94,642,15,'550','#d9e2ef');
         }
       }
     }
@@ -613,11 +675,21 @@
     }
 
     function drawApp(appId=state.activeApp){
+      const accent=appId==='messages'
+        ? '#7fd6ff'
+        : (appId==='tasks'
+          ? '#9effc4'
+          : (appId==='map' ? '#cdb7ff' : '#ffc98a'));
+
+      appShell(accent);
       drawBack();
+
       if(appId==='messages') drawMessages();
       else if(appId==='tasks') drawTasks();
       else if(appId==='map') drawMap();
       else if(appId==='scanner') drawScanner();
+
+      drawSystemFooter(appId || 'APP');
     }
 
     function easeOutCubic(t){
