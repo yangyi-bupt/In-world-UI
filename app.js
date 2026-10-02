@@ -412,6 +412,28 @@ sidewalk.material.map=pavementTexture;
 sidewalk.material.roughness=.95;
 sidewalk.material.needsUpdate=true;
 
+const curbsidePaving=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.35,88),
+  new THREE.MeshStandardMaterial({color:0xd5d1c6,roughness:.97})
+);
+curbsidePaving.rotation.x=-Math.PI/2;
+curbsidePaving.position.set(1.30,.029,-4);
+curbsidePaving.receiveShadow=true;
+scene.add(curbsidePaving);
+
+const curbsideEdgeMat=new THREE.MeshBasicMaterial({
+  color:0xbab5aa,
+  transparent:true,
+  opacity:.28,
+  depthWrite:false
+});
+[.64,1.96].forEach(x=>{
+  const edge=new THREE.Mesh(new THREE.PlaneGeometry(.018,86),curbsideEdgeMat);
+  edge.rotation.x=-Math.PI/2;
+  edge.position.set(x,.037,-4);
+  scene.add(edge);
+});
+
 const curb=box(.30,.18,92,0xc4beb2,.05,.08,-4,.92);
 const curbCap=box(.09,.035,92,0xe9e3d7,.18,.185,-4,.86);
 
@@ -436,6 +458,20 @@ for(let z=-43;z<=39;z+=3.25){
   joint.position.set(.05,.188,z);
   scene.add(joint);
 }
+
+const curbDrainMat=new THREE.MeshStandardMaterial({color:0x59605e,roughness:.68,metalness:.35});
+[-24,-8,8,24].forEach(z=>{
+  const grate=new THREE.Mesh(new THREE.BoxGeometry(.24,.018,.58),curbDrainMat);
+  grate.position.set(-.18,.034,z);
+  grate.receiveShadow=true;
+  scene.add(grate);
+
+  [-.16,-.05,.06,.17].forEach(dz=>{
+    const slot=new THREE.Mesh(new THREE.BoxGeometry(.14,.012,.025),new THREE.MeshBasicMaterial({color:0x343938}));
+    slot.position.set(-.18,.047,z+dz);
+    scene.add(slot);
+  });
+});
 
 // Fine sidewalk seams add scale without relying on image textures.
 const seamMat=new THREE.MeshBasicMaterial({color:0xbab6ad,transparent:true,opacity:.23,depthWrite:false});
@@ -547,6 +583,23 @@ scene.add(utilityCenter);
 const rightFacade=box(3.4,7.6,66,0xddd5c7,10.15,3.75,-5,.78);
 rightFacade.castShadow=false;
 
+const upperRecess=new THREE.Mesh(
+  new THREE.BoxGeometry(.18,2.10,63.9),
+  new THREE.MeshStandardMaterial({color:0xc9c5bd,roughness:.84})
+);
+upperRecess.position.set(8.47,6.18,-5);
+upperRecess.castShadow=true;
+upperRecess.receiveShadow=true;
+scene.add(upperRecess);
+
+const topCornice=new THREE.Mesh(
+  new THREE.BoxGeometry(.56,.20,65.0),
+  new THREE.MeshStandardMaterial({color:0xe6ded1,roughness:.78})
+);
+topCornice.position.set(8.25,7.42,-5);
+topCornice.castShadow=true;
+scene.add(topCornice);
+
 const facadeBaseBand=new THREE.Mesh(
   new THREE.BoxGeometry(.36,.20,64.8),
   new THREE.MeshStandardMaterial({color:0xd1c6b6,roughness:.90})
@@ -576,6 +629,44 @@ for(let z=-34.6;z<=27.8;z+=7.2){
   rib.receiveShadow=true;
   scene.add(rib);
 }
+
+const balconyStone=new THREE.MeshStandardMaterial({color:0xd8cfc2,roughness:.86});
+const balconyGreenMats=[
+  new THREE.MeshStandardMaterial({color:0x789a70,roughness:.96}),
+  new THREE.MeshStandardMaterial({color:0x93ad80,roughness:.95})
+];
+[-15.2,-.8,13.6].forEach((z,balconyIndex)=>{
+  const slab=new THREE.Mesh(new THREE.BoxGeometry(.82,.10,3.20),balconyStone);
+  slab.position.set(7.95,5.56,z);
+  slab.castShadow=true;
+  slab.receiveShadow=true;
+  scene.add(slab);
+
+  const railMat=new THREE.MeshStandardMaterial({color:0x9aa29e,roughness:.48,metalness:.28});
+  const rail=new THREE.Mesh(new THREE.BoxGeometry(.045,.50,3.05),railMat);
+  rail.position.set(7.58,5.86,z);
+  rail.castShadow=true;
+  scene.add(rail);
+
+  [-1.00,-.50,0,.50,1.00].forEach((oz,i)=>{
+    const planter=new THREE.Mesh(
+      new THREE.BoxGeometry(.28,.20,.38),
+      new THREE.MeshStandardMaterial({color:0xb9aa96,roughness:.92})
+    );
+    planter.position.set(7.72,5.72,z+oz);
+    planter.castShadow=true;
+    scene.add(planter);
+
+    const shrub=new THREE.Mesh(
+      new THREE.SphereGeometry(.13+(i%2)*.018,10,8),
+      balconyGreenMats[(i+balconyIndex)%2]
+    );
+    shrub.scale.set(1.1,.78,.95);
+    shrub.position.set(7.72,5.91,z+oz);
+    shrub.castShadow=true;
+    scene.add(shrub);
+  });
+});
 
 [1.08,3.04,5.02,6.92].forEach((y,i)=>{
   const band=box(
@@ -611,8 +702,10 @@ for(let z=-31;z<=24;z+=7.2){
   const bay=box(.42,5.6,5.35,bayTone,8.64,3.22,z,.66);
   bay.castShadow=false;
 
-  const glass=glassPanel(5.0,4.65,8.41,3.35,z,-Math.PI/2,0xc2d9da);
-  glass.material.opacity=.42;
+  const glassTint=z<-7?0xc6dad8:(z>10?0xd2d5cd:0xc2d9da);
+  const glass=glassPanel(5.0,4.65,8.41,3.35,z,-Math.PI/2,glassTint);
+  glass.material.opacity=z<-7?.39:(z>10?.37:.42);
+  glass.material.roughness=z>10?.33:.29;
 
   // Mullions prevent large glazing bays from reading as flat placeholder planes.
   [-1.62,0,1.62].forEach(offset=>{
@@ -677,6 +770,28 @@ for(let z=-31;z<=24;z+=7.2){
 
   const step=box(.92,.10,3.65,0xcec6b8,7.58,.08,z,.90);
   step.castShadow=true;
+
+  const sconceBase=new THREE.Mesh(
+    new THREE.BoxGeometry(.10,.22,.16),
+    new THREE.MeshStandardMaterial({color:0x777f7b,roughness:.48,metalness:.30})
+  );
+  sconceBase.position.set(7.63,2.34,z-1.54);
+  sconceBase.castShadow=true;
+  scene.add(sconceBase);
+
+  const sconceGlow=new THREE.Mesh(
+    new THREE.PlaneGeometry(.08,.15),
+    new THREE.MeshBasicMaterial({
+      color:0xffe7c7,
+      transparent:true,
+      opacity:.34,
+      toneMapped:false,
+      depthWrite:false
+    })
+  );
+  sconceGlow.position.set(7.575,2.34,z-1.54);
+  sconceGlow.rotation.y=-Math.PI/2;
+  scene.add(sconceGlow);
 });
 
 function createStorePlaque(label,z,bg,fg){
@@ -850,7 +965,7 @@ for(let z=2.95;z<=6.75;z+=1.90){
 
 // Buildings across the road give the boulevard depth but stay light enough for
 // the AI character to remain the visual focus.
-const farBuildingColors=[0xd8dbd7,0xd0d9d9,0xe3ddd4,0xcbd4d4];
+const farBuildingColors=[0xdde0dc,0xd6dddd,0xe6e1d9,0xd2d9d8];
 for(let i=0;i<10;i++){
   const z=-36+i*8.3;
   const h=5.2+(i%4)*1.6;
@@ -1106,6 +1221,23 @@ for(let i=-2;i<=2;i++){
   line.position.set(3.75,.051,-1.55+i*.88);
   scene.add(line);
 }
+
+const pocketAccentMat=new THREE.MeshBasicMaterial({
+  color:0xffffff,
+  transparent:true,
+  opacity:.055,
+  depthWrite:false
+});
+[
+  [2.86,-2.86,.58,.18],
+  [4.58,-.74,.72,.16],
+  [5.18,-2.92,.54,.15]
+].forEach(([x,z,w,d])=>{
+  const accent=new THREE.Mesh(new THREE.PlaneGeometry(w,d),pocketAccentMat);
+  accent.rotation.x=-Math.PI/2;
+  accent.position.set(x,.054,z);
+  scene.add(accent);
+});
 
 const pocketBorderMat=new THREE.MeshStandardMaterial({color:0xb8ad9d,roughness:.90});
 [
