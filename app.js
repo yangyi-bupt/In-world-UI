@@ -603,7 +603,11 @@ const pavementRoughness=makeGroundRoughnessTexture('pavement',0x63b192e7);
 pavementRoughness.repeat.set(5,22);
 
 const facadeSurface=configureTexturePair(makeMaterialTexture('stone',0x51a72d31),1.8,15);
+const limestoneSurface=configureTexturePair(makeMaterialTexture('stone',0x2cb85419),1.35,11.5);
+const sandstoneSurface=configureTexturePair(makeMaterialTexture('stone',0x9a7345c2),2.15,8.4);
 const concreteSurface=configureTexturePair(makeMaterialTexture('concrete',0x327c619b),2.2,5.6);
+const fineConcreteSurface=configureTexturePair(makeMaterialTexture('concrete',0x4ac9d176),3.6,8.2);
+const coarseConcreteSurface=configureTexturePair(makeMaterialTexture('concrete',0x8d31a5f0),1.45,3.8);
 const woodSurface=configureTexturePair(makeMaterialTexture('wood',0x78d0bc53),1.2,5.8);
 const metalSurface=configureTexturePair(makeMaterialTexture('metal',0x1165a2ef),5.5,1.2);
 
@@ -2501,13 +2505,14 @@ facadeBayCenters.forEach((z,bayIndex)=>{
 
 const portalStoneMat=new THREE.MeshStandardMaterial({
   color:0xd8d0c4,
-  roughness:.90,
-  map:facadeSurface.map,
-  roughnessMap:facadeSurface.roughness,
-  normalMap:facadeSurface.normal,
-  normalScale:new THREE.Vector2(.18,.18),
-  bumpMap:facadeSurface.bump,
-  bumpScale:.011
+  roughness:.93,
+  map:limestoneSurface.map,
+  roughnessMap:limestoneSurface.roughness,
+  normalMap:limestoneSurface.normal,
+  normalScale:new THREE.Vector2(.14,.14),
+  bumpMap:limestoneSurface.bump,
+  bumpScale:.008,
+  envMapIntensity:.045
 });
 [
   [-4.55,3.45,0xded6c9],
@@ -3095,9 +3100,14 @@ createWindowDisplay(13.8,'atelier');
 // Ground-floor cafe corner.
 const cafeFrame=box(.48,3.0,8.5,0xb58e70,8.33,1.55,4.8,.86);
 cafeFrame.castShadow=false;
-cafeFrame.material.map=cloneTextureVariant(facadeSurface.map,.36,.18,.82,1.12);
-cafeFrame.material.bumpMap=cloneTextureVariant(facadeSurface.bump,.36,.18,.82,1.12);
-cafeFrame.material.bumpScale=.011;
+cafeFrame.material.map=cloneTextureVariant(sandstoneSurface.map,.36,.18,.92,1.02);
+cafeFrame.material.roughnessMap=cloneTextureVariant(sandstoneSurface.roughness,.36,.18,.92,1.02);
+cafeFrame.material.normalMap=cloneTextureVariant(sandstoneSurface.normal,.36,.18,.92,1.02);
+cafeFrame.material.normalScale.set(.15,.15);
+cafeFrame.material.bumpMap=cloneTextureVariant(sandstoneSurface.bump,.36,.18,.92,1.02);
+cafeFrame.material.bumpScale=.010;
+cafeFrame.material.roughness=.94;
+cafeFrame.material.envMapIntensity=.04;
 cafeFrame.material.needsUpdate=true;
 const cafeGlass=glassPanel(7.75,2.55,8.05,1.62,4.8,-Math.PI/2,0xc3d8d7);
 cafeGlass.material.opacity=.48;
@@ -3173,13 +3183,13 @@ scene.add(cafeThreshold);
 const cafeDoorRevealMat=new THREE.MeshStandardMaterial({
   color:0xb8aa9a,
   roughness:.90,
-  map:concreteSurface.map,
-  roughnessMap:concreteSurface.roughness,
-  normalMap:concreteSurface.normal,
-  normalScale:new THREE.Vector2(.22,.22),
-  bumpMap:concreteSurface.bump,
-  bumpScale:.008,
-  envMapIntensity:.055
+  map:fineConcreteSurface.map,
+  roughnessMap:fineConcreteSurface.roughness,
+  normalMap:fineConcreteSurface.normal,
+  normalScale:new THREE.Vector2(.13,.13),
+  bumpMap:fineConcreteSurface.bump,
+  bumpScale:.006,
+  envMapIntensity:.04
 });
 [1.64,2.76].forEach(z=>{
   const reveal=new THREE.Mesh(new THREE.BoxGeometry(.16,2.48,.08),cafeDoorRevealMat);
@@ -4384,10 +4394,14 @@ const curbGroundcoverMat=makeFoliageMaterial(0x8ea27a,.93,.009,.018);
 ].forEach(([x,z,scale])=>createStreetTree(x,z,scale));
 
 function createPlanter(x,z,w=1.8){
-  const planterBase=box(w,.42,.72,0xbcb09d,x,.22,z,.94);
-  planterBase.material.map=concreteSurface.map;
-  planterBase.material.bumpMap=concreteSurface.bump;
-  planterBase.material.bumpScale=.014;
+  const planterBase=box(w,.42,.72,0xbcb09d,x,.22,z,.97);
+  planterBase.material.map=coarseConcreteSurface.map;
+  planterBase.material.roughnessMap=coarseConcreteSurface.roughness;
+  planterBase.material.normalMap=coarseConcreteSurface.normal;
+  planterBase.material.normalScale.set(.18,.18);
+  planterBase.material.bumpMap=coarseConcreteSurface.bump;
+  planterBase.material.bumpScale=.015;
+  planterBase.material.envMapIntensity=.025;
   planterBase.material.needsUpdate=true;
   const greens=[
     makeFoliageMaterial(0x789d70,.93,.009,.016),
