@@ -656,8 +656,8 @@ function makeMetalEdgeRoughness(seed){
   }
 
   const texture=new THREE.CanvasTexture(canvas);
-  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
-  texture.repeat.set(3.5,3.5);
+  texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+  texture.repeat.set(1,1);
   texture.anisotropy=8;
   return texture;
 }
@@ -781,6 +781,84 @@ function makeMicroBump(seed,repeat=8){
 const vehiclePaintMicroBump=makeMicroBump(0x26a4bd73,10);
 const rubberMicroBump=makeMicroBump(0x9f4c713a,6);
 const fabricMicroBump=makeMicroBump(0xc72e5b91,18);
+
+function makeSubjectRoughnessTexture(kind,seed,repeatX,repeatY){
+  const size=256;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  const base={
+    skin:205,
+    cloth:232,
+    hair:188,
+    carpaint:168
+  }[kind] ?? 220;
+  g.fillStyle='rgb('+base+','+base+','+base+')';
+  g.fillRect(0,0,size,size);
+
+  if(kind==='hair'){
+    for(let x=0;x<size;x++){
+      const wave=Math.sin(x*.38)+Math.sin(x*.081+1.2)*.45;
+      const v=Math.round(188+wave*18);
+      g.fillStyle='rgba('+v+','+v+','+v+',.30)';
+      g.fillRect(x,0,1,size);
+    }
+    for(let i=0;i<160;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const len=8+rnd()*50;
+      const v=158+Math.floor(rnd()*54);
+      g.strokeStyle='rgba('+v+','+v+','+v+','+(.05+rnd()*.11).toFixed(3)+')';
+      g.lineWidth=.35+rnd()*.7;
+      g.beginPath();
+      g.moveTo(x,y);
+      g.lineTo(x+(rnd()-.5)*4,y+len);
+      g.stroke();
+    }
+  }else{
+    const count=kind==='skin'?1500:(kind==='cloth'?2400:1900);
+    for(let i=0;i<count;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const v=kind==='skin'
+        ? 178+Math.floor(rnd()*58)
+        : (kind==='cloth'
+          ? 205+Math.floor(rnd()*48)
+          : 126+Math.floor(rnd()*74));
+      const alpha=kind==='carpaint'?.10+rnd()*.18:.08+rnd()*.16;
+      g.fillStyle='rgba('+v+','+v+','+v+','+alpha.toFixed(3)+')';
+      const rr=.35+rnd()*(kind==='skin'?.8:1.3);
+      g.fillRect(x,y,rr,rr);
+    }
+
+    if(kind==='carpaint'){
+      for(let i=0;i<38;i++){
+        const x=rnd()*size;
+        const y=rnd()*size;
+        const radius=8+rnd()*30;
+        const v=118+Math.floor(rnd()*72);
+        const grad=g.createRadialGradient(x,y,0,x,y,radius);
+        grad.addColorStop(0,'rgba('+v+','+v+','+v+','+(.08+rnd()*.14).toFixed(3)+')');
+        grad.addColorStop(1,'rgba('+v+','+v+','+v+',0)');
+        g.fillStyle=grad;
+        g.fillRect(x-radius,y-radius,radius*2,radius*2);
+      }
+    }
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(repeatX,repeatY);
+  texture.anisotropy=8;
+  return texture;
+}
+
+const skinRoughnessTexture=makeSubjectRoughnessTexture('skin',0x2ac9b817,4,4);
+const clothRoughnessTexture=makeSubjectRoughnessTexture('cloth',0xa416e35b,10,10);
+const hairRoughnessTexture=makeSubjectRoughnessTexture('hair',0x51c82fa0,2.2,7.5);
+const vehiclePaintRoughness=makeSubjectRoughnessTexture('carpaint',0x7ad94b21,6,6);
 
 function makeFabricColorTexture(seed){
   const size=256;
