@@ -15,3 +15,38 @@
   transform-style:preserve-3d;
   backface-visibility:hidden;
 }
+
+
+/* V4.3 optical separation: screen content sits microscopically below the
+   physical glass and the highlight drifts with the 3D hand pose. */
+.tablet{
+  --screen-parallax-x:0px;
+  --screen-parallax-y:0px;
+  --glass-shift-x:0px;
+  --glass-shift-y:0px;
+  --glass-angle:118deg;
+}
+.tablet .screen{
+  transform:
+    translate3d(var(--screen-parallax-x),var(--screen-parallax-y),0)
+    scale(.9992);
+  transition:transform .08s linear;
+}
+.tablet .screen:after{
+  transform:translate3d(var(--glass-shift-x),var(--glass-shift-y),0);
+  background:
+    linear-gradient(
+      var(--glass-angle),
+      rgba(255,255,255,.080) 0%,
+      rgba(255,255,255,.026) 10%,
+      rgba(255,255,255,.008) 20%,
+      transparent 36%,
+      transparent 72%,
+      rgba(164,201,214,.035) 100%
+    );
+  transition:transform .07s linear;
+}
+.tablet .screen:before{
+  transform:translate3d(calc(var(--glass-shift-x) * -.35),calc(var(--glass-shift-y) * -.35),0);
+  transition:transform .09s linear;
+}
