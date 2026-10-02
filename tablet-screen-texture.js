@@ -342,79 +342,150 @@
     }
 
     function drawHome(){
-      text('WORLD DECK',62,132,12,'800','#7fd6ff');
-      text('NOVA PAD',62,177,45,'700','#f7f9fd');
-      text('Everything in reach, nothing in the way.',64,207,16,'500','#71819b');
+      // Flagship home: one calm world-status surface above a compact app deck.
+      // The hierarchy is intentionally OS-like rather than a grid of web cards.
+      ctx.fillStyle='rgba(7,11,18,.62)';
+      roundedRect(52,112,920,136,32,true);
+      strokeRoundRect(52,112,920,136,32,'rgba(255,255,255,.060)',1);
 
-      pill('WORLD ONLINE',793,137,'rgba(127,214,255,.075)','#aee6ff');
+      const heroGlow=ctx.createRadialGradient(860,174,10,860,174,210);
+      heroGlow.addColorStop(0,'rgba(127,214,255,.11)');
+      heroGlow.addColorStop(.52,'rgba(95,120,255,.035)');
+      heroGlow.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=heroGlow;
+      roundedRect(53,113,918,134,31,true);
+
+      text('WORLD 01',76,144,11,'800','#7fd6ff');
+      text('NOVA PAD',76,187,37,'720','#f7f9fd');
+      text('Spatial console · all systems nominal',78,214,14,'520','#75869f');
+
+      // Right-side world telemetry gives the home screen a distinctive
+      // "device dashboard" identity without adding another fake navigation bar.
+      const orbitX=840;
+      const orbitY=178;
+      const phase=state.uiTime*.42;
+
+      ctx.strokeStyle='rgba(127,214,255,.12)';
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.arc(orbitX,orbitY,50,0,Math.PI*2);
+      ctx.stroke();
+
+      ctx.strokeStyle='rgba(205,183,255,.10)';
+      ctx.beginPath();
+      ctx.arc(orbitX,orbitY,36,0,Math.PI*2);
+      ctx.stroke();
+
+      const dotX=orbitX+Math.cos(phase)*50;
+      const dotY=orbitY+Math.sin(phase)*50;
+      ctx.fillStyle='#7fd6ff';
+      ctx.beginPath();
+      ctx.arc(dotX,dotY,3.2,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle='rgba(127,214,255,.08)';
+      ctx.beginPath();
+      ctx.arc(orbitX,orbitY,20,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle='rgba(127,214,255,.20)';
+      ctx.beginPath();
+      ctx.arc(orbitX,orbitY,20,0,Math.PI*2);
+      ctx.stroke();
+      text('01',orbitX-9,orbitY+5,13,'800','#bdeaff');
+
+      text('LINK',906,154,10,'800','#5e718c');
+      text('98%',906,174,16,'720','#dce9f7');
+      text('ROOM',906,201,10,'800','#5e718c');
+      text('LIVE',906,221,16,'720','#9effc4');
+
+      text('APPLICATION DECK',62,280,11,'800','#60718a');
+      text('04 modules',854,280,11,'650','#55667d');
 
       appRects.length=0;
       apps.forEach((app,i)=>{
         const col=i%2;
         const row=Math.floor(i/2);
         const x=62+col*480;
-        const y=236+row*172;
-        const rect={...app,x,y,w:420,h:148,key:'app:'+app.id,type:'app'};
+        const y=298+row*146;
+        const rect={...app,x,y,w:420,h:126,key:'app:'+app.id,type:'app'};
         appRects.push(rect);
 
         const hovered=isHover(rect.key);
         const pressed=isPressed(rect.key);
-        const yLift=pressed?2:(hovered?-3:0);
+        const yLift=pressed?1:(hovered?-2:0);
 
         ctx.save();
         ctx.translate(0,yLift);
 
-        // Dark glass tile with restrained accent bloom.
         if(hovered){
-          ctx.shadowColor='rgba('+app.rgb+',.16)';
-          ctx.shadowBlur=28;
-          ctx.shadowOffsetY=10;
+          ctx.shadowColor='rgba('+app.rgb+',.15)';
+          ctx.shadowBlur=24;
+          ctx.shadowOffsetY=8;
         }
-        ctx.fillStyle=hovered?'rgba(15,22,34,.92)':'rgba(11,16,25,.84)';
-        roundedRect(x,y,420,148,30,true);
+
+        const surface=ctx.createLinearGradient(x,y,x+420,y+126);
+        surface.addColorStop(0,hovered?'rgba(18,26,39,.94)':'rgba(11,17,26,.88)');
+        surface.addColorStop(1,hovered?'rgba(11,18,29,.96)':'rgba(8,13,22,.90)');
+        ctx.fillStyle=surface;
+        roundedRect(x,y,420,126,28,true);
+
         ctx.shadowColor='transparent';
         ctx.shadowBlur=0;
         ctx.shadowOffsetY=0;
+
         strokeRoundRect(
-          x,y,420,148,30,
-          hovered?'rgba('+app.rgb+',.30)':'rgba(255,255,255,.075)',
-          hovered?1.4:1
+          x,y,420,126,28,
+          hovered?'rgba('+app.rgb+',.28)':'rgba(255,255,255,.065)',
+          hovered?1.3:1
         );
 
-        const bloom=ctx.createRadialGradient(x+72,y+64,4,x+72,y+64,118);
-        bloom.addColorStop(0,'rgba('+app.rgb+','+(hovered?'.18':'.10')+')');
-        bloom.addColorStop(.55,'rgba('+app.rgb+',.035)');
-        bloom.addColorStop(1,'rgba('+app.rgb+',0)');
-        ctx.fillStyle=bloom;
-        roundedRect(x+1,y+1,418,146,29,true);
+        // Restrained accent wash lives behind the icon rather than across text.
+        const glow=ctx.createRadialGradient(x+62,y+55,2,x+62,y+55,105);
+        glow.addColorStop(0,'rgba('+app.rgb+','+(hovered?'.17':'.095')+')');
+        glow.addColorStop(.55,'rgba('+app.rgb+',.025)');
+        glow.addColorStop(1,'rgba('+app.rgb+',0)');
+        ctx.fillStyle=glow;
+        roundedRect(x+1,y+1,418,124,27,true);
 
-        // Icon puck.
-        ctx.fillStyle='rgba('+app.rgb+','+(hovered?'.17':'.11')+')';
-        roundedRect(x+22,y+24,76,76,22,true);
-        strokeRoundRect(x+22,y+24,76,76,22,'rgba('+app.rgb+','+(hovered?'.34':'.19')+')',1);
-        appIcon(app.id,x+60,y+62,42,app.accent);
+        ctx.fillStyle='rgba('+app.rgb+','+(hovered?'.16':'.10')+')';
+        roundedRect(x+20,y+20,70,70,20,true);
+        strokeRoundRect(x+20,y+20,70,70,20,'rgba('+app.rgb+','+(hovered?'.30':'.17')+')',1);
+        appIcon(app.id,x+55,y+55,38,app.accent);
 
-        text(app.label,x+120,y+55,26,'680','#f4f7fc');
-        text(app.short,x+120,y+80,14,'520','#75869f');
+        text(app.label,x+112,y+49,23,'690','#f4f7fc');
+        text(app.short,x+112,y+72,13,'520','#72829a');
 
-        // Tiny system metadata makes the cards feel like OS surfaces rather than web CTA cards.
-        text('0'+(i+1),x+24,y+127,11,'800','rgba('+app.rgb+',.72)');
-        ctx.fillStyle='rgba(255,255,255,.06)';
-        roundedRect(x+49,y+120,190,1,1,true);
-        ctx.fillStyle='rgba('+app.rgb+','+(hovered?'.70':'.42')+')';
-        roundedRect(x+49,y+120,hovered?92:54,1,1,true);
-
+        // System state on every tile makes the deck feel coherent and alive.
+        ctx.fillStyle='rgba(255,255,255,.035)';
+        roundedRect(x+112,y+88,88,22,11,true);
+        ctx.fillStyle=app.accent;
         ctx.beginPath();
-        ctx.strokeStyle=hovered?app.accent:'#58677c';
-        ctx.lineWidth=1.7;
-        ctx.arc(x+385,y+34,12,0,Math.PI*2);
+        ctx.arc(x+126,y+99,2.8,0,Math.PI*2);
+        ctx.fill();
+        text('READY',x+136,y+103,9,'800','#7e8fa7');
+
+        text('0'+(i+1),x+24,y+111,10,'800','rgba('+app.rgb+',.60)');
+
+        ctx.strokeStyle=hovered?app.accent:'#4e5e73';
+        ctx.lineWidth=1.4;
+        ctx.beginPath();
+        ctx.arc(x+386,y+34,11,0,Math.PI*2);
         ctx.stroke();
-        text('›',x+381,y+40,17,'650',hovered?app.accent:'#6a7890');
+        text('›',x+382,y+39,15,'700',hovered?app.accent:'#617087');
+
+        // Short activity trace animates subtly on the hovered module.
+        ctx.fillStyle='rgba(255,255,255,.045)';
+        roundedRect(x+228,y+98,122,2,1,true);
+        const trace=hovered
+          ? 72+Math.sin(state.uiTime*4+i)*18
+          : 34+i*8;
+        ctx.fillStyle='rgba('+app.rgb+','+(hovered?'.65':'.32')+')';
+        roundedRect(x+228,y+98,trace,2,1,true);
 
         if(app.id==='messages' && state.messageUnread){
           ctx.fillStyle='#ff9faf';
           ctx.beginPath();
-          ctx.arc(x+385,y+112,6,0,Math.PI*2);
+          ctx.arc(x+385,y+99,5.5,0,Math.PI*2);
           ctx.fill();
         }
 
