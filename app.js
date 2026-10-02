@@ -2368,6 +2368,13 @@ let worldCoreAssetsReady=false;
 let miraGLBRoot=null;
 let miraGLBBasePosition=null;
 let miraIdleAction=null;
+const miraBones={head:null,neck:null,chest:null,rightArm:null,rightForeArm:null};
+const miraBoneRestQuaternions=new Map();
+let miraGreetingUntil=0;
+let miraGreetingCooldownUntil=0;
+let miraNearLatch=false;
+const miraBoneOffsetQuaternion=new THREE.Quaternion();
+const miraBoneOffsetEuler=new THREE.Euler(0,0,0,'YXZ');
 let worldEnvironmentTexture=null;
 
 function ensureWorldAssetEnvironment(){
@@ -2574,6 +2581,62 @@ function tuneMiraAsset(root){
   });
 }
 
+function captureMiraBones(root){
+  const boneCandidates={chest:[]};
+
+  root.traverse(object=>{
+    if(!object.isBone) return;
+    const key=(object.name||'').toLowerCase();
+
+    if(!miraBones.head && /head/.test(key)) miraBones.head=object;
+    if(!miraBones.neck && /neck/.test(key)) miraBones.neck=object;
+
+    if(/upperchest|chest|spine2|spine_02|spine02/.test(key)){
+      boneCandidates.chest.push(object);
+    }
+
+    if(
+      !miraBones.rightForeArm &&
+      /rightforearm|rightlowerarm|forearm_r|lowerarm_r|r_forearm/.test(key)
+    ){
+      miraBones.rightForeArm=object;
+    }
+
+    if(
+      !miraBones.rightArm &&
+      /rightarm|rightupperarm|upperarm_r|arm_r|r_upperarm/.test(key) &&
+      !/forearm|lowerarm/.test(key)
+    ){
+      miraBones.rightArm=object;
+    }
+  });
+
+  if(boneCandidates.chest.length){
+    miraBones.chest=boneCandidates.chest[boneCandidates.chest.length-1];
+  }
+
+  Object.values(miraBones).forEach(bone=>{
+    if(bone && !miraBoneRestQuaternions.has(bone)){
+      miraBoneRestQuaternions.set(bone,bone.quaternion.clone());
+    }
+  });
+}
+
+function applyMiraBoneOffset(bone,pitch=0,yaw=0,roll=0){
+  if(!bone) return;
+
+  // When no authored idle clip exists, restore the captured bind/rest pose
+  // before adding our subtle procedural offset so transforms cannot accumulate.
+  if(!miraIdleAction){
+    const rest=miraBoneRestQuaternions.get(bone);
+    if(rest) bone.quaternion.copy(rest);
+  }
+
+  miraBoneOffsetEuler.set(pitch,yaw,roll,'YXZ');
+  miraBoneOffsetQuaternion.setFromEuler(miraBoneOffsetEuler);
+  bone.quaternion.multiply(miraBoneOffsetQuaternion);
+}
+
 function loadGLB(loader,url){
   return new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
 }
@@ -2674,6 +2737,7 @@ function attachMiraAsset(source,animations){
   mira.add(root);
   miraGLBRoot=root;
   miraGLBBasePosition=root.position.clone();
+  captureMiraBones(root);
   if(!mira.userData.glbContactShadow){
     mira.userData.glbContactShadow=createAttachedContactShadow(mira,.68,.48,.082);
   }
@@ -3112,14 +3176,23 @@ function animate(){
     miraBaseYaw-.24,
     miraBaseYaw+.22
   );
-  const replyAttention=Math.max(0,Math.min(1,(miraReplyMotionUntil-performance.now())/850));
+  const nowMs=performance.now();
+  const replyAttention=Math.max(0,Math.min(1,(miraReplyMotionUntil-nowMs)/850));
   const distanceAttention=1-THREE.MathUtils.smoothstep(miraDistance,3.2,11.5);
   const attentionDrift=.90+Math.sin(t*.23+1.4)*.07;
   const miraAttention=THREE.MathUtils.clamp(
     distanceAttention*attentionDrift+replyAttention*.28,
     0,1
   );
-  const miraYawTarget=THREE.MathUtils.lerp(miraBaseYaw,miraLookYaw,miraAttention);
+
+  // When the player is far away, Mira remains part of the world: she gives the
+  // café/street occasional attention instead of freezing on one heading.
+  const ambientBodyLook=(
+    Math.sin(t*.115+.7)*.034+
+    Math.sin(t*.043+2.2)*.020
+  )*(1-miraAttention);
+  const miraYawTarget=
+    THREE.MathUtils.lerp(miraBaseYaw,miraLookYaw,miraAttention)+ambientBodyLook;
   mira.rotation.y=THREE.MathUtils.lerp(
     mira.rotation.y,
     miraYawTarget,
@@ -3142,6 +3215,64 @@ function animate(){
     miraGLBRoot.position.z=miraGLBBasePosition.z+Math.sin(t*.29+1.1)*.0018;
     miraGLBRoot.rotation.z=weightShift*.0024;
     miraGLBRoot.rotation.x=Math.sin(t*.31)*.0014;
+
+    // One restrained acknowledgement per approach. It only re-arms after the
+    // player has stepped away, so standing nearby never loops a greeting.
+    if(
+      started &&
+      !tabletOpen &&
+      miraDistance<4.0 &&
+      !miraNearLatch &&
+      nowMs>miraGreetingCooldownUntil
+    ){
+      miraGreetingUntil=nowMs+1550;
+      miraGreetingCooldownUntil=nowMs+15000;
+      miraNearLatch=true;
+    }
+    if(miraDistance>5.6) miraNearLatch=false;
+
+    const greetingRemaining=Math.max(0,miraGreetingUntil-nowMs);
+    const greetingProgress=greetingRemaining>0
+      ? THREE.MathUtils.clamp(1-greetingRemaining/1550,0,1)
+      : 1;
+    const greetingEnvelope=greetingRemaining>0
+      ? Math.sin(Math.PI*greetingProgress)
+      : 0;
+
+    // Bone offsets are applied after AnimationMixer.update(), so authored idle
+    // motion remains intact. The head has more freedom than the torso.
+    const relativePlayerYaw=THREE.MathUtils.clamp(miraLookYaw-mira.rotation.y,-.15,.15);
+    const ambientHeadYaw=(
+      Math.sin(t*.19+1.8)*.055+
+      Math.sin(t*.071+.2)*.030
+    )*(1-miraAttention);
+    const headYaw=relativePlayerYaw*miraAttention*.68+ambientHeadYaw;
+    const headPitch=
+      Math.sin(t*.16+.9)*.012*(1-miraAttention)-
+      greetingEnvelope*.045+
+      replyAttention*.018;
+    const neckYaw=headYaw*.34;
+    const chestYaw=headYaw*.12;
+    const chestRoll=weightShift*.0035-greetingEnvelope*.006;
+
+    applyMiraBoneOffset(miraBones.chest,0,chestYaw,chestRoll);
+    applyMiraBoneOffset(miraBones.neck,headPitch*.24,neckYaw,0);
+    applyMiraBoneOffset(miraBones.head,headPitch,headYaw,Math.sin(t*.21)*.003);
+
+    // The greeting reads as a small shoulder/forearm acknowledgement rather
+    // than a full waving animation.
+    applyMiraBoneOffset(
+      miraBones.rightArm,
+      greetingEnvelope*.055,
+      -greetingEnvelope*.025,
+      -greetingEnvelope*.085
+    );
+    applyMiraBoneOffset(
+      miraBones.rightForeArm,
+      -greetingEnvelope*.16,
+      0,
+      greetingEnvelope*.025
+    );
 
     const shadow=mira.userData.glbContactShadow;
     if(shadow){
