@@ -2188,6 +2188,69 @@ function makeMacroPatinaTexture(kind,seed){
   return {map,roughness};
 }
 
+function makeRoadDustTexture(seed){
+  const size=512;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+  g.clearRect(0,0,size,size);
+
+  // Dust accumulates mostly near the road edges and gutter, with a little
+  // wind-blown material crossing the lane.
+  const edgeLeft=g.createLinearGradient(0,0,150,0);
+  edgeLeft.addColorStop(0,'rgba(202,188,161,.15)');
+  edgeLeft.addColorStop(.36,'rgba(202,188,161,.05)');
+  edgeLeft.addColorStop(1,'rgba(202,188,161,0)');
+  g.fillStyle=edgeLeft;
+  g.fillRect(0,0,170,size);
+
+  const edgeRight=g.createLinearGradient(size,0,size-150,0);
+  edgeRight.addColorStop(0,'rgba(196,184,160,.10)');
+  edgeRight.addColorStop(.40,'rgba(196,184,160,.035)');
+  edgeRight.addColorStop(1,'rgba(196,184,160,0)');
+  g.fillStyle=edgeRight;
+  g.fillRect(size-170,0,170,size);
+
+  for(let i=0;i<420;i++){
+    const nearEdge=rnd()>.34;
+    const x=nearEdge
+      ? (rnd()>.5 ? rnd()*130 : size-rnd()*130)
+      : rnd()*size;
+    const y=rnd()*size;
+    const rr=.25+rnd()*1.15;
+    g.fillStyle='rgba(214,198,168,'+(.018+rnd()*.040).toFixed(3)+')';
+    g.beginPath();
+    g.arc(x,y,rr,0,Math.PI*2);
+    g.fill();
+  }
+
+  for(let i=0;i<28;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const len=18+rnd()*72;
+    g.strokeStyle='rgba(198,184,157,'+(.012+rnd()*.022).toFixed(3)+')';
+    g.lineWidth=.5+rnd()*1.1;
+    g.beginPath();
+    g.moveTo(x,y);
+    g.bezierCurveTo(
+      x+len*.32,y+(rnd()-.5)*8,
+      x+len*.70,y+(rnd()-.5)*12,
+      x+len,y+(rnd()-.5)*7
+    );
+    g.stroke();
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(1.15,4.4);
+  texture.anisotropy=8;
+  return texture;
+}
+
+const roadDustTexture=makeRoadDustTexture(0x4d17ac92);
+
 function makeWoodEndGrainTexture(seed){
   const size=256;
   const canvas=document.createElement('canvas');
@@ -2354,6 +2417,41 @@ function makeGlassEdgeDirtTexture(){
 }
 const glassEdgeDirtTexture=makeGlassEdgeDirtTexture();
 
+function makeGlassEdgeSheenTexture(){
+  const canvas=document.createElement('canvas');
+  canvas.width=256;
+  canvas.height=512;
+  const g=canvas.getContext('2d');
+  g.clearRect(0,0,256,512);
+
+  const left=g.createLinearGradient(0,0,34,0);
+  left.addColorStop(0,'rgba(218,240,244,.22)');
+  left.addColorStop(.32,'rgba(198,225,230,.07)');
+  left.addColorStop(1,'rgba(198,225,230,0)');
+  g.fillStyle=left;
+  g.fillRect(0,0,42,512);
+
+  const right=g.createLinearGradient(256,0,222,0);
+  right.addColorStop(0,'rgba(218,240,244,.18)');
+  right.addColorStop(.32,'rgba(198,225,230,.06)');
+  right.addColorStop(1,'rgba(198,225,230,0)');
+  g.fillStyle=right;
+  g.fillRect(214,0,42,512);
+
+  const top=g.createLinearGradient(0,0,0,30);
+  top.addColorStop(0,'rgba(237,247,246,.12)');
+  top.addColorStop(1,'rgba(237,247,246,0)');
+  g.fillStyle=top;
+  g.fillRect(0,0,256,36);
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+  texture.anisotropy=8;
+  return texture;
+}
+const glassEdgeSheenTexture=makeGlassEdgeSheenTexture();
+
 function addGlassEdgeDirt(w,h,x,y,z,ry=-Math.PI/2,opacity=.42){
   const overlay=new THREE.Mesh(
     new THREE.PlaneGeometry(w,h),
@@ -2370,6 +2468,24 @@ function addGlassEdgeDirt(w,h,x,y,z,ry=-Math.PI/2,opacity=.42){
   overlay.rotation.y=ry;
   overlay.renderOrder=3;
   scene.add(overlay);
+
+  const edgeSheen=new THREE.Mesh(
+    new THREE.PlaneGeometry(w*.996,h*.996),
+    new THREE.MeshBasicMaterial({
+      map:glassEdgeSheenTexture,
+      transparent:true,
+      opacity:.22,
+      depthWrite:false,
+      toneMapped:false,
+      side:THREE.DoubleSide,
+      blending:THREE.NormalBlending
+    })
+  );
+  edgeSheen.position.set(x-.009,y,z);
+  edgeSheen.rotation.y=ry;
+  edgeSheen.renderOrder=2;
+  scene.add(edgeSheen);
+
   return overlay;
 }
 
@@ -2789,6 +2905,21 @@ roadOilLayer.rotation.x=-Math.PI/2;
 roadOilLayer.position.set(-6.72,.030,-4);
 roadOilLayer.renderOrder=2;
 scene.add(roadOilLayer);
+
+const roadDustLayer=new THREE.Mesh(
+  new THREE.PlaneGeometry(13.35,85.2),
+  new THREE.MeshBasicMaterial({
+    map:roadDustTexture,
+    transparent:true,
+    opacity:.72,
+    depthWrite:false,
+    toneMapped:false
+  })
+);
+roadDustLayer.rotation.x=-Math.PI/2;
+roadDustLayer.position.set(-6.62,.031,-4);
+roadDustLayer.renderOrder=3;
+scene.add(roadDustLayer);
 
 const pavementPatinaMat=new THREE.MeshStandardMaterial({
   color:0xffffff,
