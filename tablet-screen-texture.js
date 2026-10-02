@@ -378,91 +378,114 @@
 
     function drawMessages(){
       if(state.actionPulse>0){
-        ctx.fillStyle='rgba(143,197,255,'+(state.actionPulse*.045).toFixed(3)+')';
-        roundedRect(52,204,920,430,30,true);
+        ctx.fillStyle='rgba(127,214,255,'+(state.actionPulse*.035).toFixed(3)+')';
+        roundedRect(48,204,928,438,30,true);
       }
       appHeader('Messages','Mira · online','#7fd6ff');
 
-      ctx.fillStyle='rgba(255,255,255,.10)';
-      roundedRect(70,295,610,70,24,true);
-      text('Welcome back. Your world is ready.',96,338,22,'normal');
+      ctx.fillStyle='rgba(127,214,255,.09)';
+      roundedRect(70,306,44,44,22,true);
+      strokeRoundRect(70,306,44,44,22,'rgba(127,214,255,.22)',1);
+      text('M',84,335,18,'750','#aee8ff');
+      text('Mira',128,323,14,'700','#dfe8f6');
+      text('just now',128,344,12,'500','#65758f');
 
-      ctx.fillStyle='rgba(111,167,255,.22)';
-      roundedRect(344,385,610,70,24,true);
-      text('I am checking the room now.',372,428,22,'normal','#dceaff');
+      const incoming=ctx.createLinearGradient(70,366,610,430);
+      incoming.addColorStop(0,'rgba(255,255,255,.085)');
+      incoming.addColorStop(1,'rgba(255,255,255,.035)');
+      ctx.fillStyle=incoming;
+      roundedRect(70,366,590,68,24,true);
+      strokeRoundRect(70,366,590,68,24,'rgba(255,255,255,.075)',1);
+      text('Welcome back. Your world is ready.',96,407,20,'550','#eaf0f9');
+
+      const outgoing=ctx.createLinearGradient(364,448,954,516);
+      outgoing.addColorStop(0,'rgba(89,158,255,.20)');
+      outgoing.addColorStop(1,'rgba(89,158,255,.08)');
+      ctx.fillStyle=outgoing;
+      roundedRect(364,448,590,68,24,true);
+      strokeRoundRect(364,448,590,68,24,'rgba(127,214,255,.17)',1);
+      text('I am checking the room now.',390,489,20,'550','#dceaff');
 
       if(state.messageChoice===null){
-        text('QUICK REPLY',72,490,15,'bold','#738aa9');
-        messageRects.forEach(rect=>{
-          card(rect.x,rect.y,rect.w,rect.h,20,rect.key,'rgba(255,255,255,.075)');
-          text(rect.label,rect.x+24,rect.y+36,19,'bold',isHover(rect.key)?'#e9f5ff':'#b9d9ff');
+        text('QUICK REPLY',72,556,12,'750','#667995');
+        messageRects.forEach((rect,i)=>{
+          const selected=isHover(rect.key)||isPressed(rect.key);
+          card(rect.x,rect.y,rect.w,rect.h,18,rect.key,'rgba(255,255,255,.045)');
+          text(rect.label,rect.x+22,rect.y+35,17,'600',selected?'#eef8ff':'#b7c5d9');
+          text('↗',rect.x+rect.w-38,rect.y+35,16,'600',selected?'#7fd6ff':'#596980');
         });
-        text('Tap a reply to continue the conversation',72,600,16,'normal','#657a98');
       }else{
         const selected=messageRects[state.messageChoice];
-        ctx.fillStyle='rgba(111,167,255,.24)';
-        roundedRect(420,485,534,62,22,true);
-        text(selected.label,448,523,20,'normal','#e2ecff');
+        ctx.fillStyle='rgba(89,158,255,.16)';
+        roundedRect(410,548,544,58,20,true);
+        strokeRoundRect(410,548,544,58,20,'rgba(127,214,255,.14)',1);
+        text(selected.label,436,584,18,'550','#e2ecff');
 
         if(state.messageReplyPending){
-          ctx.fillStyle='rgba(255,255,255,.075)';
-          roundedRect(70,570,250,58,22,true);
-          const dots='.'.repeat(1+Math.floor(state.uiTime*3)%3);
-          text('Mira is typing'+dots,94,606,18,'normal','#8ca4c8');
+          ctx.fillStyle='rgba(255,255,255,.050)';
+          roundedRect(70,620,260,48,18,true);
+          text('Mira is typing'+'.'.repeat(1+Math.floor(state.uiTime*3)%3),92,651,15,'550','#8193ad');
         }else if(state.messageReply){
-          ctx.fillStyle='rgba(255,255,255,.10)';
-          roundedRect(70,570,660,62,22,true);
-          text(state.messageReply,96,608,20,'normal');
+          ctx.fillStyle='rgba(255,255,255,.060)';
+          roundedRect(70,620,630,48,18,true);
+          text(state.messageReply,94,651,16,'550','#d9e2ef');
         }
       }
     }
 
     function drawTasks(){
       if(state.actionPulse>0){
-        ctx.fillStyle='rgba(143,197,255,'+(state.actionPulse*.045).toFixed(3)+')';
-        roundedRect(52,204,920,430,30,true);
+        ctx.fillStyle='rgba(158,255,196,'+(state.actionPulse*.032).toFixed(3)+')';
+        roundedRect(48,204,928,438,30,true);
       }
-      appHeader('Tasks','Tap an item to update it','#9effc4');
+      appHeader('Tasks','Today · focused mode','#9effc4');
+
+      const doneCount=state.completedTasks.filter(Boolean).length;
+      ctx.fillStyle='rgba(158,255,196,.055)';
+      roundedRect(70,304,884,64,22,true);
+      strokeRoundRect(70,304,884,64,22,'rgba(158,255,196,.11)',1);
+      text(doneCount+' / 3',94,337,24,'720','#dcffe9');
+      text('completed',160,337,13,'650','#708a7b');
+      ctx.fillStyle='rgba(255,255,255,.055)';
+      roundedRect(300,331,620,6,3,true);
+      ctx.fillStyle='#9effc4';
+      roundedRect(300,331,Math.max(10,620*(doneCount/3)),6,3,true);
 
       const rows=[
-        ['Explore the room','ACTIVE'],
-        ['Talk with Mira','NEXT'],
-        ['Inspect the window','OPTIONAL']
+        ['Explore the room','ACTIVE','#7fd6ff'],
+        ['Talk with Mira','NEXT','#9effc4'],
+        ['Inspect the window','OPTIONAL','#cdb7ff']
       ];
 
       taskRects.length=0;
       rows.forEach((row,i)=>{
-        const y=300+i*105;
+        const y=390+i*82;
         const key='task:'+i;
-        const rect={x:70,y,w:884,h:80,key,type:'task',index:i};
+        const rect={x:70,y,w:884,h:64,key,type:'task',index:i};
         taskRects.push(rect);
 
-        card(70,y,884,80,22,key,'rgba(255,255,255,.08)');
-
         const done=state.completedTasks[i];
-        ctx.lineWidth=3;
-        if(done){
-          ctx.fillStyle='#b8ffd6';
-          ctx.beginPath();
-          ctx.arc(110,y+40,16,0,Math.PI*2);
-          ctx.fill();
-          text('✓',101,y+48,22,'bold','#173222');
-        }else{
-          ctx.strokeStyle='rgba(143,197,255,.55)';
-          ctx.beginPath();
-          ctx.arc(110,y+40,15,0,Math.PI*2);
-          ctx.stroke();
-        }
+        card(70,y,884,64,20,key,done?'rgba(158,255,196,.035)':'rgba(255,255,255,.045)');
 
-        text(row[0],150,y+49,25,done?'normal':'bold',done?'#7f8d99':'#fff');
-        text(done?'DONE':row[1],800,y+47,16,'bold',done?'#8be9b4':'#8fc5ff');
+        ctx.fillStyle=done?'#9effc4':'rgba(255,255,255,.035)';
+        ctx.beginPath();
+        ctx.arc(105,y+32,13,0,Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle=done?'rgba(158,255,196,.55)':'rgba(145,165,194,.45)';
+        ctx.lineWidth=1.5;
+        ctx.stroke();
+
+        if(done) text('✓',98,y+38,16,'800','#10251a');
+
+        text(row[0],136,y+39,19,done?'550':'650',done?'#75857f':'#e9eef7');
+        pill(790,y+18,132,28,done?'DONE':row[1],done?'#9effc4':row[2],done);
 
         if(done){
-          ctx.strokeStyle='rgba(139,233,180,.42)';
-          ctx.lineWidth=2;
+          ctx.strokeStyle='rgba(158,255,196,.18)';
+          ctx.lineWidth=1.5;
           ctx.beginPath();
-          ctx.moveTo(150,y+41);
-          ctx.lineTo(520,y+41);
+          ctx.moveTo(136,y+32);
+          ctx.lineTo(360,y+32);
           ctx.stroke();
         }
       });
@@ -470,94 +493,123 @@
 
     function drawMap(){
       if(state.actionPulse>0){
-        ctx.fillStyle='rgba(143,197,255,'+(state.actionPulse*.04).toFixed(3)+')';
-        roundedRect(52,204,920,430,30,true);
+        ctx.fillStyle='rgba(205,183,255,'+(state.actionPulse*.028).toFixed(3)+')';
+        roundedRect(48,204,928,438,30,true);
       }
-      appHeader('Map','Apartment Zone · Level 01','#cdb7ff');
+      appHeader('Map','Apartment · Level 01','#cdb7ff');
 
-      ctx.strokeStyle='rgba(255,255,255,.20)';
-      ctx.lineWidth=3;
-      ctx.strokeRect(90,300,530,270);
-      ctx.strokeRect(620,300,300,130);
-      ctx.strokeRect(620,430,145,140);
-      ctx.strokeRect(765,430,155,140);
+      ctx.fillStyle='rgba(255,255,255,.030)';
+      roundedRect(70,306,884,316,28,true);
+      strokeRoundRect(70,306,884,316,28,'rgba(255,255,255,.07)',1);
 
-      text('LIVING',260,330,14,'bold','rgba(255,255,255,.34)');
-      text('STUDY',710,330,14,'bold','rgba(255,255,255,.34)');
+      ctx.fillStyle='rgba(205,183,255,.035)';
+      roundedRect(94,330,512,250,24,true);
+      ctx.fillStyle='rgba(127,214,255,.030)';
+      roundedRect(622,330,306,112,22,true);
+      roundedRect(622,458,144,122,22,true);
+      roundedRect(784,458,144,122,22,true);
 
-      const youPulse=4+Math.sin(state.uiTime*3.1)*2;
-      ctx.strokeStyle='rgba(141,229,255,.26)';
-      ctx.lineWidth=2;
-      ctx.beginPath();ctx.arc(350,500,18+youPulse,0,Math.PI*2);ctx.stroke();
+      ctx.strokeStyle='rgba(214,222,241,.15)';
+      ctx.lineWidth=1.4;
+      ctx.strokeRect(94,330,512,250);
+      ctx.strokeRect(622,330,306,112);
+      ctx.strokeRect(622,458,144,122);
+      ctx.strokeRect(784,458,144,122);
+
+      text('LIVING',118,357,11,'750','#62718b');
+      text('STUDY',646,357,11,'750','#62718b');
+      text('ENTRY',646,484,11,'750','#62718b');
+      text('WINDOW',808,484,11,'750','#62718b');
+
+      const youPulse=5+Math.sin(state.uiTime*3.1)*2;
+      ctx.strokeStyle='rgba(141,229,255,.22)';
+      ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.arc(342,516,18+youPulse,0,Math.PI*2);ctx.stroke();
       ctx.fillStyle='#8de5ff';
-      ctx.beginPath();ctx.arc(350,500,12,0,Math.PI*2);ctx.fill();
-      text('YOU',375,508,18,'bold','#8de5ff');
+      ctx.beginPath();ctx.arc(342,516,9,0,Math.PI*2);ctx.fill();
+      text('YOU',364,522,13,'750','#9ae9ff');
 
-      const miraPulse=3+Math.sin(state.uiTime*2.6+1.2)*1.5;
-      ctx.strokeStyle='rgba(255,159,175,.20)';
-      ctx.beginPath();ctx.arc(500,365,18+miraPulse,0,Math.PI*2);ctx.stroke();
+      const miraPulse=4+Math.sin(state.uiTime*2.6+1.2)*1.5;
+      ctx.strokeStyle='rgba(255,159,175,.18)';
+      ctx.beginPath();ctx.arc(500,366,18+miraPulse,0,Math.PI*2);ctx.stroke();
       ctx.fillStyle='#ff9faf';
-      ctx.beginPath();ctx.arc(500,365,12,0,Math.PI*2);ctx.fill();
-      text('MIRA',525,373,18,'bold','#ffb1bd');
+      ctx.beginPath();ctx.arc(500,366,9,0,Math.PI*2);ctx.fill();
+      text('MIRA',522,372,13,'750','#ffb5c0');
 
       if(state.mapFocus==='mira'){
-        ctx.fillStyle='rgba(255,159,175,.10)';
-        roundedRect(620,590,300,62,20,true);
-        text('MIRA · 3.8 m',645,620,19,'bold','#ffc0ca');
-        text('living room',645,643,14,'normal','#8ca4c8');
+        ctx.fillStyle='rgba(255,159,175,.075)';
+        roundedRect(610,600,318,48,18,true);
+        strokeRoundRect(610,600,318,48,18,'rgba(255,159,175,.14)',1);
+        text('MIRA',632,630,14,'750','#ffc0ca');
+        text('3.8 m · living room',700,630,13,'550','#8f7890');
       }else{
-        text('Tap MIRA to mark her in the world',90,624,18,'normal','#8ca4c8');
+        pill(94,594,250,34,'TAP MIRA TO MARK','#cdb7ff',false);
       }
     }
 
     function drawScanner(){
       if(state.actionPulse>0){
-        ctx.fillStyle='rgba(124,255,180,'+(state.actionPulse*.045).toFixed(3)+')';
-        roundedRect(52,204,920,450,30,true);
+        ctx.fillStyle='rgba(255,201,138,'+(state.actionPulse*.030).toFixed(3)+')';
+        roundedRect(48,204,928,450,30,true);
       }
       const status=state.scanning
         ? 'SCANNING '+Math.round(state.scannerProgress*100)+'%'
         : (state.scannerComplete?'SCAN COMPLETE':'LIVE OBJECT ANALYSIS');
       appHeader('Scanner',status,state.scannerComplete?'#9effc4':'#ffc98a');
 
-      ctx.strokeStyle=state.scannerComplete?'rgba(184,255,214,.72)':'rgba(124,255,180,.55)';
-      ctx.lineWidth=3;
-      ctx.strokeRect(250,300,524,240);
+      ctx.fillStyle='rgba(255,255,255,.026)';
+      roundedRect(184,304,656,258,30,true);
+      strokeRoundRect(184,304,656,258,30,'rgba(255,255,255,.065)',1);
 
+      const accent=state.scannerComplete?'#9effc4':'#ffc98a';
+      const corner=42;
+      const left=218,right=806,top=330,bottom=536;
+      ctx.strokeStyle=accent;
+      ctx.lineWidth=2;
+      [[left,top,1,1],[right,top,-1,1],[left,bottom,1,-1],[right,bottom,-1,-1]].forEach(([x,y,sx,sy])=>{
+        ctx.beginPath();
+        ctx.moveTo(x+sx*corner,y);
+        ctx.lineTo(x,y);
+        ctx.lineTo(x,y+sy*corner);
+        ctx.stroke();
+      });
+
+      ctx.strokeStyle='rgba(255,255,255,.08)';
+      ctx.lineWidth=1;
       ctx.beginPath();
-      ctx.moveTo(512,320);ctx.lineTo(512,520);
-      ctx.moveTo(280,420);ctx.lineTo(744,420);
+      ctx.moveTo(512,348);ctx.lineTo(512,518);
+      ctx.moveTo(246,432);ctx.lineTo(778,432);
       ctx.stroke();
 
       if(state.scanning){
-        const scanY=312+state.scannerProgress*216;
-        const beam=ctx.createLinearGradient(250,scanY-24,250,scanY+24);
-        beam.addColorStop(0,'rgba(124,255,180,0)');
-        beam.addColorStop(.5,'rgba(124,255,180,.26)');
-        beam.addColorStop(1,'rgba(124,255,180,0)');
+        const scanY=344+state.scannerProgress*172;
+        const beam=ctx.createLinearGradient(218,scanY-30,218,scanY+30);
+        beam.addColorStop(0,'rgba(255,201,138,0)');
+        beam.addColorStop(.5,'rgba(255,201,138,.18)');
+        beam.addColorStop(1,'rgba(255,201,138,0)');
         ctx.fillStyle=beam;
-        ctx.fillRect(250,scanY-24,524,48);
+        ctx.fillRect(218,scanY-30,588,60);
 
-        ctx.strokeStyle='rgba(190,255,220,.9)';
-        ctx.lineWidth=2;
-        ctx.beginPath();
-        ctx.moveTo(250,scanY);
-        ctx.lineTo(774,scanY);
-        ctx.stroke();
+        ctx.strokeStyle='rgba(255,226,194,.82)';
+        ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(218,scanY);ctx.lineTo(806,scanY);ctx.stroke();
       }
 
       if(state.scannerComplete){
-        ctx.fillStyle='rgba(184,255,214,.11)';
-        roundedRect(350,355,324,130,26,true);
-        text('MIRA',460,405,30,'bold','#c8ffe0');
-        text('human · friendly',420,445,20,'normal','#8fcca9');
-        text('confidence 98%',430,474,16,'normal','#79eeb0');
+        ctx.fillStyle='rgba(158,255,196,.065)';
+        roundedRect(360,372,304,128,24,true);
+        strokeRoundRect(360,372,304,128,24,'rgba(158,255,196,.14)',1);
+        text('MIRA',454,413,27,'720','#d9ffe8');
+        text('HUMAN · FRIENDLY',430,447,12,'750','#719281');
+        pill(430,462,164,28,'CONFIDENCE 98%','#9effc4',true);
+      }else{
+        pill(434,402,156,30,'TARGET READY','#ffc98a',false);
       }
 
-      card(scannerRect.x,scannerRect.y,scannerRect.w,scannerRect.h,22,scannerRect.key,'rgba(124,255,180,.12)');
+      card(scannerRect.x,scannerRect.y,scannerRect.w,scannerRect.h,22,scannerRect.key,'rgba(255,201,138,.065)');
       const buttonLabel=state.scanning?'SCANNING…':(state.scannerComplete?'SCAN AGAIN':'RUN SCAN');
-      const buttonX=state.scanning?428:(state.scannerComplete?438:446);
-      text(buttonLabel,buttonX,622,22,'bold','#a9ffd0');
+      const buttonX=state.scanning?431:(state.scannerComplete?438:448);
+      text(buttonLabel,buttonX,621,18,'750',state.scannerComplete?'#bfffd7':'#ffd7aa');
     }
 
     function drawApp(appId=state.activeApp){
