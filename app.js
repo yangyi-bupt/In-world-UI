@@ -362,6 +362,11 @@ const concreteSurface=configureTexturePair(makeMaterialTexture('concrete',0x327c
 const woodSurface=configureTexturePair(makeMaterialTexture('wood',0x78d0bc53),1.2,5.8);
 const metalSurface=configureTexturePair(makeMaterialTexture('metal',0x1165a2ef),5.5,1.2);
 
+const pavementMicroBump=makeMaterialTexture('concrete',0x4d84b271).bump;
+pavementMicroBump.repeat.set(8,34);
+const roadMicroBump=makeMaterialTexture('concrete',0x93c25f17).bump;
+roadMicroBump.repeat.set(9,42);
+
 const glassReflectionCanvas=document.createElement('canvas');
 glassReflectionCanvas.width=128;
 glassReflectionCanvas.height=256;
@@ -543,22 +548,34 @@ function createDapplePatch(x,z,w,d,rotation=0,opacity=.72){
 // player immediately reads this as a real street rather than a generic floor.
 const cityGround=plane(52,92,0xc7c4b9,0,-.045,-4);
 cityGround.material.map=pavementTexture;
+cityGround.material.bumpMap=pavementMicroBump;
+cityGround.material.bumpScale=.010;
 cityGround.material.color.set(0xc9c6bb);
 cityGround.material.needsUpdate=true;
 
 const road=plane(15,92,0xffffff,-6.7,.004,-4);
 road.material.map=asphaltTexture;
-road.material.roughness=.96;
+road.material.bumpMap=roadMicroBump;
+road.material.bumpScale=.014;
+road.material.roughness=.965;
 road.material.needsUpdate=true;
 
 const sidewalk=plane(10.8,92,0xffffff,4.2,.014,-4);
 sidewalk.material.map=pavementTexture;
-sidewalk.material.roughness=.95;
+sidewalk.material.bumpMap=pavementMicroBump;
+sidewalk.material.bumpScale=.011;
+sidewalk.material.roughness=.955;
 sidewalk.material.needsUpdate=true;
 
 const curbsidePaving=new THREE.Mesh(
   new THREE.PlaneGeometry(1.35,88),
-  new THREE.MeshStandardMaterial({color:0xd5d1c6,roughness:.97})
+  new THREE.MeshStandardMaterial({
+    color:0xd5d1c6,
+    roughness:.97,
+    map:concreteSurface.map,
+    bumpMap:pavementMicroBump,
+    bumpScale:.010
+  })
 );
 curbsidePaving.rotation.x=-Math.PI/2;
 curbsidePaving.position.set(1.30,.029,-4);
@@ -578,12 +595,27 @@ const curbsideEdgeMat=new THREE.MeshBasicMaterial({
   scene.add(edge);
 });
 
-const curb=box(.30,.18,92,0xc4beb2,.05,.08,-4,.92);
-const curbCap=box(.09,.035,92,0xe9e3d7,.18,.185,-4,.86);
+const curb=box(.30,.18,92,0xc4beb2,.05,.08,-4,.94);
+curb.material.map=concreteSurface.map;
+curb.material.bumpMap=concreteSurface.bump;
+curb.material.bumpScale=.012;
+curb.material.needsUpdate=true;
+
+const curbCap=box(.09,.035,92,0xe9e3d7,.18,.185,-4,.90);
+curbCap.material.map=concreteSurface.map;
+curbCap.material.bumpMap=concreteSurface.bump;
+curbCap.material.bumpScale=.008;
+curbCap.material.needsUpdate=true;
 
 const gutterStrip=new THREE.Mesh(
   new THREE.PlaneGeometry(.34,88),
-  new THREE.MeshStandardMaterial({color:0x777c79,roughness:.98})
+  new THREE.MeshStandardMaterial({
+    color:0x777c79,
+    roughness:.98,
+    map:concreteSurface.map,
+    bumpMap:roadMicroBump,
+    bumpScale:.010
+  })
 );
 gutterStrip.rotation.x=-Math.PI/2;
 gutterStrip.position.set(-.20,.018,-4);
@@ -1064,7 +1096,13 @@ function createStorePlaque(label,z,bg,fg){
 createStorePlaque('MORI',-10.6,'#e7e8df','#58625d');
 createStorePlaque('ATELIER',13.8,'#eee4d8','#63574d');
 
-const facadePlanterMat=new THREE.MeshStandardMaterial({color:0xb8aa97,roughness:.92});
+const facadePlanterMat=new THREE.MeshStandardMaterial({
+  color:0xb8aa97,
+  roughness:.94,
+  map:concreteSurface.map,
+  bumpMap:concreteSurface.bump,
+  bumpScale:.014
+});
 const facadeLeafMats=[
   new THREE.MeshStandardMaterial({color:0x78986f,roughness:.96}),
   new THREE.MeshStandardMaterial({color:0x91ad80,roughness:.95})
@@ -1658,7 +1696,13 @@ for(let i=0;i<18;i++){
 // "home spot" in the street composition without changing Mira herself.
 const miraPocket=new THREE.Mesh(
   new THREE.PlaneGeometry(5.35,5.15),
-  new THREE.MeshStandardMaterial({color:0xe6ddce,roughness:.96})
+  new THREE.MeshStandardMaterial({
+    color:0xe6ddce,
+    roughness:.96,
+    map:pavementTexture,
+    bumpMap:pavementMicroBump,
+    bumpScale:.008
+  })
 );
 miraPocket.rotation.x=-Math.PI/2;
 miraPocket.position.set(3.75,.044,-1.55);
@@ -1722,7 +1766,13 @@ const pocketAccentMat=new THREE.MeshBasicMaterial({
   scene.add(accent);
 });
 
-const pocketBorderMat=new THREE.MeshStandardMaterial({color:0xb8ad9d,roughness:.90});
+const pocketBorderMat=new THREE.MeshStandardMaterial({
+  color:0xb8ad9d,
+  roughness:.93,
+  map:concreteSurface.map,
+  bumpMap:concreteSurface.bump,
+  bumpScale:.012
+});
 [
   [3.75,.045,-4.10,5.45,.08],
   [3.75,.045,1.00,5.45,.08]
