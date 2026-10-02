@@ -2118,14 +2118,21 @@ const farBuildingColors=[0xdde0dc,0xd6dddd,0xe6e1d9,0xd2d9d8];
 for(let i=0;i<10;i++){
   const z=-36+i*8.3;
   const h=5.2+(i%4)*1.6;
-  const b=box(3.8,h,6.4,farBuildingColors[i%farBuildingColors.length],-15.2,h/2-.02,z,.72);
+  const b=box(3.8,h,6.4,farBuildingColors[i%farBuildingColors.length],-15.2,h/2-.02,z,.82);
   b.castShadow=false;
+  b.material.map=i%2?concreteSurface.map:facadeSurface.map;
+  b.material.bumpMap=i%2?concreteSurface.bump:facadeSurface.bump;
+  b.material.bumpScale=i%2?.008:.010;
+  b.material.needsUpdate=true;
 
   const parapet=new THREE.Mesh(
     new THREE.BoxGeometry(3.92,.12,6.52),
     new THREE.MeshStandardMaterial({
       color:[0xc8d0cc,0xcbd3d1,0xd8d2c8][i%3],
-      roughness:.88
+      roughness:.91,
+      map:concreteSurface.map,
+      bumpMap:concreteSurface.bump,
+      bumpScale:.007
     })
   );
   parapet.position.set(-15.2,h+.06,z);
@@ -2136,10 +2143,16 @@ for(let i=0;i<10;i++){
     const windowTone=(Math.floor(level*10)+i)%3;
     const win=new THREE.Mesh(
       new THREE.PlaneGeometry(3.45,.66),
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshPhysicalMaterial({
         color:[0xaabec3,0xb2c4c7,0xa1b7bc][windowTone],
-        roughness:.30,
-        metalness:.10
+        map:glassReflectionTexture,
+        roughnessMap:glassRoughnessTexture,
+        roughness:.27,
+        metalness:.025,
+        transparent:true,
+        opacity:.82,
+        clearcoat:.18,
+        clearcoatRoughness:.30
       })
     );
     win.position.set(-13.27,level,z);
@@ -2170,7 +2183,14 @@ function createGlassTower(x,z,w,d,h,tint){
   body.receiveShadow=true;
   scene.add(body);
 
-  const mullionMat=new THREE.MeshStandardMaterial({color:0x919e9f,roughness:.48,metalness:.18});
+  const mullionMat=new THREE.MeshStandardMaterial({
+    color:0x919e9f,
+    roughness:.46,
+    metalness:.22,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.003
+  });
   for(let level=1.0;level<h-.7;level+=1.35){
     const band=new THREE.Mesh(new THREE.BoxGeometry(w+.04,.035,d+.04),mullionMat);
     band.position.set(x,level,z);
@@ -2196,8 +2216,12 @@ createGlassTower(-19.2,16.2,4.8,6.4,10.6,0xb7ccd2);
 // Soft skyline silhouettes keep the horizon bright and city-like.
 for(let i=0;i<9;i++){
   const h=9+(i%5)*2.4;
-  const tower=box(5.0,h,5.0,[0xc3cdcf,0xd0d5d3,0xb8c6c8][i%3],-19-i*1.3,h/2,-36+i*8.8,.86);
+  const tower=box(5.0,h,5.0,[0xc3cdcf,0xd0d5d3,0xb8c6c8][i%3],-19-i*1.3,h/2,-36+i*8.8,.89);
   tower.castShadow=false;
+  tower.material.map=i%3===1?facadeSurface.map:concreteSurface.map;
+  tower.material.bumpMap=i%3===1?facadeSurface.bump:concreteSurface.bump;
+  tower.material.bumpScale=.006;
+  tower.material.needsUpdate=true;
 }
 
 // Trees, planters and street furniture make this feel like somewhere Mira
