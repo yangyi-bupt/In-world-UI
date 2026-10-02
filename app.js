@@ -3319,6 +3319,81 @@ const distantBlockPalette=[0xc6cdca,0xd1d0c8,0xbfc8c6,0xd5d2ca];
   }
 });
 
+// Tiny visual-only traffic lives beyond the playable area. It never enters the
+// main vehicle system, so it cannot affect collision, GLB readiness or wheel
+// animation; it only gives the vanishing corridor a little city motion.
+const distantTrafficCues=[];
+function createDistantTrafficCue(x,z,direction,color){
+  const group=new THREE.Group();
+  const bodyMat=new THREE.MeshStandardMaterial({
+    color,
+    roughness:.48,
+    metalness:.16,
+    envMapIntensity:.36
+  });
+  const glassMat=new THREE.MeshPhysicalMaterial({
+    color:0x9fb2b5,
+    roughness:.30,
+    metalness:.02,
+    transparent:true,
+    opacity:.72,
+    clearcoat:.14,
+    clearcoatRoughness:.32,
+    envMapIntensity:.46
+  });
+  const darkMat=new THREE.MeshStandardMaterial({
+    color:0x333837,
+    roughness:.90
+  });
+
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.18,.30,2.15),bodyMat);
+  body.position.y=.36;
+  group.add(body);
+
+  const cabin=new THREE.Mesh(new THREE.BoxGeometry(.98,.34,1.02),glassMat);
+  cabin.position.set(0,.62,-.10);
+  group.add(cabin);
+
+  [-.61,.61].forEach(wx=>{
+    [-.66,.66].forEach(wz=>{
+      const wheel=new THREE.Mesh(
+        new THREE.CylinderGeometry(.15,.15,.09,12),
+        darkMat
+      );
+      wheel.rotation.z=Math.PI/2;
+      wheel.position.set(wx,.19,wz);
+      group.add(wheel);
+    });
+  });
+
+  const lightMat=new THREE.MeshBasicMaterial({
+    color:direction>0?0xe8e0c9:0x9b5a54,
+    transparent:true,
+    opacity:.52,
+    toneMapped:false
+  });
+  [-.32,.32].forEach(side=>{
+    const light=new THREE.Mesh(new THREE.PlaneGeometry(.16,.055),lightMat);
+    light.position.set(side,.39,direction>0?1.081:-1.081);
+    if(direction<0) light.rotation.y=Math.PI;
+    group.add(light);
+  });
+
+  group.position.set(x,0,z);
+  if(direction<0) group.rotation.y=Math.PI;
+  group.scale.setScalar(.76);
+  scene.add(group);
+  distantTrafficCues.push({
+    group,
+    direction,
+    speed:.48+(distantTrafficCues.length*.09),
+    phase:distantTrafficCues.length*1.7
+  });
+}
+createDistantTrafficCue(-8.95,-72,1,0xb7bbb6);
+createDistantTrafficCue(-5.70,-57,-1,0x87999d);
+createDistantTrafficCue(-9.10,-52,1,0xc9bdae);
+
 // Soft skyline silhouettes keep the horizon bright and city-like.
 for(let i=0;i<9;i++){
   const h=9+(i%5)*2.4;
@@ -5803,6 +5878,17 @@ function animate(){
     rollingWheels?.forEach(wheel=>wheel.rotation.x-=spin);
     if(traffic.speed>0 && traffic.group.position.z>38) traffic.group.position.z=-38-index*5;
     if(traffic.speed<0 && traffic.group.position.z<-38) traffic.group.position.z=38+index*5;
+  });
+
+  distantTrafficCues.forEach((traffic,index)=>{
+    const pace=traffic.speed*(1+Math.sin(t*.11+traffic.phase)*.035);
+    traffic.group.position.z+=traffic.direction*pace*dt;
+    traffic.group.position.x+=Math.sin(t*.09+traffic.phase)*.0008;
+    if(traffic.direction>0 && traffic.group.position.z>-49){
+      traffic.group.position.z=-82-index*4;
+    }else if(traffic.direction<0 && traffic.group.position.z<-82){
+      traffic.group.position.z=-50-index*3;
+    }
   });
 
   ambientWalkers.forEach((walker,index)=>{
