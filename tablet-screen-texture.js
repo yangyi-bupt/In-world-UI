@@ -135,13 +135,24 @@
       ctx.restore();
     }
 
-    function appHeader(title,subtitle,accent='#8fc5ff'){
-      text(title,70,238,42,'650','#f5f8ff');
-      text(subtitle,72,270,16,'500','#7788a6');
+    function pill(label,x,y,accent='rgba(255,255,255,.10)',fg='#b9c7db'){
+      ctx.save();
+      ctx.font='700 11px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      const w=Math.ceil(ctx.measureText(label).width)+22;
       ctx.fillStyle=accent;
-      roundedRect(70,284,44,3,1.5,true);
+      roundedRect(x,y,w,26,13,true);
+      strokeRoundRect(x,y,w,26,13,'rgba(255,255,255,.065)',1);
+      text(label,x+11,y+17,11,'700',fg);
+      ctx.restore();
+      return w;
+    }
+
+    function appHeader(title,subtitle,accent='#8fc5ff'){
+      text(title.toUpperCase(),70,212,12,'750',accent);
+      text(subtitle,70,241,15,'500','#70809a');
+      text(title,70,286,42,'680','#f5f8ff');
       ctx.fillStyle='rgba(255,255,255,.055)';
-      roundedRect(122,284,832,3,1.5,true);
+      roundedRect(70,307,884,1,1,true);
     }
 
     function isHover(key){return state.hoverKey===key;}
@@ -207,119 +218,162 @@
 
     function base(){
       ctx.clearRect(0,0,width,height);
-      ctx.fillStyle='#05070d';
+      ctx.fillStyle='#03060b';
       ctx.fillRect(0,0,width,height);
 
-      const ambientA=ctx.createRadialGradient(155,90,10,155,90,520);
-      ambientA.addColorStop(0,'rgba(49,109,195,.22)');
-      ambientA.addColorStop(.52,'rgba(30,66,130,.07)');
+      const ambientA=ctx.createRadialGradient(150,60,12,150,60,520);
+      ambientA.addColorStop(0,'rgba(45,106,190,.20)');
+      ambientA.addColorStop(.44,'rgba(22,57,116,.075)');
       ambientA.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=ambientA;
       ctx.fillRect(0,0,width,height);
 
-      const ambientB=ctx.createRadialGradient(910,650,20,910,650,460);
-      ambientB.addColorStop(0,'rgba(105,71,170,.12)');
+      const ambientB=ctx.createRadialGradient(930,630,12,930,630,470);
+      ambientB.addColorStop(0,'rgba(100,66,165,.13)');
+      ambientB.addColorStop(.55,'rgba(55,34,100,.045)');
       ambientB.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=ambientB;
       ctx.fillRect(0,0,width,height);
 
-      ctx.fillStyle='rgba(255,255,255,.025)';
-      for(let x=64;x<width;x+=128){
-        ctx.fillRect(x,112,1,height-160);
+      // Sparse micro-grid gives the display texture without looking like a
+      // website background. It remains under 3% alpha for text clarity.
+      ctx.fillStyle='rgba(255,255,255,.018)';
+      for(let y=118;y<height-42;y+=54){
+        for(let x=52+(Math.floor(y/54)%2)*27;x<width-42;x+=54){
+          ctx.beginPath();
+          ctx.arc(x,y,1,0,Math.PI*2);
+          ctx.fill();
+        }
       }
 
       const now=new Date();
       const time=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 
-      ctx.fillStyle='rgba(7,11,20,.68)';
-      roundedRect(48,28,928,62,23,true);
-      strokeRoundRect(48,28,928,62,23,'rgba(255,255,255,.065)',1);
+      // Minimal system rail rather than a large floating web-style navbar.
+      text(time,62,61,21,'650','#eaf0f9');
+      text('NOVA',486,59,12,'800','#a8b9d1');
 
-      text(time,72,68,24,'650','#e9eef9');
-
-      ctx.fillStyle='rgba(127,214,255,.10)';
-      roundedRect(430,43,164,32,16,true);
-      strokeRoundRect(430,43,164,32,16,'rgba(127,214,255,.18)',1);
-      ctx.fillStyle='#7fd6ff';
+      ctx.fillStyle='#83dcff';
       ctx.beginPath();
-      ctx.arc(450,59,4,0,Math.PI*2);
+      ctx.arc(860,54,3.2,0,Math.PI*2);
       ctx.fill();
-      text('NOVA  /  ONLINE',464,64,13,'700','#bfeaff');
+      text('LIVE',871,59,11,'750','#94a7c1');
 
-      ctx.fillStyle='rgba(255,255,255,.045)';
-      roundedRect(844,43,104,32,16,true);
-      text('98%',865,64,15,'650','#e8eef9');
-      ctx.strokeStyle='rgba(255,255,255,.36)';
-      ctx.lineWidth=1.5;
-      roundedRect(908,52,22,12,3,false);
+      ctx.strokeStyle='rgba(255,255,255,.32)';
+      ctx.lineWidth=1.4;
+      roundedRect(920,48,27,13,4,false);
       ctx.stroke();
-      ctx.fillStyle='#9effc4';
-      roundedRect(911,55,15,6,2,true);
+      ctx.fillStyle='#a4f0c2';
+      roundedRect(923,51,19,7,2,true);
+      ctx.fillStyle='rgba(255,255,255,.26)';
+      roundedRect(948,52,3,5,1.5,true);
+
+      ctx.fillStyle='rgba(255,255,255,.05)';
+      roundedRect(52,87,920,1,1,true);
     }
 
     function drawHome(){
-      text('NOVA',64,160,48,'700','#f6f8fd');
-      text('A quiet layer between you and your world.',66,190,17,'500','#7887a2');
+      text('WORLD DECK',62,132,12,'800','#7fd6ff');
+      text('NOVA PAD',62,177,45,'700','#f7f9fd');
+      text('Everything in reach, nothing in the way.',64,207,16,'500','#71819b');
 
-      ctx.fillStyle='rgba(127,214,255,.55)';
-      roundedRect(66,207,28,3,1.5,true);
-      ctx.fillStyle='rgba(255,255,255,.08)';
-      roundedRect(102,207,858,3,1.5,true);
+      pill('WORLD ONLINE',793,137,'rgba(127,214,255,.075)','#aee6ff');
 
       appRects.length=0;
       apps.forEach((app,i)=>{
-        const x=64+(i%2)*478;
-        const y=232+Math.floor(i/2)*166;
-        const rect={...app,x,y,w:418,h:142,key:'app:'+app.id,type:'app'};
+        const col=i%2;
+        const row=Math.floor(i/2);
+        const x=62+col*480;
+        const y=236+row*172;
+        const rect={...app,x,y,w:420,h:148,key:'app:'+app.id,type:'app'};
         appRects.push(rect);
 
         const hovered=isHover(rect.key);
         const pressed=isPressed(rect.key);
-        const lift=pressed?1:(hovered?0:-1);
+        const yLift=pressed?2:(hovered?-3:0);
 
         ctx.save();
-        ctx.translate(0,lift);
-        card(x,y,418,142,28,rect.key,'rgba(255,255,255,.048)');
+        ctx.translate(0,yLift);
 
-        const wash=ctx.createLinearGradient(x,y,x+418,y+142);
-        wash.addColorStop(0,'rgba('+app.rgb+','+(hovered?'.13':'.075')+')');
-        wash.addColorStop(.58,'rgba('+app.rgb+',.025)');
-        wash.addColorStop(1,'rgba('+app.rgb+',0)');
-        ctx.fillStyle=wash;
-        roundedRect(x+1,y+1,416,140,27,true);
+        // Dark glass tile with restrained accent bloom.
+        if(hovered){
+          ctx.shadowColor='rgba('+app.rgb+',.16)';
+          ctx.shadowBlur=28;
+          ctx.shadowOffsetY=10;
+        }
+        ctx.fillStyle=hovered?'rgba(15,22,34,.92)':'rgba(11,16,25,.84)';
+        roundedRect(x,y,420,148,30,true);
+        ctx.shadowColor='transparent';
+        ctx.shadowBlur=0;
+        ctx.shadowOffsetY=0;
+        strokeRoundRect(
+          x,y,420,148,30,
+          hovered?'rgba('+app.rgb+',.30)':'rgba(255,255,255,.075)',
+          hovered?1.4:1
+        );
 
-        ctx.fillStyle='rgba('+app.rgb+','+(hovered?'.18':'.11')+')';
-        roundedRect(x+22,y+27,88,88,24,true);
-        strokeRoundRect(x+22,y+27,88,88,24,'rgba('+app.rgb+','+(hovered?'.34':'.19')+')',1);
-        appIcon(app.id,x+66,y+71,50,app.accent);
+        const bloom=ctx.createRadialGradient(x+72,y+64,4,x+72,y+64,118);
+        bloom.addColorStop(0,'rgba('+app.rgb+','+(hovered?'.18':'.10')+')');
+        bloom.addColorStop(.55,'rgba('+app.rgb+',.035)');
+        bloom.addColorStop(1,'rgba('+app.rgb+',0)');
+        ctx.fillStyle=bloom;
+        roundedRect(x+1,y+1,418,146,29,true);
 
-        text(app.label,x+132,y+62,29,'650','#f4f7fc');
-        text(app.short,x+132,y+91,15,'500','#7889a4');
+        // Icon puck.
+        ctx.fillStyle='rgba('+app.rgb+','+(hovered?'.17':'.11')+')';
+        roundedRect(x+22,y+24,76,76,22,true);
+        strokeRoundRect(x+22,y+24,76,76,22,'rgba('+app.rgb+','+(hovered?'.34':'.19')+')',1);
+        appIcon(app.id,x+60,y+62,42,app.accent);
 
-        text('↗',x+370,y+53,20,'600',hovered?app.accent:'#5f6d83');
+        text(app.label,x+120,y+55,26,'680','#f4f7fc');
+        text(app.short,x+120,y+80,14,'520','#75869f');
 
-        ctx.fillStyle=hovered?app.accent:'rgba('+app.rgb+',.46)';
-        roundedRect(x+132,y+111,46,3,1.5,true);
+        // Tiny system metadata makes the cards feel like OS surfaces rather than web CTA cards.
+        text('0'+(i+1),x+24,y+127,11,'800','rgba('+app.rgb+',.72)');
+        ctx.fillStyle='rgba(255,255,255,.06)';
+        roundedRect(x+49,y+120,190,1,1,true);
+        ctx.fillStyle='rgba('+app.rgb+','+(hovered?'.70':'.42')+')';
+        roundedRect(x+49,y+120,hovered?92:54,1,1,true);
+
+        ctx.beginPath();
+        ctx.strokeStyle=hovered?app.accent:'#58677c';
+        ctx.lineWidth=1.7;
+        ctx.arc(x+385,y+34,12,0,Math.PI*2);
+        ctx.stroke();
+        text('›',x+381,y+40,17,'650',hovered?app.accent:'#6a7890');
 
         if(app.id==='messages' && state.messageUnread){
           ctx.fillStyle='#ff9faf';
           ctx.beginPath();
-          ctx.arc(x+390,y+26,7,0,Math.PI*2);
+          ctx.arc(x+385,y+112,6,0,Math.PI*2);
           ctx.fill();
         }
+
         ctx.restore();
       });
 
+      // Bottom hardware-like gesture rail / context hint.
       ctx.fillStyle='rgba(255,255,255,.055)';
-      roundedRect(438,676,148,5,2.5,true);
-      text('E',65,681,13,'700','#8ea0bb');
-      text('CLOSE',86,681,12,'600','#65758e');
+      roundedRect(431,681,162,4,2,true);
+      text('E',62,684,11,'800','#95a8c1');
+      text('CLOSE PAD',81,684,11,'650','#5f7088');
+      text('POINTER',867,684,11,'650','#5f7088');
+      ctx.fillStyle='rgba(127,214,255,.30)';
+      ctx.beginPath();
+      ctx.arc(945,680,3,0,Math.PI*2);
+      ctx.fill();
     }
 
     function drawBack(){
-      card(backRect.x,backRect.y,backRect.w,backRect.h,20,backRect.key,'rgba(255,255,255,.045)');
-      text('‹',82,160,28,'500',isHover(backRect.key)?'#eaf6ff':'#a9b8ce');
-      text('Home',108,158,17,'650',isHover(backRect.key)?'#eaf6ff':'#a9b8ce');
+      const hovered=isHover(backRect.key);
+      ctx.fillStyle=hovered?'rgba(127,214,255,.09)':'rgba(255,255,255,.035)';
+      roundedRect(backRect.x,backRect.y,backRect.w,backRect.h,18,true);
+      strokeRoundRect(
+        backRect.x,backRect.y,backRect.w,backRect.h,18,
+        hovered?'rgba(127,214,255,.24)':'rgba(255,255,255,.06)',1
+      );
+      text('‹',82,160,27,'500',hovered?'#dff4ff':'#91a1b8');
+      text('HOME',108,156,12,'800',hovered?'#dff4ff':'#91a1b8');
     }
 
     function drawMessages(){
