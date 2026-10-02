@@ -2003,12 +2003,21 @@ const portalStoneMat=new THREE.MeshStandardMaterial({
 
   // The three entries intentionally differ in their secondary construction so
   // the ground floor reads as separate addresses rather than duplicated doors.
+  const entryFrameMat=new THREE.MeshStandardMaterial({
+    color:0x838d89,
+    roughness:.40,
+    metalness:.46,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.003,
+    envMapIntensity:.86
+  });
   if(i===0){
     const transom=glassPanel(1.92,.34,7.69,2.62,z,-Math.PI/2,0xc5d4d2);
     transom.material.opacity=.34;
     const transomBar=new THREE.Mesh(
       new THREE.BoxGeometry(.055,.055,2.02),
-      cafeDoorFrame
+      entryFrameMat
     );
     transomBar.position.set(7.66,2.43,z);
     transomBar.castShadow=true;
@@ -2018,7 +2027,7 @@ const portalStoneMat=new THREE.MeshStandardMaterial({
     sidePanel.material.opacity=.36;
     const sidePost=new THREE.Mesh(
       new THREE.BoxGeometry(.07,2.18,.07),
-      cafeDoorFrame
+      entryFrameMat
     );
     sidePost.position.set(7.66,1.35,z-1.42);
     sidePost.castShadow=true;
