@@ -683,11 +683,21 @@ function makeMaterialTexture(kind,seed){
         g.arc(x,y,rr,0,Math.PI*2);
         g.fill();
 
-        const rv=158+Math.floor(rnd()*58);
-        r.fillStyle='rgba('+rv+','+rv+','+rv+','+(.08+rnd()*.14).toFixed(3)+')';
+        const crystalline=rnd()>.88;
+        const rv=crystalline
+          ? 96+Math.floor(rnd()*42)
+          : 158+Math.floor(rnd()*58);
+        r.fillStyle='rgba('+rv+','+rv+','+rv+','+(crystalline?(.14+rnd()*.18):(.08+rnd()*.14)).toFixed(3)+')';
         r.beginPath();
-        r.arc(x,y,rr*1.25,0,Math.PI*2);
+        r.arc(x,y,rr*(crystalline?1.05:1.25),0,Math.PI*2);
         r.fill();
+
+        if(crystalline){
+          b.fillStyle='rgba(148,148,148,'+(.12+rnd()*.18).toFixed(3)+')';
+          b.beginPath();
+          b.arc(x,y,Math.max(.20,rr*.62),0,Math.PI*2);
+          b.fill();
+        }
       }
     }
 
@@ -1159,6 +1169,106 @@ function makeVehicleDustRoughness(seed){
   return texture;
 }
 const vehicleDustRoughness=makeVehicleDustRoughness(0x8b6e24d1);
+
+function makeSkinSpecularTexture(seed){
+  const size=256;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='#8f8f8f';
+  g.fillRect(0,0,size,size);
+
+  for(let i=0;i<34;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const radius=6+rnd()*30;
+    const brighter=rnd()>.48;
+    const v=brighter
+      ? 152+Math.floor(rnd()*46)
+      : 86+Math.floor(rnd()*38);
+    const grad=g.createRadialGradient(x,y,0,x,y,radius);
+    grad.addColorStop(0,'rgba('+v+','+v+','+v+','+(.10+rnd()*.15).toFixed(3)+')');
+    grad.addColorStop(1,'rgba('+v+','+v+','+v+',0)');
+    g.fillStyle=grad;
+    g.fillRect(x-radius,y-radius,radius*2,radius*2);
+  }
+
+  for(let i=0;i<1500;i++){
+    const v=104+Math.floor(rnd()*80);
+    g.fillStyle='rgba('+v+','+v+','+v+','+(.025+rnd()*.060).toFixed(3)+')';
+    const rr=.2+rnd()*.65;
+    g.fillRect(rnd()*size,rnd()*size,rr,rr);
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(3.0,3.0);
+  texture.anisotropy=8;
+  return texture;
+}
+
+function makeRoadMoistureMaps(seed){
+  const w=256;
+  const h=512;
+  const alphaCanvas=document.createElement('canvas');
+  const roughCanvas=document.createElement('canvas');
+  alphaCanvas.width=roughCanvas.width=w;
+  alphaCanvas.height=roughCanvas.height=h;
+  const a=alphaCanvas.getContext('2d');
+  const r=roughCanvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  a.clearRect(0,0,w,h);
+  r.fillStyle='#6f6f6f';
+  r.fillRect(0,0,w,h);
+
+  // Residual moisture is concentrated near the gutter and interrupted into
+  // irregular dry gaps so it never reads like a wet-road effect.
+  const edge=a.createLinearGradient(0,0,w,0);
+  edge.addColorStop(0,'rgba(83,91,90,.22)');
+  edge.addColorStop(.28,'rgba(83,91,90,.095)');
+  edge.addColorStop(.72,'rgba(83,91,90,.020)');
+  edge.addColorStop(1,'rgba(83,91,90,0)');
+  a.fillStyle=edge;
+  a.fillRect(0,0,w,h);
+
+  for(let i=0;i<42;i++){
+    const x=rnd()*w*.72;
+    const y=rnd()*h;
+    const rx=8+rnd()*46;
+    const ry=14+rnd()*72;
+    const grad=a.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+    grad.addColorStop(0,'rgba(62,70,70,'+(.035+rnd()*.070).toFixed(3)+')');
+    grad.addColorStop(1,'rgba(62,70,70,0)');
+    a.fillStyle=grad;
+    a.fillRect(x-rx,y-ry,rx*2,ry*2);
+
+    const rv=66+Math.floor(rnd()*42);
+    const rg=r.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+    rg.addColorStop(0,'rgba('+rv+','+rv+','+rv+','+(.22+rnd()*.24).toFixed(3)+')');
+    rg.addColorStop(1,'rgba(122,122,122,0)');
+    r.fillStyle=rg;
+    r.fillRect(x-rx,y-ry,rx*2,ry*2);
+  }
+
+  const map=new THREE.CanvasTexture(alphaCanvas);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.wrapS=map.wrapT=THREE.RepeatWrapping;
+  map.repeat.set(1,3.4);
+  map.anisotropy=8;
+
+  const roughness=new THREE.CanvasTexture(roughCanvas);
+  roughness.wrapS=roughness.wrapT=THREE.RepeatWrapping;
+  roughness.repeat.set(1,3.4);
+  roughness.anisotropy=8;
+
+  return {map,roughness};
+}
+
+const skinSpecularTexture=makeSkinSpecularTexture(0x2f7ad1c4);
+const roadMoistureMaps=makeRoadMoistureMaps(0x7c31e6a9);
 
 function makeWoodFinishRoughness(seed,repeatX=2,repeatY=8){
   const size=256;
