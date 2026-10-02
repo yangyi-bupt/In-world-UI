@@ -2200,11 +2200,93 @@ function createWindowDisplay(z,kind='mori'){
     [-.76,-.28,.22,.72].forEach((oz,i)=>{
       const mat=objectMats[(i+shelfIndex)%objectMats.length];
       let object;
-      if((i+shelfIndex)%2===0){
-        object=new THREE.Mesh(new THREE.BoxGeometry(.20,.22+(i%2)*.08,.18),mat);
+
+      if(warm){
+        // ATELIER: ceramics, folded textiles and small sculptural objects.
+        if((i+shelfIndex)%4===0){
+          object=new THREE.Mesh(
+            new THREE.CylinderGeometry(.075,.11,.26,14),
+            mat
+          );
+          const lip=new THREE.Mesh(
+            new THREE.TorusGeometry(.076,.009,6,18),
+            mat
+          );
+          lip.rotation.x=Math.PI/2;
+          lip.position.set(8.06,y+.285,z+oz);
+          scene.add(lip);
+        }else if((i+shelfIndex)%4===1){
+          object=new THREE.Mesh(
+            new THREE.BoxGeometry(.23,.055,.18),
+            mat
+          );
+          const folded=new THREE.Mesh(
+            new THREE.BoxGeometry(.20,.040,.16),
+            objectMats[(i+shelfIndex+1)%objectMats.length]
+          );
+          folded.position.set(8.10,y+.225,z+oz+.018);
+          folded.rotation.y=-.05;
+          folded.castShadow=true;
+          scene.add(folded);
+        }else if((i+shelfIndex)%4===2){
+          object=new THREE.Mesh(
+            new THREE.TorusKnotGeometry(.055,.018,42,7),
+            mat
+          );
+          object.scale.set(1,.85,1);
+        }else{
+          object=new THREE.Mesh(
+            new THREE.ConeGeometry(.095,.25,10),
+            mat
+          );
+        }
       }else{
-        object=new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,.26+(i%2)*.07,12),mat);
+        // MORI: quiet botanical/home objects with books and simple vessels.
+        if((i+shelfIndex)%4===0){
+          object=new THREE.Mesh(
+            new THREE.CylinderGeometry(.085,.105,.20,14),
+            mat
+          );
+          const stem=new THREE.Mesh(
+            new THREE.CylinderGeometry(.010,.012,.19,7),
+            objectMats[2]
+          );
+          stem.position.set(8.07,y+.31,z+oz);
+          stem.rotation.z=.16;
+          scene.add(stem);
+          const leaf=new THREE.Mesh(
+            new THREE.IcosahedronGeometry(.055,1),
+            makeFoliageMaterial(0x78956f,.92,.006,.014)
+          );
+          leaf.scale.set(.68,1.20,.58);
+          leaf.position.set(8.05,y+.41,z+oz+.025);
+          leaf.rotation.z=-.28;
+          scene.add(leaf);
+        }else if((i+shelfIndex)%4===1){
+          object=new THREE.Mesh(
+            new THREE.BoxGeometry(.22,.045,.18),
+            mat
+          );
+          const book2=new THREE.Mesh(
+            new THREE.BoxGeometry(.205,.036,.17),
+            objectMats[(i+1)%objectMats.length]
+          );
+          book2.position.set(8.09,y+.215,z+oz-.01);
+          book2.rotation.y=.07;
+          scene.add(book2);
+        }else if((i+shelfIndex)%4===2){
+          object=new THREE.Mesh(
+            new THREE.CylinderGeometry(.060,.085,.24,12),
+            mat
+          );
+        }else{
+          object=new THREE.Mesh(
+            new THREE.BoxGeometry(.16,.26,.12),
+            mat
+          );
+        }
       }
+
       object.position.set(8.02+(i%2)*.08,y+.15,z+oz);
       object.rotation.y=(i-1.5)*.12;
       object.castShadow=true;
@@ -2800,36 +2882,64 @@ for(let i=0;i<10;i++){
   }
 
   for(let level=.9;level<h-.6;level+=1.22){
-    const windowTone=(Math.floor(level*10)+i)%3;
-    const win=new THREE.Mesh(
-      new THREE.PlaneGeometry(3.45,.66),
-      new THREE.MeshPhysicalMaterial({
-        color:[0xaabec3,0xb2c4c7,0xa1b7bc][windowTone],
-        map:cloneTextureVariant(
-          glassReflectionTexture,
-          (i*.11+level*.07)%1,
-          (i*.17+level*.03)%1,
-          .94+(i%2)*.08,
-          1
-        ),
-        roughnessMap:cloneTextureVariant(
-          glassRoughnessTexture,
-          (i*.11+level*.07)%1,
-          (i*.17+level*.03)%1,
-          .94+(i%2)*.08,
-          1
-        ),
-        roughness:.27,
-        metalness:.025,
-        transparent:true,
-        opacity:.82,
-        clearcoat:.18,
-        clearcoatRoughness:.30
+    const floorIndex=Math.round((level-.9)/1.22);
+    const windowCount=i%3===0?3:4;
+    const spacing=5.10/(windowCount-1);
+    const width=windowCount===3?1.16:.82;
+
+    for(let wIndex=0;wIndex<windowCount;wIndex++){
+      const windowTone=(floorIndex+wIndex+i)%3;
+      const litVariation=((floorIndex*3+wIndex+i)%7===0);
+      const win=new THREE.Mesh(
+        new THREE.PlaneGeometry(width,.66),
+        new THREE.MeshPhysicalMaterial({
+          color:litVariation
+            ? 0xc5c8b9
+            : [0xaabec3,0xb2c4c7,0xa1b7bc][windowTone],
+          map:cloneTextureVariant(
+            glassReflectionTexture,
+            (i*.11+level*.07+wIndex*.13)%1,
+            (i*.17+level*.03)%1,
+            .92+(wIndex%2)*.09,
+            1
+          ),
+          roughnessMap:cloneTextureVariant(
+            glassRoughnessTexture,
+            (i*.11+level*.07+wIndex*.13)%1,
+            (i*.17+level*.03)%1,
+            .92+(wIndex%2)*.09,
+            1
+          ),
+          roughness:litVariation?.34:.27,
+          metalness:.025,
+          transparent:true,
+          opacity:litVariation?.76:.82,
+          clearcoat:.18,
+          clearcoatRoughness:.30,
+          emissive:litVariation?0x6d6758:0x000000,
+          emissiveIntensity:litVariation?.028:0
+        })
+      );
+      win.position.set(
+        -13.27,
+        level,
+        z-2.55+wIndex*spacing
+      );
+      win.rotation.y=Math.PI/2;
+      scene.add(win);
+    }
+
+    const spandrel=new THREE.Mesh(
+      new THREE.BoxGeometry(.06,.10,5.95),
+      new THREE.MeshStandardMaterial({
+        color:[0xadb5b1,0xbab7af,0xa6b1af][i%3],
+        roughness:.78,
+        metalness:.08,
+        envMapIntensity:.20
       })
     );
-    win.position.set(-13.27,level,z);
-    win.rotation.y=Math.PI/2;
-    scene.add(win);
+    spandrel.position.set(-13.30,level-.43,z);
+    scene.add(spandrel);
   }
 }
 
