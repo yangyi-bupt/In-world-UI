@@ -815,6 +815,149 @@ roadWearTexture.repeat.set(1.2,4.8);
 const metalWearTexture=makeWeatheringTexture('metal',0x31d7be42);
 metalWearTexture.repeat.set(2.5,5.0);
 
+function makePaintWearAlpha(seed){
+  const size=256;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='#ffffff';
+  g.fillRect(0,0,size,size);
+
+  // Missing chips and tyre-polished pinholes remove just enough paint to keep
+  // road markings from reading like vector UI laid on top of the asphalt.
+  for(let i=0;i<220;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const rx=.5+rnd()*3.4;
+    const ry=.3+rnd()*1.8;
+    g.fillStyle='rgba(0,0,0,'+(.28+rnd()*.58).toFixed(3)+')';
+    g.beginPath();
+    g.ellipse(x,y,rx,ry,rnd()*Math.PI,0,Math.PI*2);
+    g.fill();
+  }
+
+  for(let i=0;i<24;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    g.strokeStyle='rgba(0,0,0,'+(.22+rnd()*.40).toFixed(3)+')';
+    g.lineWidth=.6+rnd()*1.4;
+    g.beginPath();
+    g.moveTo(x,y);
+    g.lineTo(x+(rnd()-.5)*28,y+(rnd()-.5)*8);
+    g.stroke();
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.anisotropy=8;
+  return texture;
+}
+
+const paintWearAlphaA=makePaintWearAlpha(0x6ab1349d);
+const paintWearAlphaB=makePaintWearAlpha(0x8f21c7e4);
+const paintWearAlphaC=makePaintWearAlpha(0x2479df61);
+
+function makeFacadeJointTexture(){
+  const canvas=document.createElement('canvas');
+  canvas.width=1024;
+  canvas.height=256;
+  const g=canvas.getContext('2d');
+  g.clearRect(0,0,canvas.width,canvas.height);
+
+  const rows=7;
+  const rowH=canvas.height/rows;
+  for(let row=1;row<rows;row++){
+    const y=Math.round(row*rowH);
+    g.fillStyle='rgba(91,83,75,.075)';
+    g.fillRect(0,y,canvas.width,1);
+    g.fillStyle='rgba(255,248,236,.040)';
+    g.fillRect(0,y+1,canvas.width,1);
+  }
+
+  const bayW=128;
+  for(let row=0;row<rows;row++){
+    const y0=row*rowH;
+    const offset=row%2?bayW*.5:0;
+    for(let x=offset;x<canvas.width;x+=bayW){
+      g.fillStyle='rgba(91,83,75,.050)';
+      g.fillRect(Math.round(x),Math.round(y0+2),1,Math.ceil(rowH-4));
+    }
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=THREE.RepeatWrapping;
+  texture.wrapT=THREE.ClampToEdgeWrapping;
+  texture.anisotropy=8;
+  return texture;
+}
+const facadeJointTexture=makeFacadeJointTexture();
+
+function makeGlassEdgeDirtTexture(){
+  const canvas=document.createElement('canvas');
+  canvas.width=256;
+  canvas.height=512;
+  const g=canvas.getContext('2d');
+  g.clearRect(0,0,256,512);
+
+  const left=g.createLinearGradient(0,0,28,0);
+  left.addColorStop(0,'rgba(83,88,84,.105)');
+  left.addColorStop(1,'rgba(83,88,84,0)');
+  g.fillStyle=left;
+  g.fillRect(0,0,34,512);
+
+  const right=g.createLinearGradient(256,0,228,0);
+  right.addColorStop(0,'rgba(83,88,84,.090)');
+  right.addColorStop(1,'rgba(83,88,84,0)');
+  g.fillStyle=right;
+  g.fillRect(222,0,34,512);
+
+  const bottom=g.createLinearGradient(0,512,0,454);
+  bottom.addColorStop(0,'rgba(105,91,76,.095)');
+  bottom.addColorStop(1,'rgba(105,91,76,0)');
+  g.fillStyle=bottom;
+  g.fillRect(0,446,256,66);
+
+  const rnd=makeSeededRandom(0xb36d0e47);
+  for(let i=0;i<72;i++){
+    const x=rnd()>.5 ? rnd()*28 : 228+rnd()*28;
+    const y=rnd()*512;
+    g.fillStyle='rgba(86,91,87,'+(.012+rnd()*.028).toFixed(3)+')';
+    g.beginPath();
+    g.arc(x,y,.5+rnd()*1.5,0,Math.PI*2);
+    g.fill();
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=THREE.ClampToEdgeWrapping;
+  texture.wrapT=THREE.ClampToEdgeWrapping;
+  texture.anisotropy=8;
+  return texture;
+}
+const glassEdgeDirtTexture=makeGlassEdgeDirtTexture();
+
+function addGlassEdgeDirt(w,h,x,y,z,ry=-Math.PI/2,opacity=.42){
+  const overlay=new THREE.Mesh(
+    new THREE.PlaneGeometry(w,h),
+    new THREE.MeshBasicMaterial({
+      map:glassEdgeDirtTexture,
+      transparent:true,
+      opacity,
+      depthWrite:false,
+      toneMapped:false,
+      side:THREE.DoubleSide
+    })
+  );
+  overlay.position.set(x-.006,y,z);
+  overlay.rotation.y=ry;
+  overlay.renderOrder=3;
+  scene.add(overlay);
+  return overlay;
+}
+
 // ---------- daytime city block ----------
 // Ground is deliberately split into road, curb and pedestrian zones so the
 // player immediately reads this as a real street rather than a generic floor.
@@ -992,21 +1135,42 @@ const pavementWearMat=new THREE.MeshBasicMaterial({
 
 // Road lane markings and a distant crossing make the street continue beyond
 // the playable slice.
-const stripeMat=new THREE.MeshBasicMaterial({color:0xe8e6dc,transparent:true,opacity:.78});
-for(let z=-40;z<40;z+=5.8){
-  const stripe=new THREE.Mesh(new THREE.PlaneGeometry(.13,2.9),stripeMat);
+const stripeMaterials=[
+  new THREE.MeshBasicMaterial({color:0xe8e6dc,transparent:true,opacity:.78,alphaMap:paintWearAlphaA,alphaTest:.04}),
+  new THREE.MeshBasicMaterial({color:0xe8e6dc,transparent:true,opacity:.76,alphaMap:paintWearAlphaB,alphaTest:.04}),
+  new THREE.MeshBasicMaterial({color:0xe8e6dc,transparent:true,opacity:.80,alphaMap:paintWearAlphaC,alphaTest:.04})
+];
+for(let z=-40,index=0;z<40;z+=5.8,index++){
+  const stripe=new THREE.Mesh(new THREE.PlaneGeometry(.13,2.9),stripeMaterials[index%stripeMaterials.length]);
   stripe.rotation.x=-Math.PI/2;
   stripe.position.set(-6.5,.022,z);
   scene.add(stripe);
 }
-const edgeLine=new THREE.Mesh(new THREE.PlaneGeometry(.11,86),new THREE.MeshBasicMaterial({color:0xd8c66d}));
+const stripeMat=stripeMaterials[0];
+
+const edgeLine=new THREE.Mesh(
+  new THREE.PlaneGeometry(.11,86),
+  new THREE.MeshBasicMaterial({
+    color:0xd8c66d,
+    transparent:true,
+    opacity:.82,
+    alphaMap:paintWearAlphaB,
+    alphaTest:.035
+  })
+);
 edgeLine.rotation.x=-Math.PI/2;
 edgeLine.position.set(-.45,.025,-4);
 scene.add(edgeLine);
 
 const focalCurbMark=new THREE.Mesh(
   new THREE.PlaneGeometry(.13,5.4),
-  new THREE.MeshBasicMaterial({color:0xd8c777,transparent:true,opacity:.58})
+  new THREE.MeshBasicMaterial({
+    color:0xd8c777,
+    transparent:true,
+    opacity:.58,
+    alphaMap:paintWearAlphaC,
+    alphaTest:.035
+  })
 );
 focalCurbMark.rotation.x=-Math.PI/2;
 focalCurbMark.position.set(-.28,.030,-1.55);
@@ -1198,6 +1362,21 @@ const facadeWeather=new THREE.Mesh(
 facadeWeather.position.set(8.392,3.47,-5);
 facadeWeather.rotation.y=-Math.PI/2;
 scene.add(facadeWeather);
+
+const facadeJointOverlay=new THREE.Mesh(
+  new THREE.PlaneGeometry(63.45,6.64),
+  new THREE.MeshBasicMaterial({
+    map:facadeJointTexture,
+    transparent:true,
+    opacity:.62,
+    depthWrite:false,
+    toneMapped:false,
+    side:THREE.DoubleSide
+  })
+);
+facadeJointOverlay.position.set(8.388,3.49,-5);
+facadeJointOverlay.rotation.y=-Math.PI/2;
+scene.add(facadeJointOverlay);
 
 // Three shallow backing planes give the long frontage three distinct identities:
 // muted grey-green shops, a cream stone home block around Mira, and the warm cafe.
@@ -1576,6 +1755,7 @@ cafeFrame.castShadow=false;
 const cafeGlass=glassPanel(7.75,2.55,8.05,1.62,4.8,-Math.PI/2,0xc3d8d7);
 cafeGlass.material.opacity=.48;
 cafeGlass.material.roughness=.31;
+addGlassEdgeDirt(7.75,2.55,8.044,1.62,4.8,-Math.PI/2,.36);
 
 const cafeMullionMat=new THREE.MeshStandardMaterial({
   color:0x9c8e80,
@@ -1607,6 +1787,7 @@ const cafeDoorFrame=new THREE.MeshStandardMaterial({color:0x8e8378,roughness:.58
 const cafeDoorGlass=glassPanel(.88,2.28,7.91,1.58,2.20,-Math.PI/2,0xc7d9d7);
 cafeDoorGlass.material.opacity=.40;
 cafeDoorGlass.material.roughness=.32;
+addGlassEdgeDirt(.88,2.28,7.904,1.58,2.20,-Math.PI/2,.30);
 
 const cafeDoorHandle=new THREE.Mesh(
   new THREE.CylinderGeometry(.018,.018,.42,10),
@@ -2454,11 +2635,19 @@ scene.add(wayfindingSign);
 
 // A bench and bike rack near the cafe create readable points of interest for
 // future Scanner/Map interactions.
+const benchWoodMap=woodSurface.map.clone();
+benchWoodMap.rotation=Math.PI/2;
+benchWoodMap.center.set(.5,.5);
+benchWoodMap.needsUpdate=true;
+const benchWoodBump=woodSurface.bump.clone();
+benchWoodBump.rotation=Math.PI/2;
+benchWoodBump.center.set(.5,.5);
+benchWoodBump.needsUpdate=true;
 const benchWood=new THREE.MeshStandardMaterial({
   color:0xb09073,
   roughness:.86,
-  map:woodSurface.map,
-  bumpMap:woodSurface.bump,
+  map:benchWoodMap,
+  bumpMap:benchWoodBump,
   bumpScale:.020
 });
 const benchMetal=new THREE.MeshStandardMaterial({
