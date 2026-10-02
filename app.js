@@ -82,8 +82,9 @@ sun.shadow.camera.top = 22;
 sun.shadow.camera.bottom = -18;
 sun.shadow.camera.near = 1;
 sun.shadow.camera.far = 52;
-sun.shadow.bias = -0.00035;
-sun.shadow.normalBias = .018;
+sun.shadow.bias = -0.00028;
+sun.shadow.normalBias = .022;
+sun.shadow.radius = 3.2;
 scene.add(sun);
 
 const daylightFill = new THREE.DirectionalLight(0xb9d9ff, .58);
@@ -94,6 +95,83 @@ const faceLight = new THREE.SpotLight(0xffe2c8, 12, 9, Math.PI * .22, .72, 1.5);
 faceLight.position.set(1.1, 3.8, 3.2);
 faceLight.target.position.set(2.0, 1.45, -1.6);
 scene.add(faceLight, faceLight.target);
+
+function makeSurfaceTexture(kind){
+  const size=256;
+  const c=document.createElement('canvas');
+  c.width=size;
+  c.height=size;
+  const g=c.getContext('2d');
+
+  if(kind==='asphalt'){
+    g.fillStyle='#575d60';
+    g.fillRect(0,0,size,size);
+    for(let i=0;i<1700;i++){
+      const v=70+Math.floor(Math.random()*55);
+      const a=.025+Math.random()*.045;
+      g.fillStyle='rgba('+v+','+v+','+v+','+a.toFixed(3)+')';
+      const r=.35+Math.random()*1.25;
+      g.fillRect(Math.random()*size,Math.random()*size,r,r);
+    }
+    for(let i=0;i<22;i++){
+      g.strokeStyle='rgba(35,40,42,'+(.025+Math.random()*.025).toFixed(3)+')';
+      g.lineWidth=.45+Math.random()*.8;
+      g.beginPath();
+      const x=Math.random()*size;
+      const y=Math.random()*size;
+      g.moveTo(x,y);
+      g.lineTo(x+(Math.random()-.5)*42,y+(Math.random()-.5)*42);
+      g.stroke();
+    }
+  }else{
+    g.fillStyle='#d6d2c7';
+    g.fillRect(0,0,size,size);
+    for(let i=0;i<1200;i++){
+      const warm=Math.random()>.52;
+      const base=warm?188:205;
+      const a=.018+Math.random()*.030;
+      g.fillStyle='rgba('+(base+8)+','+(base+5)+','+base+','+a.toFixed(3)+')';
+      g.beginPath();
+      g.arc(Math.random()*size,Math.random()*size,.35+Math.random()*1.15,0,Math.PI*2);
+      g.fill();
+    }
+  }
+
+  const texture=new THREE.CanvasTexture(c);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=THREE.RepeatWrapping;
+  texture.wrapT=THREE.RepeatWrapping;
+  texture.anisotropy=8;
+  return texture;
+}
+
+const asphaltTexture=makeSurfaceTexture('asphalt');
+asphaltTexture.repeat.set(5,26);
+const pavementTexture=makeSurfaceTexture('pavement');
+pavementTexture.repeat.set(5,22);
+
+const glassReflectionCanvas=document.createElement('canvas');
+glassReflectionCanvas.width=128;
+glassReflectionCanvas.height=256;
+const glassReflectionCtx=glassReflectionCanvas.getContext('2d');
+const glassReflectionGradient=glassReflectionCtx.createLinearGradient(0,0,0,256);
+glassReflectionGradient.addColorStop(0,'rgba(225,244,255,.66)');
+glassReflectionGradient.addColorStop(.24,'rgba(181,219,236,.30)');
+glassReflectionGradient.addColorStop(.48,'rgba(126,176,198,.14)');
+glassReflectionGradient.addColorStop(.67,'rgba(226,237,231,.24)');
+glassReflectionGradient.addColorStop(1,'rgba(94,135,152,.18)');
+glassReflectionCtx.fillStyle=glassReflectionGradient;
+glassReflectionCtx.fillRect(0,0,128,256);
+for(let i=0;i<7;i++){
+  glassReflectionCtx.fillStyle='rgba(255,255,255,'+(.025+i*.004).toFixed(3)+')';
+  glassReflectionCtx.fillRect(12+i*17,0,1,256);
+}
+const glassReflectionTexture=new THREE.CanvasTexture(glassReflectionCanvas);
+glassReflectionTexture.colorSpace=THREE.SRGBColorSpace;
+glassReflectionTexture.wrapS=THREE.RepeatWrapping;
+glassReflectionTexture.wrapT=THREE.ClampToEdgeWrapping;
+glassReflectionTexture.repeat.set(2.2,1);
+glassReflectionTexture.anisotropy=8;
 
 function box(w, h, d, color, x, y, z, roughness=.72, metalness=.02) {
   const mesh = new THREE.Mesh(
@@ -124,11 +202,14 @@ function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x9fc7d6){
     new THREE.PlaneGeometry(w,h),
     new THREE.MeshPhysicalMaterial({
       color:tint,
-      roughness:.16,
-      metalness:.08,
+      map:glassReflectionTexture,
+      roughness:.22,
+      metalness:.06,
       transparent:true,
-      opacity:.48,
-      transmission:.12,
+      opacity:.50,
+      transmission:.08,
+      clearcoat:.24,
+      clearcoatRoughness:.34,
       side:THREE.DoubleSide
     })
   );
@@ -143,8 +224,19 @@ function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x9fc7d6){
 // Ground is deliberately split into road, curb and pedestrian zones so the
 // player immediately reads this as a real street rather than a generic floor.
 const cityGround=plane(52,92,0xc7c4b9,0,-.045,-4);
-const road=plane(15,92,0x50575b,-6.7,.004,-4);
-const sidewalk=plane(10.8,92,0xd7d4c9,4.2,.014,-4);
+cityGround.material.map=pavementTexture;
+cityGround.material.color.set(0xbebbb1);
+cityGround.material.needsUpdate=true;
+
+const road=plane(15,92,0xffffff,-6.7,.004,-4);
+road.material.map=asphaltTexture;
+road.material.roughness=.96;
+road.material.needsUpdate=true;
+
+const sidewalk=plane(10.8,92,0xffffff,4.2,.014,-4);
+sidewalk.material.map=pavementTexture;
+sidewalk.material.roughness=.93;
+sidewalk.material.needsUpdate=true;
 
 const curb=box(.30,.18,92,0xb8b4a8,.05,.08,-4,.92);
 const curbCap=box(.09,.035,92,0xe7e2d6,.18,.185,-4,.86);
@@ -216,6 +308,20 @@ for(let x=-12.6;x<-1.0;x+=1.45){
 const rightFacade=box(3.4,7.6,66,0xd8d2c5,10.15,3.75,-5,.76);
 rightFacade.castShadow=false;
 
+[1.08,3.04,5.02,6.92].forEach((y,i)=>{
+  const band=box(
+    .20,
+    i===0?.24:.12,
+    65.4,
+    i===0?0xb8afa1:0xc5c0b7,
+    8.56,
+    y,
+    -5,
+    .72
+  );
+  band.castShadow=true;
+});
+
 for(let z=-31;z<=24;z+=7.2){
   const bay=box(.42,5.6,5.35,0xbab6ad,8.64,3.22,z,.62);
   bay.castShadow=false;
@@ -235,7 +341,11 @@ for(let z=-31;z<=24;z+=7.2){
 
   // dark sill + pale canopy creates the cafe / mixed-use street rhythm.
   box(.38,.16,5.2,0x565c5d,8.34,.62,z,.55,.18);
-  box(1.15,.12,5.35,0xe9e0cf,7.95,3.02,z,.66);
+  const canopy=box(1.15,.12,5.35,0xe9e0cf,7.95,3.02,z,.66);
+  canopy.castShadow=true;
+
+  const ledge=box(.28,.07,5.05,0xcfc9bd,8.18,5.70,z,.74);
+  ledge.castShadow=true;
 }
 
 // Ground-floor cafe corner.
@@ -296,9 +406,14 @@ for(let i=0;i<10;i++){
   b.castShadow=false;
 
   for(let level=.9;level<h-.6;level+=1.22){
+    const windowTone=(Math.floor(level*10)+i)%3;
     const win=new THREE.Mesh(
       new THREE.PlaneGeometry(3.45,.66),
-      new THREE.MeshStandardMaterial({color:0x8eaeb9,roughness:.24,metalness:.15})
+      new THREE.MeshStandardMaterial({
+        color:[0x91aeb8,0x9bb8c0,0x86a3ad][windowTone],
+        roughness:.30,
+        metalness:.10
+      })
     );
     win.position.set(-13.27,level,z);
     win.rotation.y=Math.PI/2;
@@ -343,14 +458,18 @@ function createStreetTree(x,z,scale=1){
   scene.add(trunk);
 
   const crown=new THREE.Group();
-  const leafMat=new THREE.MeshStandardMaterial({color:0x6f9c65,roughness:.92});
+  const leafMats=[
+    new THREE.MeshStandardMaterial({color:0x6f9c65,roughness:.92}),
+    new THREE.MeshStandardMaterial({color:0x7eaa72,roughness:.90}),
+    new THREE.MeshStandardMaterial({color:0x628c5e,roughness:.94})
+  ];
   [
     [0,0,0,1.02],
     [-.42,.03,.10,.72],
     [.38,.10,-.05,.78],
     [0,.35,.04,.70]
-  ].forEach(([ox,oy,oz,r])=>{
-    const leaf=new THREE.Mesh(new THREE.IcosahedronGeometry(r*scale,2),leafMat);
+  ].forEach(([ox,oy,oz,r],index)=>{
+    const leaf=new THREE.Mesh(new THREE.IcosahedronGeometry(r*scale,2),leafMats[index%leafMats.length]);
     leaf.position.set(ox*scale,oy*scale,oz*scale);
     leaf.castShadow=true;
     leaf.receiveShadow=true;
@@ -466,6 +585,34 @@ bin.position.set(6.85,.36,-.2);
 bin.castShadow=true;
 scene.add(bin);
 
+function createContactShadow(x,z,w,d,opacity=.10){
+  const c=document.createElement('canvas');
+  c.width=128;
+  c.height=128;
+  const g=c.getContext('2d');
+  const gradient=g.createRadialGradient(64,64,8,64,64,62);
+  gradient.addColorStop(0,'rgba(0,0,0,'+opacity.toFixed(3)+')');
+  gradient.addColorStop(.58,'rgba(0,0,0,'+(opacity*.48).toFixed(3)+')');
+  gradient.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=gradient;
+  g.fillRect(0,0,128,128);
+
+  const texture=new THREE.CanvasTexture(c);
+  const shadow=new THREE.Mesh(
+    new THREE.PlaneGeometry(w,d),
+    new THREE.MeshBasicMaterial({
+      map:texture,
+      transparent:true,
+      depthWrite:false,
+      toneMapped:false
+    })
+  );
+  shadow.rotation.x=-Math.PI/2;
+  shadow.position.set(x,.047,z);
+  scene.add(shadow);
+  return shadow;
+}
+
 function createParkedCar(x,z,color){
   const bodyMat=new THREE.MeshStandardMaterial({color,roughness:.40,metalness:.18});
   const glassMat=new THREE.MeshStandardMaterial({color:0x58727b,roughness:.18,metalness:.30});
@@ -503,7 +650,12 @@ function createParkedCar(x,z,color){
   return group;
 }
 createParkedCar(-3.55,-8.5,0x8fa0aa);
+createContactShadow(-3.55,-8.5,2.0,3.8,.13);
 createParkedCar(-3.55,8.1,0xc7b8a6);
+createContactShadow(-3.55,8.1,2.0,3.8,.13);
+createContactShadow(5.1,1.95,2.05,.85,.085);
+createContactShadow(5.9,5.7,1.65,1.12,.075);
+createContactShadow(5.9,8.2,1.65,1.12,.075);
 
 // Small flower dots keep the palette warm without becoming decorative noise.
 const flowerMat=new THREE.MeshStandardMaterial({color:0xf0eee2,roughness:.8});
@@ -780,7 +932,8 @@ function animate(){
     crown.rotation.z=Math.sin(t*.34+i*.9)*.006;
     crown.rotation.x=Math.sin(t*.27+i*1.4)*.004;
   });
-  sunHaze.material.opacity=.80+Math.sin(t*.11)*.025;
+  sunHaze.material.opacity=.80+Math.sin(t*.11)*.018;
+  sun.intensity=3.16+Math.sin(t*.045)*.035;
 
   // Human idle: breathing, tiny weight shift and occasional attention toward player.
   const idleBreath=Math.sin(t*1.55);
