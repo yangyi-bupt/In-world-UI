@@ -764,6 +764,96 @@ const coarseConcreteSurface=configureTexturePair(makeMaterialTexture('coarseConc
 const woodSurface=configureTexturePair(makeMaterialTexture('wood',0x78d0bc53),1.2,5.8);
 const metalSurface=configureTexturePair(makeMaterialTexture('metal',0x1165a2ef),5.5,1.2);
 
+function makeStoneEdgeRoughness(seed,base=220,edge=168){
+  const size=256;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='rgb('+base+','+base+','+base+')';
+  g.fillRect(0,0,size,size);
+
+  const edgeWidth=28;
+  const paintEdge=(x0,y0,x1,y1,horizontal=false)=>{
+    const grad=g.createLinearGradient(x0,y0,x1,y1);
+    grad.addColorStop(0,'rgb('+edge+','+edge+','+edge+')');
+    grad.addColorStop(.64,'rgba('+base+','+base+','+base+',.18)');
+    grad.addColorStop(1,'rgba('+base+','+base+','+base+',0)');
+    g.fillStyle=grad;
+    if(horizontal){
+      g.fillRect(0,Math.min(y0,y1),size,Math.abs(y1-y0)||edgeWidth);
+    }else{
+      g.fillRect(Math.min(x0,x1),0,Math.abs(x1-x0)||edgeWidth,size);
+    }
+  };
+  paintEdge(0,0,edgeWidth,0,false);
+  paintEdge(size,0,size-edgeWidth,0,false);
+  paintEdge(0,0,0,edgeWidth,true);
+  paintEdge(0,size,0,size-edgeWidth,true);
+
+  // Small local water uptake / hand-contact patches near edges.
+  for(let i=0;i<34;i++){
+    const side=Math.floor(rnd()*4);
+    const x=side===0?rnd()*edgeWidth:(side===1?size-rnd()*edgeWidth:rnd()*size);
+    const y=side===2?rnd()*edgeWidth:(side===3?size-rnd()*edgeWidth:rnd()*size);
+    const radius=5+rnd()*18;
+    const v=edge-12+Math.floor(rnd()*34);
+    const grad=g.createRadialGradient(x,y,0,x,y,radius);
+    grad.addColorStop(0,'rgba('+v+','+v+','+v+','+(.16+rnd()*.18).toFixed(3)+')');
+    grad.addColorStop(1,'rgba('+v+','+v+','+v+',0)');
+    g.fillStyle=grad;
+    g.fillRect(x-radius,y-radius,radius*2,radius*2);
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+  texture.anisotropy=8;
+  return texture;
+}
+
+function makeSkinOilRoughness(seed){
+  const size=256;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='#d5d5d5';
+  g.fillRect(0,0,size,size);
+
+  // Broad soft islands emulate natural variation in sebum without assuming a
+  // specific facial UV layout.
+  for(let i=0;i<26;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const radius=8+rnd()*34;
+    const v=154+Math.floor(rnd()*50);
+    const grad=g.createRadialGradient(x,y,0,x,y,radius);
+    grad.addColorStop(0,'rgba('+v+','+v+','+v+','+(.10+rnd()*.15).toFixed(3)+')');
+    grad.addColorStop(1,'rgba('+v+','+v+','+v+',0)');
+    g.fillStyle=grad;
+    g.fillRect(x-radius,y-radius,radius*2,radius*2);
+  }
+
+  for(let i=0;i<1250;i++){
+    const v=182+Math.floor(rnd()*55);
+    g.fillStyle='rgba('+v+','+v+','+v+','+(.035+rnd()*.08).toFixed(3)+')';
+    const rr=.25+rnd()*.70;
+    g.fillRect(rnd()*size,rnd()*size,rr,rr);
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(3.2,3.2);
+  texture.anisotropy=8;
+  return texture;
+}
+
+const limestoneEdgeRoughness=makeStoneEdgeRoughness(0x31c7a5d2,224,176);
+const sandstoneEdgeRoughness=makeStoneEdgeRoughness(0x81de4b63,218,164);
+const skinOilRoughness=makeSkinOilRoughness(0x64ab219e);
+
 function makeMetalEdgeRoughness(seed){
   const size=256;
   const canvas=document.createElement('canvas');
@@ -2881,7 +2971,7 @@ const portalStoneMat=new THREE.MeshStandardMaterial({
   color:0xd8d0c4,
   roughness:.93,
   map:limestoneSurface.map,
-  roughnessMap:limestoneSurface.roughness,
+  roughnessMap:limestoneEdgeRoughness,
   normalMap:limestoneSurface.normal,
   normalScale:new THREE.Vector2(.14,.14),
   bumpMap:limestoneSurface.bump,
@@ -3475,7 +3565,7 @@ createWindowDisplay(13.8,'atelier');
 const cafeFrame=box(.48,3.0,8.5,0xb58e70,8.33,1.55,4.8,.86);
 cafeFrame.castShadow=false;
 cafeFrame.material.map=cloneTextureVariant(sandstoneSurface.map,.36,.18,.92,1.02);
-cafeFrame.material.roughnessMap=cloneTextureVariant(sandstoneSurface.roughness,.36,.18,.92,1.02);
+cafeFrame.material.roughnessMap=sandstoneEdgeRoughness;
 cafeFrame.material.normalMap=cloneTextureVariant(sandstoneSurface.normal,.36,.18,.92,1.02);
 cafeFrame.material.normalScale.set(.15,.15);
 cafeFrame.material.bumpMap=cloneTextureVariant(sandstoneSurface.bump,.36,.18,.92,1.02);
@@ -6509,7 +6599,7 @@ function tunePedestrianAsset(root,index=0){
         }
         if('envMapIntensity' in material) material.envMapIntensity=.12;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
-          material.roughnessMap=skinRoughnessTexture;
+          material.roughnessMap=skinOilRoughness;
         }
         if(hasUv && 'bumpMap' in material && !material.bumpMap){
           material.bumpMap=skinMicroBump;
@@ -6581,7 +6671,7 @@ function tuneMiraAsset(root){
         }
         if('envMapIntensity' in material) material.envMapIntensity=.16;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
-          material.roughnessMap=skinRoughnessTexture;
+          material.roughnessMap=skinOilRoughness;
         }
         if(hasUv && 'bumpMap' in material && !material.bumpMap){
           material.bumpMap=skinMicroBump;
