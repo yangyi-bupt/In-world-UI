@@ -645,17 +645,42 @@ facadeSoftShade.rotation.x=-Math.PI/2;
 facadeSoftShade.position.set(6.95,.056,-5);
 scene.add(facadeSoftShade);
 
+// Three shallow backing planes give the long frontage three distinct identities:
+// muted grey-green shops, a cream stone home block around Mira, and the warm cafe.
+function createFacadeZone(z,width,color,opacity=.34){
+  const zone=new THREE.Mesh(
+    new THREE.PlaneGeometry(width,5.82),
+    new THREE.MeshStandardMaterial({
+      color,
+      roughness:.84,
+      transparent:true,
+      opacity,
+      side:THREE.DoubleSide
+    })
+  );
+  zone.position.set(8.515,3.34,z);
+  zone.rotation.y=-Math.PI/2;
+  zone.receiveShadow=true;
+  scene.add(zone);
+  return zone;
+}
+createFacadeZone(-20.4,24.0,0xc9d0c8,.30);
+createFacadeZone(-2.7,12.4,0xddd5c7,.34);
+createFacadeZone(5.1,9.6,0xb58e70,.22);
+createFacadeZone(18.1,15.0,0xd2d4cb,.28);
+
 const facadeRibMat=new THREE.MeshStandardMaterial({
   color:0xd6cec1,
   roughness:.82
 });
-for(let z=-34.6;z<=27.8;z+=7.2){
-  const rib=new THREE.Mesh(new THREE.BoxGeometry(.20,5.82,.18),facadeRibMat);
+[-34.2,-27.0,-18.9,-11.2,-3.7,4.1,12.4,20.7,27.3].forEach((z,i)=>{
+  const ribWidth=i===4||i===5?.26:.18;
+  const rib=new THREE.Mesh(new THREE.BoxGeometry(.20,5.82,ribWidth),facadeRibMat);
   rib.position.set(8.42,3.32,z);
   rib.castShadow=true;
   rib.receiveShadow=true;
   scene.add(rib);
-}
+});
 
 const balconyStone=new THREE.MeshStandardMaterial({color:0xd8cfc2,roughness:.86});
 const balconyGreenMats=[
@@ -724,40 +749,45 @@ const facadeSunWashMat=new THREE.MeshBasicMaterial({
   scene.add(wash);
 });
 
-for(let z=-31;z<=24;z+=7.2){
+const facadeBayCenters=[-31.0,-23.6,-16.0,-8.6,-1.1,6.5,14.5,22.7];
+const facadeBayDepths=[5.00,5.55,5.12,5.62,5.08,5.82,5.18,5.52];
+facadeBayCenters.forEach((z,bayIndex)=>{
+  const bayDepth=facadeBayDepths[bayIndex];
   const bayTone=z<-7?0xc2c9c2:(z>10?0xd8cabc:0xc9c1b5);
-  const bay=box(.42,5.6,5.35,bayTone,8.64,3.22,z,.66);
+  const bay=box(.42,5.6,bayDepth,bayTone,8.64,3.22,z,.66);
   bay.castShadow=false;
 
   const glassTint=z<-7?0xc6dad8:(z>10?0xd2d5cd:0xc2d9da);
-  const glass=glassPanel(5.0,4.65,8.41,3.35,z,-Math.PI/2,glassTint);
+  const glass=glassPanel(bayDepth-.34,4.65,8.41,3.35,z,-Math.PI/2,glassTint);
   glass.material.opacity=z<-7?.39:(z>10?.37:.42);
   glass.material.roughness=z>10?.33:.29;
 
   // Mullions prevent large glazing bays from reading as flat placeholder planes.
-  [-1.62,0,1.62].forEach(offset=>{
-    const mullion=box(.045,4.62,.035,0x9aa5a3,8.35,3.35,z+offset,.42,.34);
+  [-.32,0,.32].forEach(fraction=>{
+    const offset=fraction*(bayDepth-.42);
+    const mullion=box(.045,4.62,.035,0x9aa5a3,8.35,3.35,z+offset,.42,.28);
     mullion.castShadow=false;
   });
   [2.05,3.35,4.65].forEach(y=>{
-    const mullion=box(.045,.035,4.96,0xa3adaa,8.35,y,z,.42,.34);
+    const mullion=box(.045,.035,bayDepth-.40,0xa3adaa,8.35,y,z,.42,.28);
     mullion.castShadow=false;
   });
 
   // dark sill + pale canopy creates the cafe / mixed-use street rhythm.
-  box(.38,.16,5.2,0x565c5d,8.34,.62,z,.55,.18);
+  box(.38,.16,bayDepth-.18,0x666965,8.34,.62,z,.62,.10);
   const canopyTone=z<-7?0xe2e8df:(z>10?0xe6d8cb:0xeee6d8);
-  const canopy=box(1.15,.12,5.35,canopyTone,7.95,3.02,z,.70);
+  const canopyProjection=bayIndex===3||bayIndex===4?1.28:(bayIndex===5?1.46:1.02);
+  const canopy=box(canopyProjection,.12,bayDepth+.04,canopyTone,8.12-canopyProjection*.15,3.02,z,.74);
   canopy.castShadow=true;
 
-  const canopyShadow=box(1.02,.035,5.10,0x9d9489,8.00,2.945,z,.92);
+  const canopyShadow=box(Math.max(.82,canopyProjection-.12),.035,bayDepth-.16,0x9d9489,8.02,2.945,z,.92);
   canopyShadow.material.transparent=true;
   canopyShadow.material.opacity=.28;
   canopyShadow.material.depthWrite=false;
   canopyShadow.castShadow=false;
 
   const glassBacking=new THREE.Mesh(
-    new THREE.PlaneGeometry(4.78,4.38),
+    new THREE.PlaneGeometry(bayDepth-.56,4.38),
     new THREE.MeshBasicMaterial({
       color:z<-7?0xb7c1ba:(z>10?0xcbb9a9:0xbeb5aa),
       transparent:true,
@@ -769,9 +799,27 @@ for(let z=-31;z<=24;z+=7.2){
   glassBacking.rotation.y=-Math.PI/2;
   scene.add(glassBacking);
 
-  const ledge=box(.28,.07,5.05,0xcfc9bd,8.18,5.70,z,.74);
+  const ledge=box(.28,.07,bayDepth-.38,0xcfc9bd,8.18,5.70,z,.74);
   ledge.castShadow=true;
-}
+});
+
+const portalStoneMat=new THREE.MeshStandardMaterial({color:0xd8d0c4,roughness:.86});
+[
+  [-4.55,3.45,0xded6c9],
+  [10.55,3.10,0xd2d7cf]
+].forEach(([z,width,color])=>{
+  const mat=new THREE.MeshStandardMaterial({color,roughness:.86});
+  [-width*.5,width*.5].forEach(oz=>{
+    const jamb=new THREE.Mesh(new THREE.BoxGeometry(.36,3.05,.24),mat);
+    jamb.position.set(7.98,1.57,z+oz);
+    jamb.castShadow=true;
+    scene.add(jamb);
+  });
+  const head=new THREE.Mesh(new THREE.BoxGeometry(.36,.24,width+.24),mat);
+  head.position.set(7.98,3.00,z);
+  head.castShadow=true;
+  scene.add(head);
+});
 
 // A few recessed ground-floor entries keep the frontage from feeling like one
 // repeated office wall.
@@ -958,17 +1006,17 @@ const signCtx=signCanvas.getContext('2d');
 signCtx.fillStyle='#f3eee5';
 signCtx.fillRect(0,0,512,128);
 signCtx.fillStyle='#514b43';
-signCtx.font='600 48px Inter, sans-serif';
+signCtx.font='600 44px Inter, sans-serif';
 signCtx.textAlign='center';
 signCtx.textBaseline='middle';
 signCtx.fillText('NOVA CAFÉ',256,65);
 const signTexture=new THREE.CanvasTexture(signCanvas);
 signTexture.colorSpace=THREE.SRGBColorSpace;
 const cafeSign=new THREE.Mesh(
-  new THREE.PlaneGeometry(2.78,.64),
+  new THREE.PlaneGeometry(2.42,.54),
   new THREE.MeshBasicMaterial({map:signTexture,toneMapped:false})
 );
-cafeSign.position.set(7.77,3.42,4.8);
+cafeSign.position.set(7.77,3.38,4.8);
 cafeSign.rotation.y=-Math.PI/2;
 scene.add(cafeSign);
 
@@ -1199,7 +1247,7 @@ function createStreetTree(x,z,scale=1){
   ].forEach(([ox,oy,oz,r,sy,sz],index)=>{
     const leaf=new THREE.Mesh(new THREE.IcosahedronGeometry(r*scale,2),leafMats[index%leafMats.length]);
     leaf.position.set(ox*scale,oy*scale,oz*scale);
-    leaf.scale.set(1,sy,sz);
+    leaf.scale.set(.86,sy*1.06,sz*.90);
     leaf.castShadow=true;
     leaf.receiveShadow=true;
     crown.add(leaf);
@@ -1212,7 +1260,7 @@ function createStreetTree(x,z,scale=1){
   ].forEach(([ox,oy,oz,r])=>{
     const shadeLeaf=new THREE.Mesh(new THREE.IcosahedronGeometry(r*scale,1),crownShadeMat);
     shadeLeaf.position.set(ox*scale,oy*scale,oz*scale);
-    shadeLeaf.scale.set(1.05,.72,.92);
+    shadeLeaf.scale.set(.90,.78,.86);
     shadeLeaf.castShadow=true;
     crown.add(shadeLeaf);
   });
@@ -1228,12 +1276,17 @@ function createStreetTree(x,z,scale=1){
     crown.add(highlight);
   });
 
-  crown.position.set(x,3.0*scale,z);
+  crown.position.set(x,3.10*scale,z);
   scene.add(crown);
   streetTreeCrowns.push(crown);
 }
 
-[-13.2,-6.4,10.8,16.2].forEach((z,i)=>createStreetTree(1.0,z,i%2?.94:1.04));
+[
+  [1.08,-13.4,1.02],
+  [.94,-6.55,.95],
+  [1.06,10.55,1.00],
+  [.92,16.65,.93]
+].forEach(([x,z,scale])=>createStreetTree(x,z,scale));
 
 const curbGroundcoverMat=new THREE.MeshStandardMaterial({color:0x8ea27a,roughness:.98});
 [-6.4,10.8].forEach(z=>{
@@ -1245,13 +1298,18 @@ const curbGroundcoverMat=new THREE.MeshStandardMaterial({color:0x8ea27a,roughnes
     scene.add(tuft);
   });
 });
-[-18,0,18].forEach((z,i)=>createStreetTree(-12.1,z,.88+i*.04));
+[
+  [-12.35,-18.4,.88],
+  [-11.95,.35,.92],
+  [-12.25,18.5,.89]
+].forEach(([x,z,scale])=>createStreetTree(x,z,scale));
 
 function createPlanter(x,z,w=1.8){
   box(w,.42,.72,0xbcb09d,x,.22,z,.92);
   const greens=[
     new THREE.MeshStandardMaterial({color:0x789d70,roughness:.96}),
-    new THREE.MeshStandardMaterial({color:0x88aa7b,roughness:.95})
+    new THREE.MeshStandardMaterial({color:0x91b77e,roughness:.95}),
+    new THREE.MeshStandardMaterial({color:0x6f9765,roughness:.97})
   ];
   const offsets=[
     [-.34,-.05,.94],
@@ -1261,7 +1319,7 @@ function createPlanter(x,z,w=1.8){
     [.35,-.02,.92]
   ];
   offsets.forEach(([nx,nz,ss],i)=>{
-    const shrub=new THREE.Mesh(new THREE.SphereGeometry(.25,12,9),greens[i%2]);
+    const shrub=new THREE.Mesh(new THREE.SphereGeometry(.25,12,9),greens[i%greens.length]);
     shrub.scale.set(1.14*ss,.76*ss,.94*ss);
     shrub.position.set(x+w*nx,.54+(i%2)*.035,z+nz);
     shrub.castShadow=true;
