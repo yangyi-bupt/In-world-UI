@@ -664,13 +664,16 @@ function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x9fc7d6){
       color:tint,
       map:glassReflectionTexture,
       roughnessMap:glassRoughnessTexture,
-      roughness:.24,
-      metalness:.02,
+      roughness:.21,
+      metalness:.01,
       transparent:true,
-      opacity:.43,
-      transmission:.09,
-      clearcoat:.28,
-      clearcoatRoughness:.24,
+      opacity:.42,
+      transmission:.10,
+      ior:1.45,
+      thickness:.012,
+      clearcoat:.34,
+      clearcoatRoughness:.20,
+      envMapIntensity:.84,
       side:THREE.DoubleSide
     })
   );
@@ -1571,11 +1574,12 @@ const balconyGreenMats=[
 
   const railMat=new THREE.MeshStandardMaterial({
     color:0x9aa29e,
-    roughness:.46,
-    metalness:.30,
+    roughness:.40,
+    metalness:.38,
     map:metalWearTexture,
     bumpMap:metalSurface.bump,
-    bumpScale:.0035
+    bumpScale:.0035,
+    envMapIntensity:.90
   });
   const rail=new THREE.Mesh(new THREE.BoxGeometry(.045,.50,3.05),railMat);
   rail.position.set(7.58,5.86,z);
@@ -2000,11 +2004,12 @@ addGlassEdgeDirt(7.75,2.55,8.044,1.62,4.8,-Math.PI/2,.36);
 
 const cafeMullionMat=new THREE.MeshStandardMaterial({
   color:0x9c8e80,
-  roughness:.50,
-  metalness:.24,
+  roughness:.42,
+  metalness:.34,
   map:metalSurface.map,
   bumpMap:metalSurface.bump,
-  bumpScale:.006
+  bumpScale:.006,
+  envMapIntensity:.88
 });
 [2.15,3.80,5.45,7.10].forEach(z=>{
   const mullion=new THREE.Mesh(new THREE.BoxGeometry(.055,2.42,.045),cafeMullionMat);
@@ -2015,11 +2020,12 @@ const cafeMullionMat=new THREE.MeshStandardMaterial({
 
 const cafeDoorFrame=new THREE.MeshStandardMaterial({
   color:0x8e8378,
-  roughness:.52,
-  metalness:.22,
+  roughness:.46,
+  metalness:.30,
   map:metalWearTexture,
   bumpMap:metalSurface.bump,
-  bumpScale:.004
+  bumpScale:.004,
+  envMapIntensity:.82
 });
 [
   [7.88,1.58,1.73,.055,2.42,.055],
@@ -2041,11 +2047,12 @@ const cafeDoorHandle=new THREE.Mesh(
   new THREE.CylinderGeometry(.018,.018,.42,10),
   new THREE.MeshStandardMaterial({
     color:0x9ba29f,
-    roughness:.34,
-    metalness:.58,
+    roughness:.27,
+    metalness:.68,
     map:metalWearTexture,
     bumpMap:metalSurface.bump,
-    bumpScale:.0025
+    bumpScale:.0025,
+    envMapIntensity:1.05
   })
 );
 cafeDoorHandle.rotation.z=Math.PI/2;
@@ -2105,20 +2112,30 @@ cafeSign.position.set(7.77,3.38,4.8);
 cafeSign.rotation.y=-Math.PI/2;
 scene.add(cafeSign);
 
-const awningCream=new THREE.MeshStandardMaterial({
+const awningCream=new THREE.MeshPhysicalMaterial({
   color:0xf0e5d3,
-  roughness:.87,
+  roughness:.91,
+  metalness:0,
   map:fabricColorTexture,
   bumpMap:fabricMicroBump,
-  bumpScale:.007
+  bumpScale:.007,
+  sheen:1,
+  sheenColor:new THREE.Color(0xfff1dc),
+  sheenRoughness:.88,
+  envMapIntensity:.22
 });
 const awningApricotMap=cloneTextureVariant(fabricColorTexture,.16,.04,1.03,.98);
-const awningApricot=new THREE.MeshStandardMaterial({
+const awningApricot=new THREE.MeshPhysicalMaterial({
   color:0xd8aa86,
-  roughness:.85,
+  roughness:.89,
+  metalness:0,
   map:awningApricotMap,
   bumpMap:fabricMicroBump,
-  bumpScale:.007
+  bumpScale:.007,
+  sheen:1,
+  sheenColor:new THREE.Color(0xf4c9a8),
+  sheenRoughness:.86,
+  envMapIntensity:.20
 });
 const awningCreamEdge=awningCream.clone();
 awningCreamEdge.color.multiplyScalar(.965);
@@ -3681,6 +3698,11 @@ function ensureWorldAssetEnvironment(){
   const envScene=new window.RoomEnvironment();
   const target=pmrem.fromScene(envScene,.035);
   worldEnvironmentTexture=target.texture;
+
+  // Keep the visible sky dome, but let every PBR material sample the same soft
+  // daylight reflection field as imported assets.
+  scene.environment=worldEnvironmentTexture;
+
   pmrem.dispose();
 }
 
