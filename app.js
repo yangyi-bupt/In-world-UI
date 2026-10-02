@@ -983,6 +983,31 @@ function makeMetalEdgeRoughness(seed){
 }
 const metalEdgeRoughness=makeMetalEdgeRoughness(0x75ae31c4);
 
+function makeTouchPolishRoughness(){
+  const canvas=document.createElement('canvas');
+  canvas.width=128;
+  canvas.height=256;
+  const g=canvas.getContext('2d');
+  g.fillStyle='#8c8c8c';
+  g.fillRect(0,0,128,256);
+
+  const center=g.createLinearGradient(0,0,128,0);
+  center.addColorStop(0,'rgba(140,140,140,0)');
+  center.addColorStop(.26,'rgba(102,102,102,.24)');
+  center.addColorStop(.46,'rgba(63,63,63,.62)');
+  center.addColorStop(.54,'rgba(63,63,63,.62)');
+  center.addColorStop(.74,'rgba(102,102,102,.24)');
+  center.addColorStop(1,'rgba(140,140,140,0)');
+  g.fillStyle=center;
+  g.fillRect(0,0,128,256);
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+  texture.anisotropy=8;
+  return texture;
+}
+const metalTouchRoughness=makeTouchPolishRoughness();
+
 const pavementDetailSurface=configureTexturePair(
   makeMaterialTexture('concrete',0x4d84b271),
   8,
@@ -3031,6 +3056,26 @@ roadDustLayer.position.set(-6.62,.031,-4);
 roadDustLayer.renderOrder=3;
 scene.add(roadDustLayer);
 
+const roadMoistureLayer=new THREE.Mesh(
+  new THREE.PlaneGeometry(2.15,82),
+  new THREE.MeshStandardMaterial({
+    color:0x6b7372,
+    map:roadMoistureMaps.map,
+    alphaMap:roadMoistureMaps.map,
+    roughnessMap:roadMoistureMaps.roughness,
+    roughness:.42,
+    metalness:0,
+    transparent:true,
+    opacity:.34,
+    depthWrite:false,
+    envMapIntensity:.16
+  })
+);
+roadMoistureLayer.rotation.x=-Math.PI/2;
+roadMoistureLayer.position.set(-1.02,.032,-4);
+roadMoistureLayer.renderOrder=4;
+scene.add(roadMoistureLayer);
+
 const pavementPatinaMat=new THREE.MeshStandardMaterial({
   color:0xffffff,
   map:pavementPatina.map,
@@ -4325,7 +4370,7 @@ const cafeDoorHandle=new THREE.Mesh(
     roughness:.24,
     metalness:.72,
     map:metalSurface.map,
-    roughnessMap:metalEdgeRoughness,
+    roughnessMap:metalTouchRoughness,
     normalMap:metalSurface.normal,
     normalScale:new THREE.Vector2(.10,.10),
     bumpMap:metalSurface.bump,
@@ -4665,6 +4710,11 @@ const cafeBenchMat=new THREE.MeshPhysicalMaterial({
   clearcoatRoughness:.80,
   envMapIntensity:.09
 });
+if('anisotropy' in cafeBenchMat){
+  cafeBenchMat.anisotropy=.07;
+  cafeBenchMat.anisotropyRotation=0;
+}
+
 const cafeBench=new THREE.Mesh(new THREE.BoxGeometry(.34,.40,2.60),cafeBenchMat);
 cafeBench.position.set(8.18,.42,6.25);
 cafeBench.castShadow=true;
@@ -4712,6 +4762,11 @@ const cafeSmallTableMat=new THREE.MeshPhysicalMaterial({
   clearcoatRoughness:.68,
   envMapIntensity:.12
 });
+if('anisotropy' in cafeSmallTableMat){
+  cafeSmallTableMat.anisotropy=.10;
+  cafeSmallTableMat.anisotropyRotation=0;
+}
+
 [3.45,5.05,6.65].forEach((z,tableIndex)=>{
   const top=new THREE.Mesh(new THREE.CylinderGeometry(.20,.20,.035,20),cafeSmallTableMat);
   top.position.set(7.92,.72,z);
@@ -6066,6 +6121,11 @@ const benchWood=new THREE.MeshPhysicalMaterial({
   clearcoatRoughness:.76,
   envMapIntensity:.10
 });
+if('anisotropy' in benchWood){
+  benchWood.anisotropy=.07;
+  benchWood.anisotropyRotation=Math.PI/2;
+}
+
 const benchEndMat=new THREE.MeshStandardMaterial({
   color:0xb48765,
   map:woodEndGrainTexture,
@@ -7199,10 +7259,22 @@ function tuneVehicleAsset(root,bodyColor){
       }else if(/body|paint|carpaint|car_paint|coachwork|exterior/.test(key)){
         if(material.color) material.color.lerp(mutedTint,.72);
 
+        let panelHash=2166136261;
+        const panelKey=(object.name||'')+'|'+(material.name||'');
+        for(let pi=0;pi<panelKey.length;pi++){
+          panelHash^=panelKey.charCodeAt(pi);
+          panelHash=Math.imul(panelHash,16777619);
+        }
+        const panelVariation=((panelHash>>>0)%1000)/1000-.5;
+
         // Automotive paint is a dielectric colored layer under a glossy clear
-        // coat, not a bulk metal. Keeping metalness near zero avoids the
-        // metallic-plastic look produced by the previous values.
-        material.roughness=THREE.MathUtils.clamp(material.roughness ?? .31,.28,.36);
+        // coat, not a bulk metal. Small per-mesh variation keeps adjacent body
+        // panels from reflecting as one perfectly uniform plastic shell.
+        material.roughness=THREE.MathUtils.clamp(
+          (material.roughness ?? .31)+panelVariation*.028,
+          .275,
+          .37
+        );
         if('metalness' in material) material.metalness=.025;
         if('envMapIntensity' in material) material.envMapIntensity=.82;
 
@@ -7214,8 +7286,8 @@ function tuneVehicleAsset(root,bodyColor){
           material.bumpScale=.0022;
         }
         if(material.isMeshPhysicalMaterial){
-          material.clearcoat=.68;
-          material.clearcoatRoughness=.17;
+          material.clearcoat=THREE.MathUtils.clamp(.68+panelVariation*.06,.63,.73);
+          material.clearcoatRoughness=THREE.MathUtils.clamp(.17+panelVariation*.045,.145,.195);
           material.clearcoatRoughnessMap=vehicleDustRoughness;
           material.clearcoatNormalMap=vehicleClearcoatNormal;
           material.clearcoatNormalScale?.set(.040,.040);
@@ -7350,6 +7422,9 @@ function tuneMiraAsset(root){
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=0;
           if('specularIntensity' in material) material.specularIntensity=.50;
+          if(hasUv && 'specularIntensityMap' in material){
+            material.specularIntensityMap=skinSpecularTexture;
+          }
         }
       }else if(/hair/.test(key)){
         if('roughness' in material){
