@@ -178,3 +178,73 @@ body.device-open:after{background:radial-gradient(circle at 50% 47%,rgba(25,31,3
   .world-chip{left:14px;top:14px}
   .mode-label{right:14px;top:14px}
 }
+
+
+/* ---------- spatial device transition v3 ---------- */
+.tablet-layer{
+  transition:opacity .32s ease,visibility .32s ease,backdrop-filter .52s ease;
+}
+.tablet-layer:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  background:
+    radial-gradient(ellipse at 50% 58%,rgba(233,239,233,.055) 0%,rgba(233,239,233,.018) 24%,transparent 48%),
+    linear-gradient(180deg,transparent 62%,rgba(8,11,11,.12));
+  transition:opacity .46s ease;
+}
+.tablet-layer.open:before{opacity:1}
+.tablet{
+  top:51.5%;
+  transform:translate(-50%,70%) rotateX(34deg) rotateY(-3deg) rotateZ(-1.8deg) scale(.76);
+  opacity:0;
+  filter:blur(2.6px);
+  transition:
+    transform .68s cubic-bezier(.16,.86,.18,1),
+    opacity .30s ease,
+    filter .42s ease;
+}
+.tablet-layer.open .tablet{
+  transform:translate(-50%,-49%) rotateX(-.8deg) rotateY(.25deg) rotateZ(.15deg) scale(1);
+  opacity:1;
+  filter:none;
+  animation:none;
+}
+.tablet-layer.closing .tablet{
+  transform:translate(-50%,14%) rotateX(13deg) rotateY(1.3deg) rotateZ(.6deg) scale(.91);
+  opacity:.16;
+  filter:blur(1.8px);
+  transition:
+    transform .44s cubic-bezier(.5,.02,.82,.42),
+    opacity .34s ease,
+    filter .30s ease;
+}
+.tablet-layer.closing:before{opacity:.20}
+body.device-open #game{
+  filter:blur(1.55px) brightness(.79) saturate(.92) contrast(.98);
+  transform:scale(1.008);
+}
+body.device-open:before{opacity:.50}
+body.device-open:after{
+  background:
+    radial-gradient(ellipse at 50% 50%,rgba(14,20,20,0) 28%,rgba(11,16,16,.16) 68%,rgba(7,10,10,.31) 112%),
+    linear-gradient(180deg,rgba(12,17,17,.03),rgba(7,10,10,.12));
+}
+.tablet-layer.open .tablet3d{
+  filter:
+    drop-shadow(0 28px 34px rgba(0,0,0,.24))
+    drop-shadow(0 7px 12px rgba(0,0,0,.18));
+}
+.tablet-layer.open .screen:after{
+  background:
+    linear-gradient(118deg,rgba(255,255,255,.075) 0%,rgba(255,255,255,.018) 13%,transparent 31%,transparent 72%,rgba(165,199,191,.032) 100%);
+}
+@media(max-width:760px){
+  .tablet{top:50.5%;transform:translate(-50%,62%) rotateX(28deg) rotateY(-2deg) scale(.80)}
+  .tablet-layer.open .tablet{transform:translate(-50%,-50%) rotateX(-.5deg) rotateY(.15deg) scale(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  .tablet,.tablet-layer,.tablet-layer:before{transition-duration:.01ms!important}
+}
