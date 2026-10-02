@@ -1907,11 +1907,15 @@ function createParkedCar(x,z,color,assetVariant='primary'){
   group.position.set(x+(parkedIndex===0?-.05:.06),0,z);
   group.rotation.y=parkedIndex===0?-.018:.024;
   scene.add(group);
+  const placeholderChildren=[...group.children];
+  // Keep the legacy procedural car out of the first painted frame. It is only
+  // revealed again if every authored vehicle asset for this slot fails.
+  placeholderChildren.forEach(child=>{child.visible=false;});
   parkedCars.push({
     group,
     color,
     assetVariant,
-    placeholderChildren:[...group.children],
+    placeholderChildren,
     assetRoot:null
   });
   return group;
@@ -1953,6 +1957,9 @@ function createAmbientWalker(x,z,direction,color,speed=.58,assetVariant='primary
   group.position.set(x,0,z);
   group.scale.setScalar(.76);
   scene.add(group);
+  const placeholderChildren=[...group.children];
+  // Avoid the old mannequin pass flashing while the GLB walkers download.
+  placeholderChildren.forEach(child=>{child.visible=false;});
   ambientWalkers.push({
     group,
     direction,
@@ -1967,7 +1974,7 @@ function createAmbientWalker(x,z,direction,color,speed=.58,assetVariant='primary
     phase:Math.random()*Math.PI*2,
     strollOffset:ambientWalkers.length*6.25+2.5,
     motionState:'walk',
-    placeholderChildren:[...group.children],
+    placeholderChildren,
     assetRoot:null,
     mixer:null
   });
@@ -2028,6 +2035,8 @@ function createTrafficCar(x,z,color,speed,assetVariant='primary'){
   group.position.set(x,0,z);
   if(speed<0) group.rotation.y=Math.PI;
   scene.add(group);
+  const placeholderChildren=[...group.children];
+  placeholderChildren.forEach(child=>{child.visible=false;});
   movingTraffic.push({
     group,
     speed,
@@ -2036,7 +2045,7 @@ function createTrafficCar(x,z,color,speed,assetVariant='primary'){
     assetVariant,
     motionPhase:Math.random()*Math.PI*2,
     wheels,
-    placeholderChildren:[...group.children],
+    placeholderChildren,
     assetRoot:null,
     assetWheels:[]
   });
@@ -2158,6 +2167,9 @@ mira.position.set(2.0,0,-1.6);
 const miraBaseYaw=-.16;
 mira.rotation.y=miraBaseYaw;
 mira.scale.setScalar(1.02);
+// The authored character is the normal path. Keep the procedural Mira hidden
+// from frame zero so there is no visible "old -> new" character swap.
+miraRig.visible=false;
 scene.add(mira);
 
 const WORLD_GLB_ASSETS={
@@ -2320,7 +2332,12 @@ function tuneVehicleAsset(root,bodyColor){
     if(/wheel|tire|tyre/.test(meshKey)) wheels.push(object);
   });
 
-  return wheels;
+  // These source GLBs do not guarantee wheel-mesh pivots at the wheel hubs.
+  // Rotating a mesh whose geometry is baked around a body/root pivot makes the
+  // wheel orbit the car ("flying wheels"). Keep authored wheels static rather
+  // than applying unsafe runtime rotation; the vehicle translation still sells
+  // the slow street traffic motion.
+  return [];
 }
 
 function tunePedestrianAsset(root,index=0){
@@ -2454,72 +2471,113 @@ function attachMiraAsset(source,animations){
   }
 }
 
+function setPlaceholderVisibility(entries,visible){
+  entries.forEach(entry=>{
+    entry.placeholderChildren?.forEach(child=>{child.visible=visible;});
+  });
+}
+
+function carTargetLength(entry){
+  const parked=entry.baseSpeed===undefined;
+  return entry.assetVariant==='secondary'
+    ? (parked?4.16:4.02)
+    : (parked?4.52:4.42);
+}
+
 async function initWorldGLBAssets(){
   if(worldGLBLoadStarted || !window.GLTFLoader) return;
   worldGLBLoadStarted=true;
   ensureWorldAssetEnvironment();
   const loader=new window.GLTFLoader();
+  const vehicleEntries=[...parkedCars,...movingTraffic];
 
-  const [carPrimary,carSecondary,carFallback,pedestrianPrimary,pedestrianSecondary,pedestrianTertiary,pedestrianQuaternary,pedestrianQuinary,miraResult]=await Promise.allSettled([
-    loadGLB(loader,WORLD_GLB_ASSETS.carPrimary),
-    loadGLB(loader,WORLD_GLB_ASSETS.carSecondary),
-    loadGLB(loader,WORLD_GLB_ASSETS.carFallback),
-    loadGLB(loader,WORLD_GLB_ASSETS.pedestrianPrimary),
-    loadGLB(loader,WORLD_GLB_ASSETS.pedestrianSecondary),
-    loadGLB(loader,WORLD_GLB_ASSETS.pedestrianTertiary),
-    loadGLB(loader,WORLD_GLB_ASSETS.pedestrianQuaternary),
-    loadGLB(loader,WORLD_GLB_ASSETS.pedestrianQuinary),
-    loadGLB(loader,WORLD_GLB_ASSETS.mira)
-  ]);
-
-  const carSources={
-    primary:carPrimary.status==='fulfilled'?carPrimary.value:null,
-    secondary:carSecondary.status==='fulfilled'?carSecondary.value:null,
-    fallback:carFallback.status==='fulfilled'?carFallback.value:null
-  };
-  parkedCars.forEach((entry,index)=>{
-    const source=carSources[entry.assetVariant] || carSources.primary || carSources.secondary || carSources.fallback;
-    if(source) attachCarAsset(entry,source.scene,index,entry.assetVariant==='secondary'?4.16:4.52);
-  });
-  movingTraffic.forEach((entry,index)=>{
-    const source=carSources[entry.assetVariant] || carSources.primary || carSources.secondary || carSources.fallback;
-    if(source) attachCarAsset(entry,source.scene,index+2,entry.assetVariant==='secondary'?4.02:4.42);
-  });
-  if(!carSources.primary && !carSources.secondary && !carSources.fallback){
-    console.warn('Vehicle GLBs failed; retaining procedural fallbacks.');
+  // Load and attach the two visible car variants independently. Previously all
+  // nine world GLBs were held behind one Promise.allSettled(), so even a slow
+  // pedestrian download delayed the cars and Mira.
+  async function loadCarVariant(variant,url){
+    try{
+      const result=await loadGLB(loader,url);
+      vehicleEntries.forEach((entry,index)=>{
+        if(entry.assetVariant===variant && !entry.assetRoot){
+          attachCarAsset(entry,result.scene,index,carTargetLength(entry));
+        }
+      });
+      return result;
+    }catch(error){
+      console.warn('Vehicle GLB failed:',variant,error);
+      return null;
+    }
   }
 
-  const pedestrianSources={
-    primary:pedestrianPrimary.status==='fulfilled'?pedestrianPrimary.value:null,
-    secondary:pedestrianSecondary.status==='fulfilled'?pedestrianSecondary.value:null,
-    tertiary:pedestrianTertiary.status==='fulfilled'?pedestrianTertiary.value:null,
-    quaternary:pedestrianQuaternary.status==='fulfilled'?pedestrianQuaternary.value:null,
-    quinary:pedestrianQuinary.status==='fulfilled'?pedestrianQuinary.value:null
-  };
-  ambientWalkers.forEach((entry,index)=>{
-    const source=pedestrianSources[entry.assetVariant] ||
-      pedestrianSources.primary ||
-      pedestrianSources.secondary ||
-      pedestrianSources.tertiary ||
-      pedestrianSources.quaternary ||
-      pedestrianSources.quinary;
-    if(source) attachWalkerAsset(entry,source.scene,source.animations,index);
-  });
-  if(
-    !pedestrianSources.primary &&
-    !pedestrianSources.secondary &&
-    !pedestrianSources.tertiary &&
-    !pedestrianSources.quaternary &&
-    !pedestrianSources.quinary
-  ){
-    console.warn('Pedestrian GLBs failed; retaining procedural fallbacks.');
-  }
+  const primaryCarTask=loadCarVariant('primary',WORLD_GLB_ASSETS.carPrimary);
+  const secondaryCarTask=loadCarVariant('secondary',WORLD_GLB_ASSETS.carSecondary);
 
-  if(miraResult.status==='fulfilled'){
-    attachMiraAsset(miraResult.value.scene,miraResult.value.animations);
-  }else{
-    console.warn('Mira GLB failed; retaining procedural fallback.',miraResult.reason);
-  }
+  const carTask=Promise.all([primaryCarTask,secondaryCarTask]).then(async ([primary,secondary])=>{
+    if(primary && secondary) return;
+
+    try{
+      const fallback=await loadGLB(loader,WORLD_GLB_ASSETS.carFallback);
+      vehicleEntries.forEach((entry,index)=>{
+        const variantLoaded=entry.assetVariant==='secondary'?secondary:primary;
+        if(!variantLoaded && !entry.assetRoot){
+          attachCarAsset(entry,fallback.scene,index,carTargetLength(entry));
+        }
+      });
+    }catch(error){
+      console.warn('Vehicle fallback GLB failed; revealing procedural fallback.',error);
+      vehicleEntries
+        .filter(entry=>!entry.assetRoot)
+        .forEach(entry=>entry.placeholderChildren?.forEach(child=>{child.visible=true;}));
+    }
+  });
+
+  const pedestrianDefinitions=[
+    ['primary',WORLD_GLB_ASSETS.pedestrianPrimary],
+    ['secondary',WORLD_GLB_ASSETS.pedestrianSecondary],
+    ['tertiary',WORLD_GLB_ASSETS.pedestrianTertiary],
+    ['quaternary',WORLD_GLB_ASSETS.pedestrianQuaternary],
+    ['quinary',WORLD_GLB_ASSETS.pedestrianQuinary]
+  ];
+  const pedestrianSources={};
+
+  const pedestrianTask=Promise.all(pedestrianDefinitions.map(async ([variant,url])=>{
+    try{
+      const result=await loadGLB(loader,url);
+      pedestrianSources[variant]=result;
+      ambientWalkers.forEach((entry,index)=>{
+        if(entry.assetVariant===variant && !entry.assetRoot){
+          attachWalkerAsset(entry,result.scene,result.animations,index);
+        }
+      });
+    }catch(error){
+      console.warn('Pedestrian GLB failed:',variant,error);
+    }
+  })).then(()=>{
+    const fallback=Object.values(pedestrianSources)[0] || null;
+    ambientWalkers.forEach((entry,index)=>{
+      if(entry.assetRoot) return;
+      if(fallback){
+        attachWalkerAsset(entry,fallback.scene,fallback.animations,index);
+      }else{
+        entry.placeholderChildren?.forEach(child=>{child.visible=true;});
+      }
+    });
+  });
+
+  const miraTask=loadGLB(loader,WORLD_GLB_ASSETS.mira)
+    .then(result=>attachMiraAsset(result.scene,result.animations))
+    .catch(error=>{
+      console.warn('Mira GLB failed; revealing procedural fallback.',error);
+      miraRig.visible=true;
+    });
+
+  // The player can enter as soon as the focal character and cars have settled.
+  // Ambient walkers continue streaming independently instead of blocking entry.
+  await Promise.allSettled([carTask,miraTask]);
+  window.dispatchEvent(new Event('world-core-assets-ready'));
+
+  await Promise.allSettled([pedestrianTask]);
+  window.dispatchEvent(new Event('world-assets-ready'));
 }
 
 if(window.GLTFLoader){
@@ -2661,7 +2719,26 @@ function updateClock(){const clockEl=document.querySelector('#clock');if(!clockE
 
 const startOverlay=document.querySelector('#startOverlay');
 const startBtn=document.querySelector('#startBtn');
-if(startBtn){startBtn.addEventListener('click',()=>{started=true;startOverlay?.classList.add('hidden');setTimeout(()=>canvas.requestPointerLock?.(),250)});}
+let coreWorldAssetsReady=false;
+if(startBtn){
+  startBtn.disabled=true;
+  startBtn.setAttribute('aria-busy','true');
+  startBtn.textContent='Loading city…';
+
+  window.addEventListener('world-core-assets-ready',()=>{
+    coreWorldAssetsReady=true;
+    startBtn.disabled=false;
+    startBtn.removeAttribute('aria-busy');
+    startBtn.textContent='Click to enter world';
+  },{once:true});
+
+  startBtn.addEventListener('click',()=>{
+    if(!coreWorldAssetsReady) return;
+    started=true;
+    startOverlay?.classList.add('hidden');
+    setTimeout(()=>canvas.requestPointerLock?.(),250);
+  });
+}
 
 // ---------- animation ----------
 const clock=new THREE.Clock();
