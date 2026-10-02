@@ -155,6 +155,36 @@
     sideShade.position.set(0,-1.004,0);
     rig.add(sideShade);
 
+    // Thin side-wall sheens live on the actual chassis thickness rather than
+    // the front face. As the tablet tilts they reveal the near/far rail and
+    // make the body read as a solid object instead of a flat card.
+    const railMaterial=()=>new THREE.MeshBasicMaterial({
+      color:0xcfe9ff,
+      transparent:true,
+      opacity:0,
+      depthWrite:false,
+      toneMapped:false,
+      blending:THREE.AdditiveBlending
+    });
+
+    const railSheen={
+      left:new THREE.Mesh(new THREE.BoxGeometry(.012,1.70,.115),railMaterial()),
+      right:new THREE.Mesh(new THREE.BoxGeometry(.012,1.70,.115),railMaterial()),
+      top:new THREE.Mesh(new THREE.BoxGeometry(2.44,.012,.115),railMaterial()),
+      bottom:new THREE.Mesh(new THREE.BoxGeometry(2.44,.012,.115),railMaterial())
+    };
+
+    railSheen.left.position.set(-1.414,0,-.010);
+    railSheen.right.position.set(1.414,0,-.010);
+    railSheen.top.position.set(0,1.006,-.010);
+    railSheen.bottom.position.set(0,-1.006,-.010);
+
+    Object.values(railSheen).forEach(part=>{
+      part.renderOrder=6;
+      part.raycast=()=>{};
+      rig.add(part);
+    });
+
     const handSkin=new THREE.MeshStandardMaterial({color:0xb9826f,roughness:.74,metalness:0});
     const sleeveMat=new THREE.MeshStandardMaterial({color:0x242a31,roughness:.9,metalness:.02});
 
@@ -413,6 +443,26 @@
       lensGlint.position.x=-.006+pointerX*.010;
       lensGlint.position.y=.900+pointerY*.006;
       lensGlintMat.opacity=(.22+.34*hold)*(1-Math.min(.45,Math.abs(pointerX)*.15))+Math.max(0,pressAmount)*.08;
+
+      // Real side-wall visibility changes with tilt: the edge opposite the
+      // direction of travel opens up more strongly, while the other side
+      // almost disappears. Inertia and haptic release add a brief metal flash.
+      const railMotion=Math.min(.08,Math.hypot(inertiaX,inertiaY)*2.7);
+      const railHaptic=Math.min(.045,Math.abs(hapticPitch)*2.1+Math.abs(hapticYaw)*1.8);
+      const railBase=.008*hold;
+      railSheen.left.material.opacity=
+        railBase+Math.max(0,pointerX)*.060+Math.max(0,inertiaX)*1.8+railMotion+railHaptic;
+      railSheen.right.material.opacity=
+        railBase+Math.max(0,-pointerX)*.060+Math.max(0,-inertiaX)*1.8+railMotion+railHaptic;
+      railSheen.top.material.opacity=
+        railBase+Math.max(0,-pointerY)*.045+Math.max(0,-inertiaY)*1.6+railMotion*.75+railHaptic*.8;
+      railSheen.bottom.material.opacity=
+        railBase+Math.max(0,pointerY)*.045+Math.max(0,inertiaY)*1.6+railMotion*.75+railHaptic*.8;
+
+      railSheen.left.scale.z=1+Math.max(0,pointerX)*.20;
+      railSheen.right.scale.z=1+Math.max(0,-pointerX)*.20;
+      railSheen.top.scale.z=1+Math.max(0,-pointerY)*.16;
+      railSheen.bottom.scale.z=1+Math.max(0,pointerY)*.16;
 
       key.position.x=-2.6+Math.sin(t*.38)*.28+pointerX*.22;
       rim.position.y=-1.2+Math.cos(t*.46)*.2-pointerY*.15;
