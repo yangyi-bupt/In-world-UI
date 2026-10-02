@@ -415,6 +415,28 @@ sidewalk.material.needsUpdate=true;
 const curb=box(.30,.18,92,0xc4beb2,.05,.08,-4,.92);
 const curbCap=box(.09,.035,92,0xe9e3d7,.18,.185,-4,.86);
 
+const gutterStrip=new THREE.Mesh(
+  new THREE.PlaneGeometry(.34,88),
+  new THREE.MeshStandardMaterial({color:0x777c79,roughness:.98})
+);
+gutterStrip.rotation.x=-Math.PI/2;
+gutterStrip.position.set(-.20,.018,-4);
+gutterStrip.receiveShadow=true;
+scene.add(gutterStrip);
+
+const curbJointMat=new THREE.MeshBasicMaterial({
+  color:0x9f9a90,
+  transparent:true,
+  opacity:.34,
+  depthWrite:false
+});
+for(let z=-43;z<=39;z+=3.25){
+  const joint=new THREE.Mesh(new THREE.PlaneGeometry(.30,.018),curbJointMat);
+  joint.rotation.x=-Math.PI/2;
+  joint.position.set(.05,.188,z);
+  scene.add(joint);
+}
+
 // Fine sidewalk seams add scale without relying on image textures.
 const seamMat=new THREE.MeshBasicMaterial({color:0xbab6ad,transparent:true,opacity:.23,depthWrite:false});
 for(let z=-44;z<=40;z+=2.35){
@@ -543,6 +565,18 @@ storefrontPavingBand.position.set(7.62,.047,-5);
 storefrontPavingBand.receiveShadow=true;
 scene.add(storefrontPavingBand);
 
+const facadeRibMat=new THREE.MeshStandardMaterial({
+  color:0xd6cec1,
+  roughness:.82
+});
+for(let z=-34.6;z<=27.8;z+=7.2){
+  const rib=new THREE.Mesh(new THREE.BoxGeometry(.20,5.82,.18),facadeRibMat);
+  rib.position.set(8.42,3.32,z);
+  rib.castShadow=true;
+  rib.receiveShadow=true;
+  scene.add(rib);
+}
+
 [1.08,3.04,5.02,6.92].forEach((y,i)=>{
   const band=box(
     .20,
@@ -555,6 +589,21 @@ scene.add(storefrontPavingBand);
     .72
   );
   band.castShadow=true;
+});
+
+const facadeSunWashMat=new THREE.MeshBasicMaterial({
+  color:0xffe6c8,
+  transparent:true,
+  opacity:.055,
+  depthWrite:false,
+  toneMapped:false
+});
+[-16.6,-2.2,12.2].forEach((z,i)=>{
+  const wash=new THREE.Mesh(new THREE.PlaneGeometry(4.20,2.05),facadeSunWashMat);
+  wash.position.set(8.28,4.52,z);
+  wash.rotation.y=-Math.PI/2;
+  wash.rotation.z=(i-1)*.018;
+  scene.add(wash);
 });
 
 for(let z=-31;z<=24;z+=7.2){
@@ -904,6 +953,28 @@ function createStreetTree(x,z,scale=1){
   trunk.castShadow=true;
   scene.add(trunk);
 
+  const branchMat=new THREE.MeshStandardMaterial({color:0x8a725d,roughness:.96});
+  const branchRoot=new THREE.Vector3(x,2.15*scale,z);
+  [
+    [-.34,.52,.08,.055],
+    [.30,.46,-.10,.050],
+    [-.08,.64,-.26,.046]
+  ].forEach(([ox,oy,oz,r])=>{
+    const end=new THREE.Vector3(x+ox*scale,(2.15+oy)*scale,z+oz*scale);
+    const dir=end.clone().sub(branchRoot);
+    const branch=new THREE.Mesh(
+      new THREE.CylinderGeometry(r*scale,r*.72*scale,dir.length(),9),
+      branchMat
+    );
+    branch.position.copy(branchRoot).add(end).multiplyScalar(.5);
+    branch.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0,1,0),
+      dir.clone().normalize()
+    );
+    branch.castShadow=true;
+    scene.add(branch);
+  });
+
   const crown=new THREE.Group();
   const leafMats=[
     new THREE.MeshStandardMaterial({color:0x7ba56f,roughness:.94}),
@@ -943,6 +1014,17 @@ function createStreetTree(x,z,scale=1){
 }
 
 [-13.2,-6.4,10.8,16.2].forEach((z,i)=>createStreetTree(1.0,z,i%2?.94:1.04));
+
+const curbGroundcoverMat=new THREE.MeshStandardMaterial({color:0x8ea27a,roughness:.98});
+[-6.4,10.8].forEach(z=>{
+  [-.31,-.15,.14,.30].forEach((dx,i)=>{
+    const tuft=new THREE.Mesh(new THREE.ConeGeometry(.055,.20,7),curbGroundcoverMat);
+    tuft.position.set(1.0+dx,.145,z+(i%2?.27:-.25));
+    tuft.rotation.z=(i-1.5)*.18;
+    tuft.castShadow=true;
+    scene.add(tuft);
+  });
+});
 [-18,0,18].forEach((z,i)=>createStreetTree(-12.1,z,.88+i*.04));
 
 function createPlanter(x,z,w=1.8){
@@ -1306,6 +1388,19 @@ const terraceTrimMat=new THREE.MeshStandardMaterial({color:0xcfc4b6,roughness:.9
   trim.receiveShadow=true;
   scene.add(trim);
 });
+
+const terraceEdgeLine=new THREE.Mesh(
+  new THREE.PlaneGeometry(.035,5.75),
+  new THREE.MeshBasicMaterial({
+    color:0xb5aa9b,
+    transparent:true,
+    opacity:.40,
+    depthWrite:false
+  })
+);
+terraceEdgeLine.rotation.x=-Math.PI/2;
+terraceEdgeLine.position.set(4.39,.061,6.95);
+scene.add(terraceEdgeLine);
 
 const cafeTableWood=new THREE.MeshStandardMaterial({color:0xc39b78,roughness:.84});
 const cafeTableMetal=new THREE.MeshStandardMaterial({color:0x7f8783,roughness:.58,metalness:.30});
@@ -1880,7 +1975,7 @@ function animate(){
     if(cloud.position.x>46) cloud.position.x=-46-index*7;
   });
 
-  glassReflectionTexture.offset.x=(Math.sin(t*.045)*.018+.018)%1;
+  glassReflectionTexture.offset.x=(Math.sin(t*.034)*.013+.013)%1;
 
   movingTraffic.forEach((traffic,index)=>{
     traffic.group.position.z+=traffic.speed*dt;
