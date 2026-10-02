@@ -868,6 +868,43 @@ for(let i=0;i<8;i++){
   glassRoughnessCtx.fillStyle=grad;
   glassRoughnessCtx.fillRect(0,y-10,128,26);
 }
+
+for(let i=0;i<11;i++){
+  const cx=12+glassRoughRnd()*104;
+  const cy=38+glassRoughRnd()*182;
+  const rx=4+glassRoughRnd()*7;
+  const ry=6+glassRoughRnd()*10;
+  for(let ring=0;ring<4;ring++){
+    glassRoughnessCtx.strokeStyle='rgba(150,150,150,'+(.018+glassRoughRnd()*.025).toFixed(3)+')';
+    glassRoughnessCtx.lineWidth=.45+.12*ring;
+    glassRoughnessCtx.beginPath();
+    glassRoughnessCtx.ellipse(
+      cx,
+      cy,
+      rx+ring*1.35,
+      ry+ring*1.55,
+      (glassRoughRnd()-.5)*.30,
+      Math.PI*.12,
+      Math.PI*1.58
+    );
+    glassRoughnessCtx.stroke();
+  }
+}
+
+for(let i=0;i<18;i++){
+  const x=glassRoughRnd()*128;
+  const y=16+glassRoughRnd()*205;
+  const len=12+glassRoughRnd()*44;
+  const grad=glassRoughnessCtx.createLinearGradient(x,y,x,y+len);
+  grad.addColorStop(0,'rgba(158,158,158,'+(.018+glassRoughRnd()*.030).toFixed(3)+')');
+  grad.addColorStop(1,'rgba(158,158,158,0)');
+  glassRoughnessCtx.strokeStyle=grad;
+  glassRoughnessCtx.lineWidth=.35+glassRoughRnd()*.65;
+  glassRoughnessCtx.beginPath();
+  glassRoughnessCtx.moveTo(x,y);
+  glassRoughnessCtx.lineTo(x+(glassRoughRnd()-.5)*1.8,y+len);
+  glassRoughnessCtx.stroke();
+}
 const glassRoughnessTexture=new THREE.CanvasTexture(glassRoughnessCanvas);
 glassRoughnessTexture.wrapS=THREE.RepeatWrapping;
 glassRoughnessTexture.wrapT=THREE.ClampToEdgeWrapping;
@@ -1852,6 +1889,46 @@ const roadWearMat=new THREE.MeshBasicMaterial({
   scene.add(wear);
 });
 
+const roadOilMat=new THREE.MeshStandardMaterial({
+  color:0xffffff,
+  map:roadOilPatina.map,
+  roughnessMap:roadOilPatina.roughness,
+  roughness:.72,
+  metalness:0,
+  transparent:true,
+  opacity:.60,
+  depthWrite:false,
+  envMapIntensity:.075
+});
+const roadOilLayer=new THREE.Mesh(
+  new THREE.PlaneGeometry(12.8,84),
+  roadOilMat
+);
+roadOilLayer.rotation.x=-Math.PI/2;
+roadOilLayer.position.set(-6.72,.030,-4);
+roadOilLayer.renderOrder=2;
+scene.add(roadOilLayer);
+
+const pavementPatinaMat=new THREE.MeshStandardMaterial({
+  color:0xffffff,
+  map:pavementPatina.map,
+  roughnessMap:pavementPatina.roughness,
+  roughness:.94,
+  metalness:0,
+  transparent:true,
+  opacity:.52,
+  depthWrite:false,
+  envMapIntensity:.035
+});
+const pavementPatinaLayer=new THREE.Mesh(
+  new THREE.PlaneGeometry(9.8,83),
+  pavementPatinaMat
+);
+pavementPatinaLayer.rotation.x=-Math.PI/2;
+pavementPatinaLayer.position.set(4.55,.044,-4);
+pavementPatinaLayer.renderOrder=2;
+scene.add(pavementPatinaLayer);
+
 const roadRepairMat=new THREE.MeshBasicMaterial({
   color:0x4d5555,
   transparent:true,
@@ -2107,6 +2184,27 @@ const facadeWeather=new THREE.Mesh(
 facadeWeather.position.set(8.392,3.47,-5);
 facadeWeather.rotation.y=-Math.PI/2;
 scene.add(facadeWeather);
+
+const facadeBasePatinaMat=new THREE.MeshStandardMaterial({
+  color:0xffffff,
+  map:wallBasePatina.map,
+  roughnessMap:wallBasePatina.roughness,
+  roughness:.96,
+  metalness:0,
+  transparent:true,
+  opacity:.78,
+  depthWrite:false,
+  envMapIntensity:.035,
+  side:THREE.DoubleSide
+});
+const facadeBasePatina=new THREE.Mesh(
+  new THREE.PlaneGeometry(63.3,2.35),
+  facadeBasePatinaMat
+);
+facadeBasePatina.position.set(8.382,1.20,-5);
+facadeBasePatina.rotation.y=-Math.PI/2;
+facadeBasePatina.renderOrder=2;
+scene.add(facadeBasePatina);
 
 const facadeJointOverlay=new THREE.Mesh(
   new THREE.PlaneGeometry(63.45,6.64),
@@ -4798,14 +4896,45 @@ const benchWoodBump=woodSurface.bump.clone();
 benchWoodBump.rotation=Math.PI/2;
 benchWoodBump.center.set(.5,.5);
 benchWoodBump.needsUpdate=true;
+const benchWoodRoughness=woodSurface.roughness.clone();
+benchWoodRoughness.rotation=Math.PI/2;
+benchWoodRoughness.center.set(.5,.5);
+benchWoodRoughness.needsUpdate=true;
+const benchWoodNormal=woodSurface.normal.clone();
+benchWoodNormal.rotation=Math.PI/2;
+benchWoodNormal.center.set(.5,.5);
+benchWoodNormal.needsUpdate=true;
 const benchWood=new THREE.MeshStandardMaterial({
   color:0xb09073,
-  roughness:.88,
+  roughness:.90,
   map:benchWoodMap,
+  roughnessMap:benchWoodRoughness,
+  normalMap:benchWoodNormal,
+  normalScale:new THREE.Vector2(.16,.16),
   bumpMap:benchWoodBump,
   bumpScale:.020,
-  envMapIntensity:.18
+  envMapIntensity:.12
 });
+const benchEndMat=new THREE.MeshStandardMaterial({
+  color:0xb48765,
+  map:woodEndGrainTexture,
+  roughness:.92,
+  metalness:0,
+  envMapIntensity:.08
+});
+function addBenchEndCaps(y,z,w=.13,h=.085,rotationX=0){
+  [-1,1].forEach(side=>{
+    const cap=new THREE.Mesh(
+      new THREE.PlaneGeometry(w,h),
+      benchEndMat
+    );
+    cap.position.set(6.15+side*.878,y,z);
+    cap.rotation.y=side>0?-Math.PI/2:Math.PI/2;
+    cap.rotation.z=rotationX;
+    cap.castShadow=false;
+    scene.add(cap);
+  });
+}
 const benchMetal=new THREE.MeshStandardMaterial({
   color:0x707875,
   roughness:.44,
@@ -4826,6 +4955,7 @@ const benchMetal=new THREE.MeshStandardMaterial({
   slat.rotation.x=(index-1)*.010;
   slat.castShadow=true;
   scene.add(slat);
+  addBenchEndCaps(.54,-5.55+zOffset,.13,.085,(index-1)*.010);
 });
 [-.15,0,.15].forEach((yOffset,index)=>{
   const backSlat=new THREE.Mesh(new THREE.BoxGeometry(1.75,.12,.065),benchWood);
