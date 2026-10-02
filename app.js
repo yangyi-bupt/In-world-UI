@@ -1790,6 +1790,35 @@ bin.position.set(6.85,.36,-7.0);
 bin.castShadow=true;
 scene.add(bin);
 
+function createAttachedContactShadow(parent,w,d,opacity=.08){
+  const c=document.createElement('canvas');
+  c.width=96;
+  c.height=96;
+  const g=c.getContext('2d');
+  const gradient=g.createRadialGradient(48,48,8,48,48,46);
+  gradient.addColorStop(0,'rgba(0,0,0,'+opacity.toFixed(3)+')');
+  gradient.addColorStop(.52,'rgba(0,0,0,'+(opacity*.44).toFixed(3)+')');
+  gradient.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=gradient;
+  g.fillRect(0,0,96,96);
+
+  const texture=new THREE.CanvasTexture(c);
+  const shadow=new THREE.Mesh(
+    new THREE.PlaneGeometry(w,d),
+    new THREE.MeshBasicMaterial({
+      map:texture,
+      transparent:true,
+      depthWrite:false,
+      toneMapped:false
+    })
+  );
+  shadow.rotation.x=-Math.PI/2;
+  shadow.position.y=.031;
+  shadow.renderOrder=1;
+  parent.add(shadow);
+  return shadow;
+}
+
 function createContactShadow(x,z,w,d,opacity=.10){
   const c=document.createElement('canvas');
   c.width=128;
@@ -1921,6 +1950,7 @@ function createAmbientWalker(x,z,direction,color,speed=.58,assetVariant='primary
     direction,
     speed,
     assetVariant,
+    baseX:x,
     phase:Math.random()*Math.PI*2,
     placeholderChildren:[...group.children],
     assetRoot:null,
@@ -1928,9 +1958,9 @@ function createAmbientWalker(x,z,direction,color,speed=.58,assetVariant='primary
   });
 }
 
-createAmbientWalker(-12.05,-15.8,1,0xa98f82,.56,'primary');
-createAmbientWalker(-11.65,16.6,-1,0x718692,.62,'secondary');
-createAmbientWalker(-12.25,13.5,-1,0x8d9a73,.52,'primary');
+createAmbientWalker(4.95,-15.8,1,0xa98f82,.56,'primary');
+createAmbientWalker(6.15,16.6,-1,0x718692,.62,'secondary');
+createAmbientWalker(5.45,13.5,-1,0x8d9a73,.52,'primary');
 
 const movingTraffic=[];
 function createTrafficCar(x,z,color,speed,assetVariant='primary'){
@@ -2123,6 +2153,16 @@ const WORLD_GLB_ASSETS={
 const worldAssetMixers=[];
 let worldGLBLoadStarted=false;
 let miraGLBRoot=null;
+let worldEnvironmentTexture=null;
+
+function ensureWorldAssetEnvironment(){
+  if(worldEnvironmentTexture || !window.RoomEnvironment) return;
+  const pmrem=new THREE.PMREMGenerator(renderer);
+  const envScene=new window.RoomEnvironment();
+  const target=pmrem.fromScene(envScene,.035);
+  worldEnvironmentTexture=target.texture;
+  pmrem.dispose();
+}
 
 function cloneAssetScene(source){
   if(window.cloneGLTFScene) return window.cloneGLTFScene(source);
@@ -2139,6 +2179,16 @@ function prepareImportedModel(root){
     }else if(object.material?.clone){
       object.material=object.material.clone();
     }
+
+    const materials=Array.isArray(object.material)?object.material:[object.material];
+    materials.forEach(material=>{
+      if(!material) return;
+      if(worldEnvironmentTexture && (material.isMeshStandardMaterial || material.isMeshPhysicalMaterial)){
+        material.envMap=worldEnvironmentTexture;
+        material.envMapIntensity=.58;
+      }
+      material.needsUpdate=true;
+    });
   });
 }
 
@@ -2268,6 +2318,10 @@ function attachCarAsset(entry,source,index=0,targetLength=3.85){
   entry.placeholderChildren?.forEach(child=>{child.visible=false;});
   entry.group.add(root);
   entry.assetRoot=root;
+  entry.assetBaseY=root.position.y;
+  if(entry.baseSpeed!==undefined && !entry.contactShadow){
+    entry.contactShadow=createAttachedContactShadow(entry.group,1.82,targetLength*.96,.075);
+  }
 }
 
 function attachWalkerAsset(entry,source,animations,index){
@@ -2280,6 +2334,9 @@ function attachWalkerAsset(entry,source,animations,index){
   entry.group.scale.setScalar(1);
   entry.group.add(root);
   entry.assetRoot=root;
+  if(!entry.contactShadow){
+    entry.contactShadow=createAttachedContactShadow(entry.group,.48,.34,.072);
+  }
 
   const walkClip=animations.find(clip=>/walk/i.test(clip.name)) || animations[3] || animations[0];
   if(walkClip){
@@ -2303,6 +2360,9 @@ function attachMiraAsset(source,animations){
   miraRig.visible=false;
   mira.add(root);
   miraGLBRoot=root;
+  if(!mira.userData.glbContactShadow){
+    mira.userData.glbContactShadow=createAttachedContactShadow(mira,.62,.42,.065);
+  }
 
   // Only play an explicitly named idle animation. A dancing/run clip would
   // make the central character less believable than a restrained static pose.
@@ -2319,6 +2379,7 @@ function attachMiraAsset(source,animations){
 async function initWorldGLBAssets(){
   if(worldGLBLoadStarted || !window.GLTFLoader) return;
   worldGLBLoadStarted=true;
+  ensureWorldAssetEnvironment();
   const loader=new window.GLTFLoader();
 
   const [carPrimary,carSecondary,pedestrianPrimary,pedestrianSecondary,miraResult]=await Promise.allSettled([
@@ -2575,7 +2636,9 @@ function animate(){
     const drift=1+Math.sin(t*.19+traffic.motionPhase)*.035;
     traffic.speed=traffic.baseSpeed*drift;
     traffic.group.position.z+=traffic.speed*dt;
-    traffic.group.position.y=traffic.assetRoot?Math.sin(t*2.1+traffic.motionPhase)*.0025:0;
+    if(traffic.assetRoot){
+      traffic.assetRoot.position.y=traffic.assetBaseY+Math.sin(t*2.1+traffic.motionPhase)*.0025;
+    }
     const spin=traffic.speed*dt*2.8;
     const rollingWheels=traffic.assetWheels?.length?traffic.assetWheels:traffic.wheels;
     rollingWheels?.forEach(wheel=>wheel.rotation.x-=spin);
@@ -2589,7 +2652,7 @@ function animate(){
     walker.phase+=dt*(3.8+index*.35);
     if(walker.assetRoot){
       walker.group.position.y=0;
-      walker.group.position.x+=Math.sin(t*.22+walker.phase)*dt*.0025;
+      walker.group.position.x=walker.baseX+Math.sin(t*.38+walker.phase*.12)*.035;
       walker.group.rotation.z=0;
     }else{
       walker.group.position.y=Math.abs(Math.sin(walker.phase))*0.012;

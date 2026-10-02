@@ -30,8 +30,10 @@
 <script type="module">
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 window.GLTFLoader = GLTFLoader;
 window.cloneGLTFScene = cloneSkeleton;
+window.RoomEnvironment = RoomEnvironment;
 window.dispatchEvent(new Event('gltf-loader-ready'));
 </script>
 <script src="./start-bridge.js"></script><script src="./boot-guard.js"></script><script src="./tablet-model.js"></script><script src="./tablet-model-fix.js"></script><script src="./player-viewmodel.js"></script><script src="./tablet-rig.js"></script><script src="./hand-rig.js"></script><script src="./ui-bindings.js"></script><script src="./tablet-screen-glass.js"></script><script src="./tablet-screen-texture.js"></script><script src="./tablet-screen-bridge.js"></script><script src="./tablet-screen-mesh.js"></script><script src="./tablet-screen-auto-bind.js"></script><script src="./tablet-screen-runtime-bridge.js"></script><script src="./tablet-interaction-v1.js"></script><script src="./tablet-hand-mount-v1.js"></script><script src="./tablet-hand-rig-v2.js"></script><script src="./app.js"></script>
