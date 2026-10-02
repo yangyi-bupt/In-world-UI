@@ -367,28 +367,153 @@ pavementMicroBump.repeat.set(8,34);
 const roadMicroBump=makeMaterialTexture('concrete',0x93c25f17).bump;
 roadMicroBump.repeat.set(9,42);
 
+function makeOrganicTexture(kind,seed){
+  const size=256;
+  const colorCanvas=document.createElement('canvas');
+  const bumpCanvas=document.createElement('canvas');
+  colorCanvas.width=colorCanvas.height=size;
+  bumpCanvas.width=bumpCanvas.height=size;
+  const g=colorCanvas.getContext('2d');
+  const b=bumpCanvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  if(kind==='bark'){
+    g.fillStyle='#9b7b60';
+    g.fillRect(0,0,size,size);
+    b.fillStyle='#808080';
+    b.fillRect(0,0,size,size);
+
+    for(let x=0;x<size;x++){
+      const wave=Math.sin(x*.16)+Math.sin(x*.043+1.2)*.55;
+      const alpha=.025+Math.abs(wave)*.025;
+      g.fillStyle=wave>0
+        ? 'rgba(69,45,32,'+alpha.toFixed(3)+')'
+        : 'rgba(224,195,157,'+(alpha*.70).toFixed(3)+')';
+      g.fillRect(x,0,1,size);
+      const v=Math.round(128+wave*17);
+      b.fillStyle='rgb('+v+','+v+','+v+')';
+      b.fillRect(x,0,1,size);
+    }
+
+    for(let i=0;i<55;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const len=10+rnd()*42;
+      g.strokeStyle='rgba(61,39,28,'+(.025+rnd()*.040).toFixed(3)+')';
+      g.lineWidth=.4+rnd()*.9;
+      g.beginPath();
+      g.moveTo(x,y);
+      g.bezierCurveTo(x+(rnd()-.5)*4,y+len*.35,x+(rnd()-.5)*5,y+len*.72,x+(rnd()-.5)*3,y+len);
+      g.stroke();
+    }
+  }else{
+    g.fillStyle='#f0f3e8';
+    g.fillRect(0,0,size,size);
+    b.fillStyle='#808080';
+    b.fillRect(0,0,size,size);
+
+    for(let i=0;i<1700;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const r=.35+rnd()*1.35;
+      const warm=rnd()>.66;
+      const dark=rnd()>.57;
+      g.fillStyle=dark
+        ? 'rgba(70,88,62,'+(.018+rnd()*.040).toFixed(3)+')'
+        : (warm
+          ? 'rgba(213,210,139,'+(.012+rnd()*.028).toFixed(3)+')'
+          : 'rgba(255,255,244,'+(.014+rnd()*.030).toFixed(3)+')');
+      g.beginPath();
+      g.arc(x,y,r,0,Math.PI*2);
+      g.fill();
+
+      const v=Math.floor(120+rnd()*20);
+      b.fillStyle='rgb('+v+','+v+','+v+')';
+      b.fillRect(x,y,1+rnd(),1+rnd());
+    }
+  }
+
+  const map=new THREE.CanvasTexture(colorCanvas);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.wrapS=map.wrapT=THREE.RepeatWrapping;
+  map.anisotropy=8;
+
+  const bump=new THREE.CanvasTexture(bumpCanvas);
+  bump.wrapS=bump.wrapT=THREE.RepeatWrapping;
+  bump.anisotropy=8;
+  return {map,bump};
+}
+
+const barkSurface=configureTexturePair(makeOrganicTexture('bark',0x829ad73f),2.6,4.8);
+const foliageSurface=configureTexturePair(makeOrganicTexture('foliage',0xa1426b8d),2.2,2.2);
+
 const glassReflectionCanvas=document.createElement('canvas');
 glassReflectionCanvas.width=128;
 glassReflectionCanvas.height=256;
 const glassReflectionCtx=glassReflectionCanvas.getContext('2d');
 const glassReflectionGradient=glassReflectionCtx.createLinearGradient(0,0,0,256);
-glassReflectionGradient.addColorStop(0,'rgba(236,248,252,.64)');
-glassReflectionGradient.addColorStop(.24,'rgba(199,225,235,.28)');
-glassReflectionGradient.addColorStop(.48,'rgba(177,209,207,.15)');
-glassReflectionGradient.addColorStop(.70,'rgba(229,235,221,.22)');
-glassReflectionGradient.addColorStop(1,'rgba(154,182,180,.16)');
+glassReflectionGradient.addColorStop(0,'rgba(226,244,250,.72)');
+glassReflectionGradient.addColorStop(.18,'rgba(192,222,232,.38)');
+glassReflectionGradient.addColorStop(.43,'rgba(159,190,195,.20)');
+glassReflectionGradient.addColorStop(.62,'rgba(205,211,196,.18)');
+glassReflectionGradient.addColorStop(.78,'rgba(178,166,145,.19)');
+glassReflectionGradient.addColorStop(1,'rgba(112,126,122,.20)');
 glassReflectionCtx.fillStyle=glassReflectionGradient;
 glassReflectionCtx.fillRect(0,0,128,256);
-for(let i=0;i<7;i++){
-  glassReflectionCtx.fillStyle='rgba(255,255,255,'+(.025+i*.004).toFixed(3)+')';
-  glassReflectionCtx.fillRect(12+i*17,0,1,256);
+
+// Soft vertical reflections hint at nearby facade bays rather than a uniform tint.
+for(let i=0;i<9;i++){
+  const x=6+i*15;
+  glassReflectionCtx.fillStyle='rgba(255,255,255,'+(.018+(i%3)*.008).toFixed(3)+')';
+  glassReflectionCtx.fillRect(x,0,1+(i%2),256);
 }
+glassReflectionCtx.fillStyle='rgba(255,247,230,.035)';
+glassReflectionCtx.fillRect(0,174,128,26);
+glassReflectionCtx.fillStyle='rgba(91,111,107,.040)';
+glassReflectionCtx.fillRect(0,205,128,51);
+
 const glassReflectionTexture=new THREE.CanvasTexture(glassReflectionCanvas);
 glassReflectionTexture.colorSpace=THREE.SRGBColorSpace;
 glassReflectionTexture.wrapS=THREE.RepeatWrapping;
 glassReflectionTexture.wrapT=THREE.ClampToEdgeWrapping;
 glassReflectionTexture.repeat.set(2.2,1);
 glassReflectionTexture.anisotropy=8;
+
+const glassRoughnessCanvas=document.createElement('canvas');
+glassRoughnessCanvas.width=128;
+glassRoughnessCanvas.height=256;
+const glassRoughnessCtx=glassRoughnessCanvas.getContext('2d');
+glassRoughnessCtx.fillStyle='#3d3d3d';
+glassRoughnessCtx.fillRect(0,0,128,256);
+const glassRoughRnd=makeSeededRandom(0x7e5a1c93);
+for(let i=0;i<240;i++){
+  const a=.02+glassRoughRnd()*.08;
+  const v=74+Math.floor(glassRoughRnd()*42);
+  glassRoughnessCtx.fillStyle='rgba('+v+','+v+','+v+','+a.toFixed(3)+')';
+  glassRoughnessCtx.beginPath();
+  glassRoughnessCtx.arc(
+    glassRoughRnd()*128,
+    glassRoughRnd()*256,
+    .4+glassRoughRnd()*1.8,
+    0,Math.PI*2
+  );
+  glassRoughnessCtx.fill();
+}
+for(let i=0;i<8;i++){
+  const y=30+glassRoughRnd()*205;
+  const grad=glassRoughnessCtx.createLinearGradient(0,y,128,y+8);
+  grad.addColorStop(0,'rgba(110,110,110,0)');
+  grad.addColorStop(.45,'rgba(110,110,110,.055)');
+  grad.addColorStop(.55,'rgba(110,110,110,.025)');
+  grad.addColorStop(1,'rgba(110,110,110,0)');
+  glassRoughnessCtx.fillStyle=grad;
+  glassRoughnessCtx.fillRect(0,y-10,128,26);
+}
+const glassRoughnessTexture=new THREE.CanvasTexture(glassRoughnessCanvas);
+glassRoughnessTexture.wrapS=THREE.RepeatWrapping;
+glassRoughnessTexture.wrapT=THREE.ClampToEdgeWrapping;
+glassRoughnessTexture.repeat.set(2.2,1);
+glassRoughnessTexture.anisotropy=8;
 
 const streetBannerCanvas=document.createElement('canvas');
 streetBannerCanvas.width=256;
@@ -453,13 +578,14 @@ function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x9fc7d6){
     new THREE.MeshPhysicalMaterial({
       color:tint,
       map:glassReflectionTexture,
-      roughness:.29,
-      metalness:.03,
+      roughnessMap:glassRoughnessTexture,
+      roughness:.24,
+      metalness:.02,
       transparent:true,
-      opacity:.47,
-      transmission:.06,
-      clearcoat:.18,
-      clearcoatRoughness:.34,
+      opacity:.43,
+      transmission:.09,
+      clearcoat:.28,
+      clearcoatRoughness:.24,
       side:THREE.DoubleSide
     })
   );
@@ -1540,13 +1666,25 @@ function createStreetTree(x,z,scale=1){
 
   const trunk=new THREE.Mesh(
     new THREE.CylinderGeometry(.10*scale,.145*scale,2.55*scale,12),
-    new THREE.MeshStandardMaterial({color:0x8c735d,roughness:.96})
+    new THREE.MeshStandardMaterial({
+      color:0x8c735d,
+      roughness:.96,
+      map:barkSurface.map,
+      bumpMap:barkSurface.bump,
+      bumpScale:.028
+    })
   );
   trunk.position.set(x,1.275*scale,z);
   trunk.castShadow=true;
   scene.add(trunk);
 
-  const branchMat=new THREE.MeshStandardMaterial({color:0x8a725d,roughness:.96});
+  const branchMat=new THREE.MeshStandardMaterial({
+    color:0x8a725d,
+    roughness:.96,
+    map:barkSurface.map,
+    bumpMap:barkSurface.bump,
+    bumpScale:.022
+  });
   const branchRoot=new THREE.Vector3(x,2.15*scale,z);
   [
     [-.34,.52,.08,.055],
@@ -1570,9 +1708,15 @@ function createStreetTree(x,z,scale=1){
 
   const crown=new THREE.Group();
   const leafMats=[
-    new THREE.MeshStandardMaterial({color:0x7ba56f,roughness:.94}),
-    new THREE.MeshStandardMaterial({color:0x91b77e,roughness:.92}),
-    new THREE.MeshStandardMaterial({color:0x6f9765,roughness:.95})
+    new THREE.MeshStandardMaterial({
+      color:0x7ba56f,roughness:.91,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.010
+    }),
+    new THREE.MeshStandardMaterial({
+      color:0x91b77e,roughness:.89,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.009
+    }),
+    new THREE.MeshStandardMaterial({
+      color:0x6f9765,roughness:.93,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.011
+    })
   ];
   [
     [0,.02,0,.86,1.08,.92],
@@ -1590,7 +1734,13 @@ function createStreetTree(x,z,scale=1){
     crown.add(leaf);
   });
 
-  const crownShadeMat=new THREE.MeshStandardMaterial({color:0x63875e,roughness:.97});
+  const crownShadeMat=new THREE.MeshStandardMaterial({
+    color:0x63875e,
+    roughness:.94,
+    map:foliageSurface.map,
+    bumpMap:foliageSurface.bump,
+    bumpScale:.010
+  });
   [
     [-.32,-.22,.02,.38],
     [.28,-.16,-.08,.34]
@@ -1602,7 +1752,13 @@ function createStreetTree(x,z,scale=1){
     crown.add(shadeLeaf);
   });
 
-  const highlightMat=new THREE.MeshStandardMaterial({color:0xa8c895,roughness:.94});
+  const highlightMat=new THREE.MeshStandardMaterial({
+    color:0xa8c895,
+    roughness:.88,
+    map:foliageSurface.map,
+    bumpMap:foliageSurface.bump,
+    bumpScale:.008
+  });
   [
     [-.26,.62,.18,.28],
     [.30,.42,.14,.24]
