@@ -1971,7 +1971,7 @@ function createAmbientWalker(x,z,direction,color,speed=.58,assetVariant='primary
 
 createAmbientWalker(4.95,-15.8,1,0xa98f82,.56,'primary');
 createAmbientWalker(6.15,16.6,-1,0x718692,.62,'secondary');
-createAmbientWalker(5.45,13.5,-1,0x8d9a73,.52,'primary');
+createAmbientWalker(5.45,13.5,-1,0x8d9a73,.52,'tertiary');
 
 const movingTraffic=[];
 function createTrafficCar(x,z,color,speed,assetVariant='primary'){
@@ -2157,10 +2157,14 @@ scene.add(mira);
 const WORLD_GLB_ASSETS={
   // Pinned assets keep the prototype deterministic while still replacing the
   // primitive placeholders with real authored meshes and skeletal animation.
-  carPrimary:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/ferrari.glb',
-  carSecondary:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Assets@main/Models/CarConcept/glTF-Binary/CarConcept.glb',
+  // Quaternius / Kay Lousberg models are CC0; pinned to the source revision
+  // used by the public demo so the street does not drift between releases.
+  carPrimary:'https://cdn.jsdelivr.net/gh/halcyon-video/halcyon-video@57cb937f18bb162706c91d0a250258685928ec2a/public/models/car_sedan.glb',
+  carSecondary:'https://cdn.jsdelivr.net/gh/halcyon-video/halcyon-video@57cb937f18bb162706c91d0a250258685928ec2a/public/models/car_hatchback.glb',
+  carFallback:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/ferrari.glb',
   pedestrianPrimary:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/Soldier.glb',
   pedestrianSecondary:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/Michelle.glb',
+  pedestrianTertiary:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Assets@main/Models/CesiumMan/glTF-Binary/CesiumMan.glb',
   mira:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/Michelle.glb'
 };
 const worldAssetMixers=[];
@@ -2182,7 +2186,8 @@ function cloneAssetScene(source){
   return source.clone(true);
 }
 
-function prepareImportedModel(root){
+function prepareImportedModel(root,envIntensity=.42){
+  const maxAnisotropy=Math.min(renderer.capabilities.getMaxAnisotropy?.() || 1,8);
   root.traverse(object=>{
     if(!object.isMesh) return;
     object.castShadow=true;
@@ -2198,8 +2203,12 @@ function prepareImportedModel(root){
       if(!material) return;
       if(worldEnvironmentTexture && (material.isMeshStandardMaterial || material.isMeshPhysicalMaterial)){
         material.envMap=worldEnvironmentTexture;
-        material.envMapIntensity=.58;
+        material.envMapIntensity=envIntensity;
       }
+      ['map','normalMap','roughnessMap','metalnessMap'].forEach(key=>{
+        const texture=material[key];
+        if(texture?.isTexture) texture.anisotropy=maxAnisotropy;
+      });
       material.needsUpdate=true;
     });
   });
@@ -2259,12 +2268,22 @@ function tuneVehicleAsset(root,bodyColor){
       const key=((object.name||'')+' '+(material.name||'')).toLowerCase();
 
       if(/glass|window|windshield|windscreen/.test(key)){
-        if(material.color) material.color.set(0xb7c9cb);
+        if(material.color) material.color.lerp(new THREE.Color(0xb9cbcc),.48);
         material.transparent=true;
-        material.opacity=.64;
+        material.opacity=.76;
+        material.roughness=.18;
+        if('metalness' in material) material.metalness=.03;
+        material.depthWrite=false;
+      }else if(/head.?light|lamp_front|front.?light/.test(key)){
+        if(material.color) material.color.lerp(new THREE.Color(0xf2ead8),.72);
+        if(material.emissive) material.emissive.set(0x8f856d);
+        if('emissiveIntensity' in material) material.emissiveIntensity=.08;
         material.roughness=.22;
-        if('metalness' in material) material.metalness=.04;
-        material.depthWrite=true;
+      }else if(/tail.?light|rear.?light|brake/.test(key)){
+        if(material.color) material.color.lerp(new THREE.Color(0x9f665e),.72);
+        if(material.emissive) material.emissive.set(0x5d211d);
+        if('emissiveIntensity' in material) material.emissiveIntensity=.06;
+        material.roughness=.26;
       }else if(/tire|tyre|rubber/.test(key)){
         if(material.color) material.color.set(0x2d3131);
         material.roughness=.88;
@@ -2306,13 +2325,13 @@ function tunePedestrianAsset(root,index=0){
     materials.forEach(material=>{
       if(!material?.color) return;
       const key=((object.name||'')+' '+(material.name||'')).toLowerCase();
-      if(!/skin|face|head|hand/.test(key)){
+      if(!material.map && !/skin|face|head|hand|eye|hair/.test(key)){
         const hsl={h:0,s:0,l:0};
         material.color.getHSL(hsl);
-        material.color.lerp(clothTints[index%clothTints.length],hsl.s>.25?.18:.08);
+        material.color.lerp(clothTints[index%clothTints.length],hsl.s>.25?.16:.07);
       }
-      if('roughness' in material) material.roughness=Math.max(material.roughness||0,.62);
-      if('metalness' in material) material.metalness=Math.min(material.metalness||0,.08);
+      if('roughness' in material) material.roughness=Math.max(material.roughness||0,.72);
+      if('metalness' in material) material.metalness=Math.min(material.metalness||0,.05);
       material.needsUpdate=true;
     });
   });
@@ -2324,9 +2343,9 @@ function loadGLB(loader,url){
 
 function attachCarAsset(entry,source,index=0,targetLength=3.85){
   const root=source.clone(true);
-  prepareImportedModel(root);
+  prepareImportedModel(root,.72);
   normalizeCarAsset(root,targetLength);
-  const palette=[0xbfc5c2,0xd6ccbc,0xaebfc4,0xc8c7c0];
+  const palette=[0xbfc3c0,0xd5ccbe,0xaebdc0,0xc7c6bf];
   entry.assetWheels=tuneVehicleAsset(root,entry.color ?? palette[index%palette.length]);
   entry.placeholderChildren?.forEach(child=>{child.visible=false;});
   entry.group.add(root);
@@ -2339,7 +2358,7 @@ function attachCarAsset(entry,source,index=0,targetLength=3.85){
 
 function attachWalkerAsset(entry,source,animations,index){
   const root=cloneAssetScene(source);
-  prepareImportedModel(root);
+  prepareImportedModel(root,.28);
   normalizeHumanAsset(root,[1.68,1.75,1.71][index%3]);
   tunePedestrianAsset(root,index);
   root.rotation.y=(entry.direction>0?0:Math.PI)+entry.headingBias;
@@ -2366,7 +2385,7 @@ function attachWalkerAsset(entry,source,animations,index){
 
 function attachMiraAsset(source,animations){
   const root=cloneAssetScene(source);
-  prepareImportedModel(root);
+  prepareImportedModel(root,.34);
   normalizeHumanAsset(root,1.72);
   root.rotation.y=Math.PI-.12;
   root.position.z=.015;
@@ -2395,39 +2414,43 @@ async function initWorldGLBAssets(){
   ensureWorldAssetEnvironment();
   const loader=new window.GLTFLoader();
 
-  const [carPrimary,carSecondary,pedestrianPrimary,pedestrianSecondary,miraResult]=await Promise.allSettled([
+  const [carPrimary,carSecondary,carFallback,pedestrianPrimary,pedestrianSecondary,pedestrianTertiary,miraResult]=await Promise.allSettled([
     loadGLB(loader,WORLD_GLB_ASSETS.carPrimary),
     loadGLB(loader,WORLD_GLB_ASSETS.carSecondary),
+    loadGLB(loader,WORLD_GLB_ASSETS.carFallback),
     loadGLB(loader,WORLD_GLB_ASSETS.pedestrianPrimary),
     loadGLB(loader,WORLD_GLB_ASSETS.pedestrianSecondary),
+    loadGLB(loader,WORLD_GLB_ASSETS.pedestrianTertiary),
     loadGLB(loader,WORLD_GLB_ASSETS.mira)
   ]);
 
   const carSources={
     primary:carPrimary.status==='fulfilled'?carPrimary.value:null,
-    secondary:carSecondary.status==='fulfilled'?carSecondary.value:null
+    secondary:carSecondary.status==='fulfilled'?carSecondary.value:null,
+    fallback:carFallback.status==='fulfilled'?carFallback.value:null
   };
   parkedCars.forEach((entry,index)=>{
-    const source=carSources[entry.assetVariant] || carSources.primary || carSources.secondary;
-    if(source) attachCarAsset(entry,source.scene,index,entry.assetVariant==='secondary'?4.18:3.92);
+    const source=carSources[entry.assetVariant] || carSources.primary || carSources.secondary || carSources.fallback;
+    if(source) attachCarAsset(entry,source.scene,index,entry.assetVariant==='secondary'?4.16:4.52);
   });
   movingTraffic.forEach((entry,index)=>{
-    const source=carSources[entry.assetVariant] || carSources.primary || carSources.secondary;
-    if(source) attachCarAsset(entry,source.scene,index+2,entry.assetVariant==='secondary'?4.05:3.78);
+    const source=carSources[entry.assetVariant] || carSources.primary || carSources.secondary || carSources.fallback;
+    if(source) attachCarAsset(entry,source.scene,index+2,entry.assetVariant==='secondary'?4.02:4.42);
   });
-  if(!carSources.primary && !carSources.secondary){
+  if(!carSources.primary && !carSources.secondary && !carSources.fallback){
     console.warn('Vehicle GLBs failed; retaining procedural fallbacks.');
   }
 
   const pedestrianSources={
     primary:pedestrianPrimary.status==='fulfilled'?pedestrianPrimary.value:null,
-    secondary:pedestrianSecondary.status==='fulfilled'?pedestrianSecondary.value:null
+    secondary:pedestrianSecondary.status==='fulfilled'?pedestrianSecondary.value:null,
+    tertiary:pedestrianTertiary.status==='fulfilled'?pedestrianTertiary.value:null
   };
   ambientWalkers.forEach((entry,index)=>{
-    const source=pedestrianSources[entry.assetVariant] || pedestrianSources.primary || pedestrianSources.secondary;
+    const source=pedestrianSources[entry.assetVariant] || pedestrianSources.primary || pedestrianSources.secondary || pedestrianSources.tertiary;
     if(source) attachWalkerAsset(entry,source.scene,source.animations,index);
   });
-  if(!pedestrianSources.primary && !pedestrianSources.secondary){
+  if(!pedestrianSources.primary && !pedestrianSources.secondary && !pedestrianSources.tertiary){
     console.warn('Pedestrian GLBs failed; retaining procedural fallbacks.');
   }
 
