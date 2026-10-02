@@ -3757,14 +3757,15 @@ const portalStoneMat=new THREE.MeshStandardMaterial({
     new THREE.CylinderGeometry(.018,.018,.48,10),
     new THREE.MeshStandardMaterial({
       color:0x8c9692,
-      roughness:.36,
-      metalness:.58,
+      roughness:.30,
+      metalness:.60,
       map:metalSurface.map,
-      roughnessMap:metalSurface.roughness,
+      roughnessMap:metalTouchRoughness,
       normalMap:metalSurface.normal,
       normalScale:new THREE.Vector2(.10,.10),
       bumpMap:metalSurface.bump,
-      bumpScale:.0025
+      bumpScale:.0025,
+      envMapIntensity:.96
     })
   );
   handle.rotation.z=Math.PI/2;
