@@ -58,13 +58,13 @@ sunHaze.position.set(-34,34,-46);
 sunHaze.scale.set(18,18,1);
 scene.add(sunHaze);
 
-const camera = new THREE.PerspectiveCamera(74, window.innerWidth / window.innerHeight, 0.08, 120);
+const camera = new THREE.PerspectiveCamera(72.5, window.innerWidth / window.innerHeight, 0.08, 120);
 camera.position.set(1.4, 1.68, 7.8);
 camera.rotation.order = 'YXZ';
 
 // A slightly wider field of view + subtle camera inertia makes the flat-screen
 // prototype feel closer to looking through a headset without requiring WebXR.
-let cameraFovTarget = 74;
+let cameraFovTarget = 72.5;
 
 // ---------- daylight ----------
 renderer.toneMappingExposure = 1.02;
@@ -257,6 +257,48 @@ function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x9fc7d6){
   return panel;
 }
 
+const dappleCanvas=document.createElement('canvas');
+dappleCanvas.width=512;
+dappleCanvas.height=512;
+const dappleCtx=dappleCanvas.getContext('2d');
+dappleCtx.clearRect(0,0,512,512);
+for(let i=0;i<120;i++){
+  const x=40+Math.random()*432;
+  const y=40+Math.random()*432;
+  const rx=9+Math.random()*24;
+  const ry=5+Math.random()*15;
+  dappleCtx.save();
+  dappleCtx.translate(x,y);
+  dappleCtx.rotate(Math.random()*Math.PI);
+  const a=.018+Math.random()*.026;
+  dappleCtx.fillStyle='rgba(47,66,48,'+a.toFixed(3)+')';
+  dappleCtx.beginPath();
+  dappleCtx.ellipse(0,0,rx,ry,0,0,Math.PI*2);
+  dappleCtx.fill();
+  dappleCtx.restore();
+}
+const dappleTexture=new THREE.CanvasTexture(dappleCanvas);
+dappleTexture.colorSpace=THREE.SRGBColorSpace;
+dappleTexture.anisotropy=8;
+
+function createDapplePatch(x,z,w,d,rotation=0,opacity=.72){
+  const patch=new THREE.Mesh(
+    new THREE.PlaneGeometry(w,d),
+    new THREE.MeshBasicMaterial({
+      map:dappleTexture,
+      transparent:true,
+      opacity,
+      depthWrite:false,
+      toneMapped:false
+    })
+  );
+  patch.rotation.x=-Math.PI/2;
+  patch.rotation.z=rotation;
+  patch.position.set(x,.052,z);
+  scene.add(patch);
+  return patch;
+}
+
 // ---------- daytime city block ----------
 // Ground is deliberately split into road, curb and pedestrian zones so the
 // player immediately reads this as a real street rather than a generic floor.
@@ -333,6 +375,14 @@ const edgeLine=new THREE.Mesh(new THREE.PlaneGeometry(.11,86),new THREE.MeshBasi
 edgeLine.rotation.x=-Math.PI/2;
 edgeLine.position.set(-.45,.025,-4);
 scene.add(edgeLine);
+
+const focalCurbMark=new THREE.Mesh(
+  new THREE.PlaneGeometry(.13,5.4),
+  new THREE.MeshBasicMaterial({color:0xe5d179,transparent:true,opacity:.92})
+);
+focalCurbMark.rotation.x=-Math.PI/2;
+focalCurbMark.position.set(-.28,.030,-1.55);
+scene.add(focalCurbMark);
 
 for(let x=-12.6;x<-1.0;x+=1.45){
   const cross=new THREE.Mesh(new THREE.PlaneGeometry(.62,3.1),stripeMat);
@@ -572,6 +622,107 @@ for(let i=0;i<18;i++){
   scene.add(bloom);
 }
 
+// ---------- Mira street pocket ----------
+// A warmer paving inset, curb ramp and low seat-wall create a human-scale
+// "home spot" in the street composition without changing Mira herself.
+const miraPocket=new THREE.Mesh(
+  new THREE.PlaneGeometry(5.35,5.15),
+  new THREE.MeshStandardMaterial({color:0xddd6c8,roughness:.95})
+);
+miraPocket.rotation.x=-Math.PI/2;
+miraPocket.position.set(3.75,.044,-1.55);
+miraPocket.receiveShadow=true;
+scene.add(miraPocket);
+
+const pocketLineMat=new THREE.MeshBasicMaterial({
+  color:0xbdb4a6,
+  transparent:true,
+  opacity:.44,
+  depthWrite:false
+});
+for(let i=-2;i<=2;i++){
+  const line=new THREE.Mesh(new THREE.PlaneGeometry(.018,5.02),pocketLineMat);
+  line.rotation.x=-Math.PI/2;
+  line.position.set(3.75+i*.92,.050,-1.55);
+  scene.add(line);
+}
+for(let i=-2;i<=2;i++){
+  const line=new THREE.Mesh(new THREE.PlaneGeometry(5.20,.018),pocketLineMat);
+  line.rotation.x=-Math.PI/2;
+  line.position.set(3.75,.051,-1.55+i*.88);
+  scene.add(line);
+}
+
+const pocketBorderMat=new THREE.MeshStandardMaterial({color:0xb8ad9d,roughness:.90});
+[
+  [3.75,.045,-4.10,5.45,.08],
+  [3.75,.045,1.00,5.45,.08]
+].forEach(([x,y,z,w,d])=>{
+  const border=new THREE.Mesh(new THREE.BoxGeometry(w,.035,d),pocketBorderMat);
+  border.position.set(x,y,z);
+  border.receiveShadow=true;
+  scene.add(border);
+});
+
+// Curb ramp visually ties Mira's pocket to the street and gives the sidewalk a
+// practical urban detail at the exact focal area.
+const ramp=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.35,1.55),
+  new THREE.MeshStandardMaterial({color:0xcec8bb,roughness:.94})
+);
+ramp.rotation.x=-Math.PI/2;
+ramp.position.set(.76,.050,-1.55);
+scene.add(ramp);
+
+const dotMat=new THREE.MeshStandardMaterial({color:0xcaa95c,roughness:.90});
+for(let dz=-.48;dz<=.48;dz+=.24){
+  for(let dx=-.42;dx<=.42;dx+=.21){
+    const dot=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.012,10),dotMat);
+    dot.position.set(.76+dx,.061,-1.55+dz);
+    scene.add(dot);
+  }
+}
+
+const seatStone=new THREE.MeshStandardMaterial({color:0xc0b6a6,roughness:.92});
+const pocketSeat=new THREE.Mesh(new THREE.BoxGeometry(2.35,.34,.48),seatStone);
+pocketSeat.position.set(6.25,.20,-1.70);
+pocketSeat.castShadow=true;
+pocketSeat.receiveShadow=true;
+scene.add(pocketSeat);
+
+const pocketPlanter=new THREE.Mesh(new THREE.BoxGeometry(2.55,.52,.62),seatStone);
+pocketPlanter.position.set(6.25,.27,-2.27);
+pocketPlanter.castShadow=true;
+scene.add(pocketPlanter);
+
+const pocketGreenMats=[
+  new THREE.MeshStandardMaterial({color:0x789a70,roughness:.95}),
+  new THREE.MeshStandardMaterial({color:0x86a879,roughness:.94})
+];
+for(let i=0;i<7;i++){
+  const shrub=new THREE.Mesh(
+    new THREE.SphereGeometry(.25+(i%2)*.035,12,9),
+    pocketGreenMats[i%2]
+  );
+  shrub.scale.set(1.05,.74,.90);
+  shrub.position.set(5.30+i*.31,.66,-2.27+(i%2)*.035);
+  shrub.castShadow=true;
+  scene.add(shrub);
+}
+
+// Drainage slots and dappled tree shade add foreground realism where the player
+// spends the most time.
+const drainMat=new THREE.MeshStandardMaterial({color:0x59615f,roughness:.60,metalness:.48});
+for(let i=0;i<7;i++){
+  const slot=new THREE.Mesh(new THREE.BoxGeometry(.045,.018,.30),drainMat);
+  slot.position.set(-.02,.065,-2.25+i*.24);
+  slot.castShadow=false;
+  scene.add(slot);
+}
+
+createDapplePatch(2.15,-2.10,4.3,5.1,-.10,.82);
+createDapplePatch(4.75,5.15,3.8,4.4,.16,.62);
+
 function createLampPost(x,z){
   const metal=new THREE.MeshStandardMaterial({color:0x3f494b,roughness:.48,metalness:.62});
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,3.2,10),metal);
@@ -654,6 +805,17 @@ function createCafeTable(x,z){
 }
 createCafeTable(5.9,5.7);
 createCafeTable(5.9,8.2);
+
+const cupMat=new THREE.MeshStandardMaterial({color:0xf0ece2,roughness:.72});
+[
+  [5.78,.78,5.64],
+  [6.02,.78,8.12]
+].forEach(([x,y,z])=>{
+  const cup=new THREE.Mesh(new THREE.CylinderGeometry(.055,.045,.10,12),cupMat);
+  cup.position.set(x,y,z);
+  cup.castShadow=true;
+  scene.add(cup);
+});
 
 [-9.5,-6.5,8.7].forEach(z=>{
   const bollard=new THREE.Mesh(
@@ -958,7 +1120,7 @@ function openTablet(){
   }
 
   tabletOpen=true; keys.clear(); document.exitPointerLock?.();
-  cameraFovTarget=71;
+  cameraFovTarget=69.5;
   document.body.classList.add('device-open');
   tabletLayer?.classList.remove('closing');
   tabletLayer?.classList.add('open');
@@ -972,7 +1134,7 @@ function openTablet(){
 function closeTablet(){
   if(!tabletOpen) return;
 
-  tabletOpen=false; cameraFovTarget=74;
+  tabletOpen=false; cameraFovTarget=72.5;
   tabletLayer?.classList.add('closing');
   tabletLayer?.setAttribute('aria-hidden','true');
   window.dispatchEvent(new CustomEvent('tablet-close'));
@@ -1057,6 +1219,8 @@ function animate(){
     crown.rotation.z=Math.sin(t*.34+i*.9)*.006;
     crown.rotation.x=Math.sin(t*.27+i*1.4)*.004;
   });
+  dappleTexture.offset.x=Math.sin(t*.075)*.003;
+  dappleTexture.offset.y=Math.cos(t*.061)*.002;
   sunHaze.material.opacity=.80+Math.sin(t*.11)*.018;
   sun.intensity=3.16+Math.sin(t*.045)*.035;
 
