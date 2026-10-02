@@ -58,6 +58,51 @@ sunHaze.position.set(-34,34,-46);
 sunHaze.scale.set(18,18,1);
 scene.add(sunHaze);
 
+const cloudCanvas=document.createElement('canvas');
+cloudCanvas.width=512;
+cloudCanvas.height=256;
+const cloudCtx=cloudCanvas.getContext('2d');
+cloudCtx.clearRect(0,0,512,256);
+[
+  [150,132,82,42,.30],
+  [228,112,104,56,.28],
+  [320,136,78,39,.24],
+  [260,154,126,38,.20]
+].forEach(([x,y,rx,ry,a])=>{
+  const g=cloudCtx.createRadialGradient(x,y,8,x,y,rx);
+  g.addColorStop(0,'rgba(255,255,255,'+a.toFixed(2)+')');
+  g.addColorStop(.52,'rgba(255,255,255,'+(a*.68).toFixed(2)+')');
+  g.addColorStop(1,'rgba(255,255,255,0)');
+  cloudCtx.fillStyle=g;
+  cloudCtx.save();
+  cloudCtx.translate(x,y);
+  cloudCtx.scale(1,ry/rx);
+  cloudCtx.beginPath();
+  cloudCtx.arc(0,0,rx,0,Math.PI*2);
+  cloudCtx.fill();
+  cloudCtx.restore();
+});
+const cloudTexture=new THREE.CanvasTexture(cloudCanvas);
+cloudTexture.colorSpace=THREE.SRGBColorSpace;
+const skyClouds=[];
+[
+  [-22,18,-52,20,10,.24],
+  [18,15,-64,26,12,.18],
+  [34,20,-78,22,10,.14]
+].forEach(([x,y,z,w,h,opacity])=>{
+  const cloud=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:cloudTexture,
+    transparent:true,
+    depthWrite:false,
+    toneMapped:false,
+    opacity
+  }));
+  cloud.position.set(x,y,z);
+  cloud.scale.set(w,h,1);
+  scene.add(cloud);
+  skyClouds.push(cloud);
+});
+
 const camera = new THREE.PerspectiveCamera(72.5, window.innerWidth / window.innerHeight, 0.08, 120);
 camera.position.set(1.4, 1.68, 7.8);
 camera.rotation.order = 'YXZ';
@@ -521,6 +566,50 @@ for(let i=0;i<10;i++){
   }
 }
 
+// Glass office volumes sit behind the lower street wall so the boulevard reads
+// as a real modern city rather than one strip of boxes.
+function createGlassTower(x,z,w,d,h,tint){
+  const body=new THREE.Mesh(
+    new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshPhysicalMaterial({
+      color:tint,
+      map:glassReflectionTexture,
+      roughness:.24,
+      metalness:.08,
+      transparent:true,
+      opacity:.62,
+      transmission:.05,
+      clearcoat:.20,
+      clearcoatRoughness:.38
+    })
+  );
+  body.position.set(x,h/2,z);
+  body.receiveShadow=true;
+  scene.add(body);
+
+  const mullionMat=new THREE.MeshStandardMaterial({color:0x77888e,roughness:.42,metalness:.26});
+  for(let level=1.0;level<h-.7;level+=1.35){
+    const band=new THREE.Mesh(new THREE.BoxGeometry(w+.04,.035,d+.04),mullionMat);
+    band.position.set(x,level,z);
+    scene.add(band);
+  }
+  [-.34,0,.34].forEach(n=>{
+    const v=new THREE.Mesh(new THREE.BoxGeometry(.04,h-.4,d+.05),mullionMat);
+    v.position.set(x+n*w*.72,h/2,z);
+    scene.add(v);
+  });
+
+  const roof=new THREE.Mesh(
+    new THREE.BoxGeometry(w+.20,.16,d+.20),
+    new THREE.MeshStandardMaterial({color:0xaeb8b9,roughness:.64,metalness:.08})
+  );
+  roof.position.set(x,h+.08,z);
+  scene.add(roof);
+}
+
+createGlassTower(-17.8,-4.8,4.4,7.0,12.4,0xa8c8d2);
+createGlassTower(-19.2,16.2,4.8,6.4,10.6,0xb7ccd2);
+
 // Soft skyline silhouettes keep the horizon bright and city-like.
 for(let i=0;i<9;i++){
   const h=9+(i%5)*2.4;
@@ -756,6 +845,36 @@ function createLampPost(x,z){
 }
 [-11,2,15].forEach(z=>createLampPost(.45,z));
 
+const wayfindingPole=new THREE.Mesh(
+  new THREE.CylinderGeometry(.045,.055,2.25,10),
+  new THREE.MeshStandardMaterial({color:0x485254,roughness:.52,metalness:.42})
+);
+wayfindingPole.position.set(.48,1.13,-16.1);
+wayfindingPole.castShadow=true;
+scene.add(wayfindingPole);
+
+const wayfindingCanvas=document.createElement('canvas');
+wayfindingCanvas.width=256;
+wayfindingCanvas.height=128;
+const wayfindingCtx=wayfindingCanvas.getContext('2d');
+wayfindingCtx.fillStyle='#405458';
+wayfindingCtx.fillRect(0,0,256,128);
+wayfindingCtx.fillStyle='#f2efe6';
+wayfindingCtx.font='700 28px Inter, sans-serif';
+wayfindingCtx.fillText('NOVA WALK',20,48);
+wayfindingCtx.font='500 20px Inter, sans-serif';
+wayfindingCtx.fillStyle='rgba(242,239,230,.78)';
+wayfindingCtx.fillText('CAFÉ  •  PARK',20,82);
+const wayfindingTexture=new THREE.CanvasTexture(wayfindingCanvas);
+wayfindingTexture.colorSpace=THREE.SRGBColorSpace;
+const wayfindingSign=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.18,.58),
+  new THREE.MeshBasicMaterial({map:wayfindingTexture,toneMapped:false,side:THREE.DoubleSide})
+);
+wayfindingSign.position.set(.72,1.88,-16.1);
+wayfindingSign.rotation.y=Math.PI/2;
+scene.add(wayfindingSign);
+
 // A bench and bike rack near the cafe create readable points of interest for
 // future Scanner/Map interactions.
 const benchWood=new THREE.MeshStandardMaterial({color:0x9b795d,roughness:.82});
@@ -906,6 +1025,41 @@ createContactShadow(-3.55,8.1,2.0,3.8,.13);
 createContactShadow(5.1,1.95,2.05,.85,.085);
 createContactShadow(5.9,5.7,1.65,1.12,.075);
 createContactShadow(5.9,8.2,1.65,1.12,.075);
+createContactShadow(6.25,-1.72,2.75,1.18,.080);
+
+const ambientWalkers=[];
+function createAmbientWalker(x,z,direction,color){
+  const group=new THREE.Group();
+  const cloth=new THREE.MeshStandardMaterial({color,roughness:.86});
+  const skin=new THREE.MeshStandardMaterial({color:0xc69c83,roughness:.82});
+  const dark=new THREE.MeshStandardMaterial({color:0x3f474b,roughness:.88});
+
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.11,.42,5,10),cloth);
+  torso.position.y=1.08;
+  torso.castShadow=true;
+  group.add(torso);
+
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.13,12,10),skin);
+  head.position.y=1.48;
+  head.castShadow=true;
+  group.add(head);
+
+  [-1,1].forEach(side=>{
+    const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.055,.44,5,8),dark);
+    leg.position.set(side*.075,.54,0);
+    leg.castShadow=true;
+    group.add(leg);
+  });
+
+  group.position.set(x,0,z);
+  group.scale.setScalar(.88);
+  scene.add(group);
+  ambientWalkers.push({group,direction,phase:Math.random()*Math.PI*2});
+}
+
+createAmbientWalker(5.05,-15.8,1,0xa98f82);
+createAmbientWalker(3.55,16.6,-1,0x718692);
+createAmbientWalker(6.25,13.5,-1,0x8d9a73);
 
 const movingTraffic=[];
 function createTrafficCar(x,z,color,speed){
@@ -1224,10 +1378,25 @@ function animate(){
   sunHaze.material.opacity=.80+Math.sin(t*.11)*.018;
   sun.intensity=3.16+Math.sin(t*.045)*.035;
 
+  skyClouds.forEach((cloud,index)=>{
+    cloud.position.x+=dt*(.055+index*.018);
+    if(cloud.position.x>46) cloud.position.x=-46-index*7;
+  });
+
   movingTraffic.forEach((traffic,index)=>{
     traffic.group.position.z+=traffic.speed*dt;
     if(traffic.speed>0 && traffic.group.position.z>38) traffic.group.position.z=-38-index*5;
     if(traffic.speed<0 && traffic.group.position.z<-38) traffic.group.position.z=38+index*5;
+  });
+
+  ambientWalkers.forEach((walker,index)=>{
+    const travel=.58+index*.06;
+    walker.group.position.z+=walker.direction*travel*dt;
+    walker.phase+=dt*(3.8+index*.35);
+    walker.group.position.y=Math.abs(Math.sin(walker.phase))*0.012;
+    walker.group.rotation.z=Math.sin(walker.phase)*.012;
+    if(walker.direction>0 && walker.group.position.z>20) walker.group.position.z=-19.5-index;
+    if(walker.direction<0 && walker.group.position.z<-19.5) walker.group.position.z=20+index;
   });
 
   // Human idle: breathing, tiny weight shift and occasional attention toward player.
