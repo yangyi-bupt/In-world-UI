@@ -1198,12 +1198,155 @@ function makeWoodFinishRoughness(seed,repeatX=2,repeatY=8){
     g.stroke();
   }
 
+  const edgeW=26;
+  const left=g.createLinearGradient(0,0,edgeW,0);
+  left.addColorStop(0,'rgba(242,242,242,.55)');
+  left.addColorStop(1,'rgba(242,242,242,0)');
+  g.fillStyle=left; g.fillRect(0,0,edgeW,size);
+  const right=g.createLinearGradient(size,0,size-edgeW,0);
+  right.addColorStop(0,'rgba(242,242,242,.55)');
+  right.addColorStop(1,'rgba(242,242,242,0)');
+  g.fillStyle=right; g.fillRect(size-edgeW,0,edgeW,size);
+  const top=g.createLinearGradient(0,0,0,edgeW);
+  top.addColorStop(0,'rgba(238,238,238,.42)');
+  top.addColorStop(1,'rgba(238,238,238,0)');
+  g.fillStyle=top; g.fillRect(0,0,size,edgeW);
+  const bottom=g.createLinearGradient(0,size,0,size-edgeW);
+  bottom.addColorStop(0,'rgba(238,238,238,.42)');
+  bottom.addColorStop(1,'rgba(238,238,238,0)');
+  g.fillStyle=bottom; g.fillRect(0,size-edgeW,size,edgeW);
+
+  for(let i=0;i<44;i++){
+    const side=Math.floor(rnd()*4);
+    const x=side===0?rnd()*22:(side===1?size-rnd()*22:rnd()*size);
+    const y=side===2?rnd()*22:(side===3?size-rnd()*22:rnd()*size);
+    const rx=1+rnd()*5;
+    const ry=.6+rnd()*3.2;
+    g.fillStyle='rgba(248,248,248,'+(.16+rnd()*.24).toFixed(3)+')';
+    g.beginPath();
+    g.ellipse(x,y,rx,ry,rnd()*Math.PI,0,Math.PI*2);
+    g.fill();
+  }
+
   const texture=new THREE.CanvasTexture(canvas);
-  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
-  texture.repeat.set(repeatX,repeatY);
+  texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+  texture.repeat.set(1,1);
   texture.anisotropy=8;
   return texture;
 }
+
+function makeWoodClearcoatWear(seed){
+  const size=256;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='#cfcfcf';
+  g.fillRect(0,0,size,size);
+
+  const edgeW=30;
+  const edgeGrad=(x0,y0,x1,y1,rect)=>{
+    const grad=g.createLinearGradient(x0,y0,x1,y1);
+    grad.addColorStop(0,'#5d5d5d');
+    grad.addColorStop(.62,'rgba(170,170,170,.42)');
+    grad.addColorStop(1,'rgba(207,207,207,0)');
+    g.fillStyle=grad;
+    g.fillRect(...rect);
+  };
+  edgeGrad(0,0,edgeW,0,[0,0,edgeW,size]);
+  edgeGrad(size,0,size-edgeW,0,[size-edgeW,0,edgeW,size]);
+  edgeGrad(0,0,0,edgeW,[0,0,size,edgeW]);
+  edgeGrad(0,size,0,size-edgeW,[0,size-edgeW,size,edgeW]);
+
+  for(let i=0;i<60;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const rx=1+rnd()*7;
+    const ry=.6+rnd()*4;
+    const v=52+Math.floor(rnd()*70);
+    g.fillStyle='rgba('+v+','+v+','+v+','+(.18+rnd()*.30).toFixed(3)+')';
+    g.beginPath();
+    g.ellipse(x,y,rx,ry,rnd()*Math.PI,0,Math.PI*2);
+    g.fill();
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+  texture.anisotropy=8;
+  return texture;
+}
+
+function makeCoatedMetalMaps(seed){
+  const size=256;
+  const colorCanvas=document.createElement('canvas');
+  const roughCanvas=document.createElement('canvas');
+  const metalCanvas=document.createElement('canvas');
+  colorCanvas.width=colorCanvas.height=size;
+  roughCanvas.width=roughCanvas.height=size;
+  metalCanvas.width=metalCanvas.height=size;
+  const g=colorCanvas.getContext('2d');
+  const r=roughCanvas.getContext('2d');
+  const m=metalCanvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='#f2f2ef';
+  g.fillRect(0,0,size,size);
+  r.fillStyle='#9a9a9a';
+  r.fillRect(0,0,size,size);
+  m.fillStyle='#0c0c0c';
+  m.fillRect(0,0,size,size);
+
+  for(let i=0;i<110;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const rx=.7+rnd()*3.8;
+    const ry=.4+rnd()*2.2;
+    const exposed=rnd()>.72;
+    g.fillStyle=exposed
+      ? 'rgba(89,94,92,'+(.16+rnd()*.24).toFixed(3)+')'
+      : 'rgba(108,91,73,'+(.06+rnd()*.12).toFixed(3)+')';
+    g.beginPath();
+    g.ellipse(x,y,rx,ry,rnd()*Math.PI,0,Math.PI*2);
+    g.fill();
+
+    const rv=exposed?82+Math.floor(rnd()*42):176+Math.floor(rnd()*46);
+    r.fillStyle='rgba('+rv+','+rv+','+rv+','+(.28+rnd()*.32).toFixed(3)+')';
+    r.beginPath();
+    r.ellipse(x,y,rx*1.15,ry*1.15,0,0,Math.PI*2);
+    r.fill();
+
+    if(exposed){
+      const mv=188+Math.floor(rnd()*58);
+      m.fillStyle='rgba('+mv+','+mv+','+mv+','+(.55+rnd()*.35).toFixed(3)+')';
+      m.beginPath();
+      m.ellipse(x,y,rx*.88,ry*.88,0,0,Math.PI*2);
+      m.fill();
+    }
+  }
+
+  const map=new THREE.CanvasTexture(colorCanvas);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.wrapS=map.wrapT=THREE.RepeatWrapping;
+  map.repeat.set(3,3);
+  map.anisotropy=8;
+
+  const roughness=new THREE.CanvasTexture(roughCanvas);
+  roughness.wrapS=roughness.wrapT=THREE.RepeatWrapping;
+  roughness.repeat.set(3,3);
+  roughness.anisotropy=8;
+
+  const metalness=new THREE.CanvasTexture(metalCanvas);
+  metalness.wrapS=metalness.wrapT=THREE.RepeatWrapping;
+  metalness.repeat.set(3,3);
+  metalness.anisotropy=8;
+
+  return {map,roughness,metalness};
+}
+
+const benchWoodClearcoatWear=makeWoodClearcoatWear(0x79bc142e);
+const cafeWoodClearcoatWear=makeWoodClearcoatWear(0x31e8a7c4);
+const coatedMetalSurface=makeCoatedMetalMaps(0x5ad41c82);
 
 function makeRubberAgingMaps(seed){
   const size=256;
@@ -3853,7 +3996,7 @@ const cafeMullionMat=new THREE.MeshStandardMaterial({
   roughness:.42,
   metalness:.34,
   map:metalSurface.map,
-  roughnessMap:metalEdgeRoughness,
+  roughnessMap:coatedMetalSurface.roughness,
   normalMap:metalSurface.normal,
   normalScale:new THREE.Vector2(.10,.10),
   bumpMap:metalSurface.bump,
@@ -3872,7 +4015,7 @@ const cafeDoorFrame=new THREE.MeshStandardMaterial({
   roughness:.46,
   metalness:.30,
   map:metalSurface.map,
-  roughnessMap:metalEdgeRoughness,
+  roughnessMap:coatedMetalSurface.roughness,
   normalMap:metalSurface.normal,
   normalScale:new THREE.Vector2(.10,.10),
   bumpMap:metalSurface.bump,
@@ -4274,6 +4417,7 @@ const cafeBenchMat=new THREE.MeshPhysicalMaterial({
   bumpMap:woodSurface.bump,
   bumpScale:.017,
   clearcoat:.045,
+  clearcoatMap:cafeWoodClearcoatWear,
   clearcoatRoughness:.80,
   envMapIntensity:.09
 });
@@ -4320,6 +4464,7 @@ const cafeSmallTableMat=new THREE.MeshPhysicalMaterial({
   bumpMap:woodSurface.bump,
   bumpScale:.017,
   clearcoat:.075,
+  clearcoatMap:cafeWoodClearcoatWear,
   clearcoatRoughness:.68,
   envMapIntensity:.12
 });
@@ -5672,6 +5817,7 @@ const benchWood=new THREE.MeshPhysicalMaterial({
   bumpMap:benchWoodBump,
   bumpScale:.020,
   clearcoat:.055,
+  clearcoatMap:benchWoodClearcoatWear,
   clearcoatRoughness:.76,
   envMapIntensity:.10
 });
@@ -5700,7 +5846,7 @@ const benchMetal=new THREE.MeshStandardMaterial({
   roughness:.44,
   metalness:.46,
   map:metalSurface.map,
-  roughnessMap:metalEdgeRoughness,
+  roughnessMap:coatedMetalSurface.roughness,
   normalMap:metalSurface.normal,
   normalScale:new THREE.Vector2(.10,.10),
   bumpMap:metalSurface.bump,
