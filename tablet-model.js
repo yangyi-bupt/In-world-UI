@@ -322,15 +322,37 @@
       const leftLoad=impact*(.72-pointerX*.28);
       const rightLoad=impact*(.72+pointerX*.28);
 
-      leftHand.position.x=leftSide*.042*hidden-leftSide*leftLoad*.005;
-      rightHand.position.x=rightSide*.042*hidden-rightSide*rightLoad*.005;
-      leftHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-leftLoad*.0022;
-      rightHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-rightLoad*.0022;
+      // Weight transfer continues even when the user is not clicking. The hand
+      // on the lower/loaded side firms up while the opposite wrist relaxes.
+      // All offsets stay behind the bezel so the grip never crosses the screen.
+      const supportBias=THREE.MathUtils.clamp(pointerX*.18+inertiaX*5,-.24,.24);
+      const verticalBias=THREE.MathUtils.clamp(pointerY*.10+inertiaY*4,-.14,.14);
+      const leftSupport=.5-supportBias;
+      const rightSupport=.5+supportBias;
+      const leftBreath=Math.sin(t*.67+.4)*.0011*hold;
+      const rightBreath=Math.sin(t*.67+2.6)*.0011*hold;
 
-      leftHand.userData.thumb.rotation.x=.28+.06*hold+leftLoad*.055;
-      rightHand.userData.thumb.rotation.x=.28+.06*hold+rightLoad*.055;
-      leftHand.userData.thumb.rotation.z=leftSide*(.76+.08*hold+leftLoad*.042);
-      rightHand.userData.thumb.rotation.z=rightSide*(.76+.08*hold+rightLoad*.042);
+      leftHand.position.x=leftSide*.042*hidden-leftSide*(leftLoad*.005+leftSupport*.0018);
+      rightHand.position.x=rightSide*.042*hidden-rightSide*(rightLoad*.005+rightSupport*.0018);
+      leftHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-leftLoad*.0022+leftBreath-verticalBias*.0022;
+      rightHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-rightLoad*.0022+rightBreath+verticalBias*.0022;
+
+      // Wrists counter-rotate against tablet inertia; palms and thumb roots
+      // compress by different amounts so the device feels supported, not glued.
+      leftHand.userData.forearm.rotation.z=leftSide*(.75+pointerX*.010+inertiaX*.22);
+      rightHand.userData.forearm.rotation.z=rightSide*(.75+pointerX*.010+inertiaX*.22);
+      leftHand.userData.forearm.rotation.x=-.10-pointerY*.012-inertiaY*.18;
+      rightHand.userData.forearm.rotation.x=-.10-pointerY*.012-inertiaY*.18;
+
+      leftHand.userData.palm.rotation.z=leftSide*(.09+leftSupport*.010+impact*.006);
+      rightHand.userData.palm.rotation.z=rightSide*(.09+rightSupport*.010+impact*.006);
+      leftHand.userData.thumbRoot.rotation.z=leftSide*(.18+leftSupport*.020+leftLoad*.018);
+      rightHand.userData.thumbRoot.rotation.z=rightSide*(.18+rightSupport*.020+rightLoad*.018);
+
+      leftHand.userData.thumb.rotation.x=.28+.06*hold+leftLoad*.055+leftSupport*.010;
+      rightHand.userData.thumb.rotation.x=.28+.06*hold+rightLoad*.055+rightSupport*.010;
+      leftHand.userData.thumb.rotation.z=leftSide*(.76+.08*hold+leftLoad*.042+leftSupport*.012);
+      rightHand.userData.thumb.rotation.z=rightSide*(.76+.08*hold+rightLoad*.042+rightSupport*.012);
 
       // Material response: the metal gets slightly sharper at steeper pointer
       // angles, while the camera lens catches a moving pin-prick reflection.
