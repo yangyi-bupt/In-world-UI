@@ -447,6 +447,30 @@ function makeOrganicTexture(kind,seed){
 const barkSurface=configureTexturePair(makeOrganicTexture('bark',0x829ad73f),2.6,4.8);
 const foliageSurface=configureTexturePair(makeOrganicTexture('foliage',0xa1426b8d),2.2,2.2);
 
+function makeMicroBump(seed,repeat=8){
+  const size=128;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+  g.fillStyle='#808080';
+  g.fillRect(0,0,size,size);
+  for(let i=0;i<1600;i++){
+    const v=116+Math.floor(rnd()*25);
+    g.fillStyle='rgb('+v+','+v+','+v+')';
+    const r=.25+rnd()*.85;
+    g.fillRect(rnd()*size,rnd()*size,r,r);
+  }
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(repeat,repeat);
+  texture.anisotropy=8;
+  return texture;
+}
+
+const vehiclePaintMicroBump=makeMicroBump(0x26a4bd73,10);
+const rubberMicroBump=makeMicroBump(0x9f4c713a,6);
+
 const glassReflectionCanvas=document.createElement('canvas');
 glassReflectionCanvas.width=128;
 glassReflectionCanvas.height=256;
@@ -1600,13 +1624,14 @@ function createGlassTower(x,z,w,d,h,tint){
     new THREE.MeshPhysicalMaterial({
       color:tint,
       map:glassReflectionTexture,
-      roughness:.29,
-      metalness:.05,
+      roughnessMap:glassRoughnessTexture,
+      roughness:.22,
+      metalness:.025,
       transparent:true,
-      opacity:.56,
-      transmission:.05,
-      clearcoat:.20,
-      clearcoatRoughness:.38
+      opacity:.50,
+      transmission:.10,
+      clearcoat:.30,
+      clearcoatRoughness:.24
     })
   );
   body.position.set(x,h/2,z);
@@ -2889,44 +2914,67 @@ function tuneVehicleAsset(root,bodyColor){
 
   root.traverse(object=>{
     if(!object.isMesh) return;
+    const hasUv=Boolean(object.geometry?.attributes?.uv);
     const materials=Array.isArray(object.material)?object.material:[object.material];
+
     materials.forEach(material=>{
       if(!material) return;
       const key=((object.name||'')+' '+(material.name||'')).toLowerCase();
 
       if(/glass|window|windshield|windscreen/.test(key)){
-        if(material.color) material.color.lerp(new THREE.Color(0xb9cbcc),.48);
+        if(material.color) material.color.lerp(new THREE.Color(0xb5c8ca),.44);
         material.transparent=true;
-        material.opacity=.76;
-        material.roughness=.18;
-        if('metalness' in material) material.metalness=.03;
+        material.opacity=.68;
+        material.roughness=.12;
+        if('metalness' in material) material.metalness=.015;
+        if('envMapIntensity' in material) material.envMapIntensity=1.02;
+        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
+          material.roughnessMap=glassRoughnessTexture;
+        }
         material.depthWrite=false;
       }else if(/head.?light|lamp_front|front.?light/.test(key)){
-        if(material.color) material.color.lerp(new THREE.Color(0xf2ead8),.72);
-        if(material.emissive) material.emissive.set(0x8f856d);
-        if('emissiveIntensity' in material) material.emissiveIntensity=.08;
-        material.roughness=.22;
+        if(material.color) material.color.lerp(new THREE.Color(0xf4ecdc),.76);
+        if(material.emissive) material.emissive.set(0x988a70);
+        if('emissiveIntensity' in material) material.emissiveIntensity=.075;
+        material.roughness=.18;
+        if('envMapIntensity' in material) material.envMapIntensity=.88;
       }else if(/tail.?light|rear.?light|brake/.test(key)){
-        if(material.color) material.color.lerp(new THREE.Color(0x9f665e),.72);
-        if(material.emissive) material.emissive.set(0x5d211d);
-        if('emissiveIntensity' in material) material.emissiveIntensity=.06;
-        material.roughness=.26;
+        if(material.color) material.color.lerp(new THREE.Color(0xa26059),.76);
+        if(material.emissive) material.emissive.set(0x64231f);
+        if('emissiveIntensity' in material) material.emissiveIntensity=.055;
+        material.roughness=.22;
+        if('envMapIntensity' in material) material.envMapIntensity=.82;
       }else if(/tire|tyre|rubber/.test(key)){
-        if(material.color) material.color.set(0x2d3131);
-        material.roughness=.88;
+        if(material.color) material.color.set(0x292d2d);
+        material.roughness=.94;
+        if('metalness' in material) material.metalness=0;
+        if('envMapIntensity' in material) material.envMapIntensity=.18;
+        if(hasUv && 'bumpMap' in material && !material.bumpMap){
+          material.bumpMap=rubberMicroBump;
+          material.bumpScale=.018;
+        }
       }else if(/wheel|rim/.test(key)){
-        if(material.color) material.color.lerp(new THREE.Color(0x9ba09d),.56);
-        material.roughness=.42;
-        if('metalness' in material) material.metalness=.46;
+        if(material.color) material.color.lerp(new THREE.Color(0xa5aaa7),.62);
+        material.roughness=.34;
+        if('metalness' in material) material.metalness=.58;
+        if('envMapIntensity' in material) material.envMapIntensity=.84;
       }else if(/body|paint|carpaint|car_paint|coachwork|exterior/.test(key)){
-        if(material.color) material.color.lerp(mutedTint,.72);
-        material.roughness=Math.max(.28,Math.min(material.roughness ?? .34,.42));
-        if('metalness' in material) material.metalness=Math.min(material.metalness ?? .16,.22);
+        if(material.color) material.color.lerp(mutedTint,.76);
+        material.roughness=THREE.MathUtils.clamp(material.roughness ?? .31,.245,.34);
+        if('metalness' in material) material.metalness=THREE.MathUtils.clamp(material.metalness ?? .18,.14,.24);
+        if('envMapIntensity' in material) material.envMapIntensity=.96;
+        if(hasUv && 'bumpMap' in material && !material.bumpMap){
+          material.bumpMap=vehiclePaintMicroBump;
+          material.bumpScale=.0026;
+        }
       }else if(material.color){
         const hsl={h:0,s:0,l:0};
         material.color.getHSL(hsl);
         if(hsl.s>.46 && hsl.l>.12){
           material.color.lerp(mutedTint,.34);
+        }
+        if('roughness' in material){
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .60,.42,.82);
         }
       }
       material.needsUpdate=true;
