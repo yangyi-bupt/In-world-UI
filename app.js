@@ -3099,21 +3099,68 @@ function createLampPost(x,z,withBanner=true){
     bumpScale:.004,
     envMapIntensity:.94
   });
-  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,3.2,10),metal);
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.060,3.2,12),metal);
   pole.position.set(x,1.6,z);
   pole.castShadow=true;
   scene.add(pole);
 
-  const arm=new THREE.Mesh(new THREE.BoxGeometry(.65,.055,.055),metal);
-  arm.position.set(x-.27,3.16,z);
-  scene.add(arm);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,.10,16),metal);
+  base.position.set(x,.05,z);
+  base.castShadow=true;
+  scene.add(base);
 
-  const lamp=new THREE.Mesh(
-    new THREE.BoxGeometry(.34,.11,.18),
-    new THREE.MeshStandardMaterial({color:0xe9efe6,roughness:.34,emissive:0xe9efe6,emissiveIntensity:.06})
+  const collar=new THREE.Mesh(new THREE.CylinderGeometry(.068,.068,.055,14),metal);
+  collar.position.set(x,2.96,z);
+  collar.castShadow=true;
+  scene.add(collar);
+
+  // Two-piece arm creates a softer contemporary street-light silhouette.
+  const armA=new THREE.Mesh(new THREE.CylinderGeometry(.024,.028,.46,10),metal);
+  armA.position.set(x-.16,3.10,z);
+  armA.rotation.z=Math.PI/2-.28;
+  armA.castShadow=true;
+  scene.add(armA);
+
+  const armB=new THREE.Mesh(new THREE.CylinderGeometry(.022,.024,.34,10),metal);
+  armB.position.set(x-.48,3.19,z);
+  armB.rotation.z=Math.PI/2+.08;
+  armB.castShadow=true;
+  scene.add(armB);
+
+  const lampHousing=new THREE.Mesh(
+    new THREE.BoxGeometry(.34,.115,.19),
+    new THREE.MeshStandardMaterial({
+      color:0x7a8380,
+      roughness:.38,
+      metalness:.42,
+      map:metalWearTexture,
+      bumpMap:metalSurface.bump,
+      bumpScale:.003,
+      envMapIntensity:.90
+    })
   );
-  lamp.position.set(x-.59,3.11,z);
-  scene.add(lamp);
+  lampHousing.position.set(x-.66,3.17,z);
+  lampHousing.rotation.z=.035;
+  lampHousing.castShadow=true;
+  scene.add(lampHousing);
+
+  const lens=new THREE.Mesh(
+    new THREE.PlaneGeometry(.26,.12),
+    new THREE.MeshPhysicalMaterial({
+      color:0xf1eee2,
+      roughness:.24,
+      metalness:0,
+      transparent:true,
+      opacity:.92,
+      emissive:0xe9e3d5,
+      emissiveIntensity:.035,
+      clearcoat:.20,
+      clearcoatRoughness:.30
+    })
+  );
+  lens.position.set(x-.66,3.105,z+.098);
+  lens.rotation.x=-Math.PI/2;
+  scene.add(lens);
 
   if(withBanner){
     const banner=new THREE.Mesh(
@@ -3262,6 +3309,12 @@ function createStreetBike(x,z,rotation=.08){
     bumpScale:.003,
     envMapIntensity:.88
   });
+  const spokeMat=new THREE.MeshStandardMaterial({
+    color:0xaab0ad,
+    roughness:.34,
+    metalness:.66,
+    envMapIntensity:.95
+  });
   const seatMat=new THREE.MeshStandardMaterial({
     color:0x574b43,
     roughness:.91,
@@ -3270,11 +3323,36 @@ function createStreetBike(x,z,rotation=.08){
   });
 
   [-.42,.42].forEach(wz=>{
-    const wheel=new THREE.Mesh(new THREE.TorusGeometry(.26,.022,8,28),tireMat);
+    const wheel=new THREE.Mesh(new THREE.TorusGeometry(.26,.022,8,32),tireMat);
     wheel.rotation.y=Math.PI/2;
     wheel.position.set(0,.30,wz);
     wheel.castShadow=true;
     bike.add(wheel);
+
+    const rim=new THREE.Mesh(new THREE.TorusGeometry(.225,.008,6,28),spokeMat);
+    rim.rotation.y=Math.PI/2;
+    rim.position.set(0,.30,wz);
+    bike.add(rim);
+
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.07,10),spokeMat);
+    hub.rotation.z=Math.PI/2;
+    hub.position.set(0,.30,wz);
+    bike.add(hub);
+
+    for(let s=0;s<8;s++){
+      const angle=s*Math.PI/4;
+      const spoke=new THREE.Mesh(
+        new THREE.CylinderGeometry(.0025,.0025,.20,5),
+        spokeMat
+      );
+      spoke.position.set(
+        0,
+        .30+Math.sin(angle)*.10,
+        wz+Math.cos(angle)*.10
+      );
+      spoke.rotation.x=angle;
+      bike.add(spoke);
+    }
   });
 
   const points=[
@@ -3297,9 +3375,43 @@ function createStreetBike(x,z,rotation=.08){
   seat.rotation.x=.06;
   bike.add(seat);
 
-  const handle=new THREE.Mesh(new THREE.BoxGeometry(.055,.055,.30),frameMat);
-  handle.position.set(0,.76,.31);
+  const seatPost=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.18,8),frameMat);
+  seatPost.position.set(0,.59,-.10);
+  bike.add(seatPost);
+
+  const handleStem=new THREE.Mesh(new THREE.CylinderGeometry(.012,.014,.18,8),frameMat);
+  handleStem.position.set(0,.69,.27);
+  handleStem.rotation.x=-.18;
+  bike.add(handleStem);
+
+  const handle=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.30,8),frameMat);
+  handle.rotation.z=Math.PI/2;
+  handle.position.set(0,.77,.31);
   bike.add(handle);
+
+  const chainRing=new THREE.Mesh(new THREE.TorusGeometry(.075,.008,6,22),spokeMat);
+  chainRing.rotation.y=Math.PI/2;
+  chainRing.position.set(0,.34,-.03);
+  bike.add(chainRing);
+
+  [-1,1].forEach(side=>{
+    const crank=new THREE.Mesh(new THREE.BoxGeometry(.018,.018,.13),spokeMat);
+    crank.position.set(side*.018,.34,-.03);
+    crank.rotation.x=side*.52;
+    bike.add(crank);
+
+    const pedal=new THREE.Mesh(new THREE.BoxGeometry(.06,.012,.025),seatMat);
+    pedal.position.set(side*.030,.34+side*.055,-.03+side*.045);
+    bike.add(pedal);
+  });
+
+  const rearFender=new THREE.Mesh(
+    new THREE.TorusGeometry(.285,.010,6,24,Math.PI*.78),
+    frameMat
+  );
+  rearFender.rotation.set(Math.PI/2,0,Math.PI*.12);
+  rearFender.position.set(0,.31,-.42);
+  bike.add(rearFender);
 
   bike.position.set(x,0,z);
   bike.rotation.y=rotation;
