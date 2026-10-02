@@ -504,9 +504,44 @@ for(let x=-12.6;x<-1.0;x+=1.45){
   scene.add(cross);
 }
 
+const utilityCover=new THREE.Mesh(
+  new THREE.RingGeometry(.27,.39,28),
+  new THREE.MeshStandardMaterial({color:0x51595a,roughness:.86,metalness:.20,side:THREE.DoubleSide})
+);
+utilityCover.rotation.x=-Math.PI/2;
+utilityCover.position.set(-8.55,.031,2.8);
+utilityCover.receiveShadow=true;
+scene.add(utilityCover);
+
+const utilityCenter=new THREE.Mesh(
+  new THREE.CircleGeometry(.265,28),
+  new THREE.MeshStandardMaterial({color:0x5d6464,roughness:.92,metalness:.12,side:THREE.DoubleSide})
+);
+utilityCenter.rotation.x=-Math.PI/2;
+utilityCenter.position.set(-8.55,.0305,2.8);
+scene.add(utilityCenter);
+
 // Street-facing buildings: warm stone + glass + shaded shopfronts.
 const rightFacade=box(3.4,7.6,66,0xddd5c7,10.15,3.75,-5,.78);
 rightFacade.castShadow=false;
+
+const facadeBaseBand=new THREE.Mesh(
+  new THREE.BoxGeometry(.36,.20,64.8),
+  new THREE.MeshStandardMaterial({color:0xd1c6b6,roughness:.90})
+);
+facadeBaseBand.position.set(8.36,.20,-5);
+facadeBaseBand.castShadow=true;
+facadeBaseBand.receiveShadow=true;
+scene.add(facadeBaseBand);
+
+const storefrontPavingBand=new THREE.Mesh(
+  new THREE.PlaneGeometry(.72,63.8),
+  new THREE.MeshStandardMaterial({color:0xd9d0c3,roughness:.96})
+);
+storefrontPavingBand.rotation.x=-Math.PI/2;
+storefrontPavingBand.position.set(7.62,.047,-5);
+storefrontPavingBand.receiveShadow=true;
+scene.add(storefrontPavingBand);
 
 [1.08,3.04,5.02,6.92].forEach((y,i)=>{
   const band=box(
@@ -545,6 +580,25 @@ for(let z=-31;z<=24;z+=7.2){
   const canopyTone=z<-7?0xe2e8df:(z>10?0xe6d8cb:0xeee6d8);
   const canopy=box(1.15,.12,5.35,canopyTone,7.95,3.02,z,.70);
   canopy.castShadow=true;
+
+  const canopyShadow=box(1.02,.035,5.10,0x9d9489,8.00,2.945,z,.92);
+  canopyShadow.material.transparent=true;
+  canopyShadow.material.opacity=.28;
+  canopyShadow.material.depthWrite=false;
+  canopyShadow.castShadow=false;
+
+  const glassBacking=new THREE.Mesh(
+    new THREE.PlaneGeometry(4.78,4.38),
+    new THREE.MeshBasicMaterial({
+      color:z<-7?0xb7c1ba:(z>10?0xcbb9a9:0xbeb5aa),
+      transparent:true,
+      opacity:.055,
+      depthWrite:false
+    })
+  );
+  glassBacking.position.set(8.48,3.34,z);
+  glassBacking.rotation.y=-Math.PI/2;
+  scene.add(glassBacking);
 
   const ledge=box(.28,.07,5.05,0xcfc9bd,8.18,5.70,z,.74);
   ledge.castShadow=true;
@@ -608,6 +662,31 @@ const facadeLeafMats=[
   new THREE.MeshStandardMaterial({color:0x91ad80,roughness:.95})
 ];
 [-10.6,13.8].forEach((z,groupIndex)=>{
+  const interiorWash=new THREE.Mesh(
+    new THREE.PlaneGeometry(2.82,1.72),
+    new THREE.MeshBasicMaterial({
+      color:groupIndex===0?0xdde2d8:0xead8c8,
+      transparent:true,
+      opacity:.15,
+      depthWrite:false,
+      toneMapped:false
+    })
+  );
+  interiorWash.position.set(8.02,1.46,z);
+  interiorWash.rotation.y=-Math.PI/2;
+  scene.add(interiorWash);
+
+  const displayPlinth=new THREE.Mesh(
+    new THREE.BoxGeometry(.42,.46,1.42),
+    new THREE.MeshStandardMaterial({
+      color:groupIndex===0?0xb8c1b4:0xc8ae98,
+      roughness:.88
+    })
+  );
+  displayPlinth.position.set(7.94,.42,z+(groupIndex===0?.28:-.24));
+  displayPlinth.castShadow=true;
+  scene.add(displayPlinth);
+
   const planter=new THREE.Mesh(new THREE.BoxGeometry(.62,.22,2.15),facadePlanterMat);
   planter.position.set(7.55,.36,z);
   planter.castShadow=true;
@@ -1061,6 +1140,19 @@ const focalPlantMats=[
   plant.position.set(4.95+ox,.48+(i%2)*.035,-4.72+oz);
   plant.castShadow=true;
   scene.add(plant);
+});
+
+const focalBloomMats=[
+  new THREE.MeshStandardMaterial({color:0xf0ebe0,roughness:.84}),
+  new THREE.MeshStandardMaterial({color:0xe4cfd1,roughness:.84})
+];
+[
+  [-.62,-.20],[-.30,.18],[.06,-.16],[.36,.17],[.63,-.10]
+].forEach(([ox,oz],i)=>{
+  const bloom=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),focalBloomMats[i%2]);
+  bloom.position.set(4.95+ox,.70,-4.72+oz);
+  bloom.castShadow=true;
+  scene.add(bloom);
 });
 
 function createLampPost(x,z,withBanner=true){
@@ -1778,8 +1870,8 @@ function animate(){
     crown.rotation.z=Math.sin(t*.34+i*.9)*.006;
     crown.rotation.x=Math.sin(t*.27+i*1.4)*.004;
   });
-  dappleTexture.offset.x=Math.sin(t*.075)*.003;
-  dappleTexture.offset.y=Math.cos(t*.061)*.002;
+  dappleTexture.offset.x=Math.sin(t*.052)*.0022;
+  dappleTexture.offset.y=Math.cos(t*.044)*.0015;
   sunHaze.material.opacity=.80+Math.sin(t*.11)*.018;
   sun.intensity=3.03+Math.sin(t*.045)*.025;
 
