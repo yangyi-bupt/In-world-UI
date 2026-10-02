@@ -2191,6 +2191,7 @@ const WORLD_GLB_ASSETS={
 };
 const worldAssetMixers=[];
 let worldGLBLoadStarted=false;
+let worldCoreAssetsReady=false;
 let miraGLBRoot=null;
 let worldEnvironmentTexture=null;
 
@@ -2574,6 +2575,7 @@ async function initWorldGLBAssets(){
   // The player can enter as soon as the focal character and cars have settled.
   // Ambient walkers continue streaming independently instead of blocking entry.
   await Promise.allSettled([carTask,miraTask]);
+  worldCoreAssetsReady=true;
   window.dispatchEvent(new Event('world-core-assets-ready'));
 
   await Promise.allSettled([pedestrianTask]);
@@ -2719,21 +2721,24 @@ function updateClock(){const clockEl=document.querySelector('#clock');if(!clockE
 
 const startOverlay=document.querySelector('#startOverlay');
 const startBtn=document.querySelector('#startBtn');
-let coreWorldAssetsReady=false;
 if(startBtn){
-  startBtn.disabled=true;
-  startBtn.setAttribute('aria-busy','true');
-  startBtn.textContent='Loading city…';
-
-  window.addEventListener('world-core-assets-ready',()=>{
-    coreWorldAssetsReady=true;
+  const unlockWorldEntry=()=>{
     startBtn.disabled=false;
     startBtn.removeAttribute('aria-busy');
     startBtn.textContent='Click to enter world';
-  },{once:true});
+  };
+
+  if(worldCoreAssetsReady){
+    unlockWorldEntry();
+  }else{
+    startBtn.disabled=true;
+    startBtn.setAttribute('aria-busy','true');
+    startBtn.textContent='Loading city…';
+    window.addEventListener('world-core-assets-ready',unlockWorldEntry,{once:true});
+  }
 
   startBtn.addEventListener('click',()=>{
-    if(!coreWorldAssetsReady) return;
+    if(!worldCoreAssetsReady) return;
     started=true;
     startOverlay?.classList.add('hidden');
     setTimeout(()=>canvas.requestPointerLock?.(),250);
