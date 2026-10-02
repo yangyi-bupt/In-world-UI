@@ -2001,6 +2001,67 @@ const portalStoneMat=new THREE.MeshStandardMaterial({
   const step=box(.92,.10,3.65,0xcec6b8,7.58,.08,z,.90);
   step.castShadow=true;
 
+  // The three entries intentionally differ in their secondary construction so
+  // the ground floor reads as separate addresses rather than duplicated doors.
+  if(i===0){
+    const transom=glassPanel(1.92,.34,7.69,2.62,z,-Math.PI/2,0xc5d4d2);
+    transom.material.opacity=.34;
+    const transomBar=new THREE.Mesh(
+      new THREE.BoxGeometry(.055,.055,2.02),
+      cafeDoorFrame
+    );
+    transomBar.position.set(7.66,2.43,z);
+    transomBar.castShadow=true;
+    scene.add(transomBar);
+  }else if(i===1){
+    const sidePanel=glassPanel(.46,2.10,7.69,1.34,z-1.18,-Math.PI/2,0xc0d4d1);
+    sidePanel.material.opacity=.36;
+    const sidePost=new THREE.Mesh(
+      new THREE.BoxGeometry(.07,2.18,.07),
+      cafeDoorFrame
+    );
+    sidePost.position.set(7.66,1.35,z-1.42);
+    sidePost.castShadow=true;
+    scene.add(sidePost);
+  }else{
+    const addressPlate=new THREE.Mesh(
+      new THREE.BoxGeometry(.045,.38,.54),
+      new THREE.MeshStandardMaterial({
+        color:0x6f7773,
+        roughness:.42,
+        metalness:.40,
+        map:metalWearTexture,
+        bumpMap:metalSurface.bump,
+        bumpScale:.0025,
+        envMapIntensity:.78
+      })
+    );
+    addressPlate.position.set(7.62,2.10,z+1.30);
+    addressPlate.castShadow=true;
+    scene.add(addressPlate);
+
+    const shallowCanopy=new THREE.Mesh(
+      new THREE.BoxGeometry(.56,.055,2.55),
+      portalStoneMat
+    );
+    shallowCanopy.position.set(7.55,2.82,z);
+    shallowCanopy.castShadow=true;
+    scene.add(shallowCanopy);
+  }
+
+  const stepShadow=new THREE.Mesh(
+    new THREE.PlaneGeometry(.42,3.26),
+    new THREE.MeshBasicMaterial({
+      color:0x5f554b,
+      transparent:true,
+      opacity:.055,
+      depthWrite:false
+    })
+  );
+  stepShadow.rotation.x=-Math.PI/2;
+  stepShadow.position.set(7.15,.052,z);
+  scene.add(stepShadow);
+
   const sconceBase=new THREE.Mesh(
     new THREE.BoxGeometry(.10,.22,.16),
     new THREE.MeshStandardMaterial({color:0x777f7b,roughness:.48,metalness:.30})
@@ -2362,6 +2423,36 @@ function createWindowDisplay(z,kind='mori'){
   );
   lightSlot.position.set(8.18,2.23,z);
   scene.add(lightSlot);
+
+  const backGlow=new THREE.Mesh(
+    new THREE.PlaneGeometry(2.10,.68),
+    new THREE.MeshBasicMaterial({
+      color:warm?0xffd5af:0xd9e7dc,
+      transparent:true,
+      opacity:warm?.050:.036,
+      depthWrite:false,
+      toneMapped:false
+    })
+  );
+  backGlow.position.set(8.345,1.58,z+(warm?.14:-.12));
+  backGlow.rotation.y=-Math.PI/2;
+  scene.add(backGlow);
+
+  const shelfGlowMat=new THREE.MeshBasicMaterial({
+    color:warm?0xffe4c7:0xe8f1e9,
+    transparent:true,
+    opacity:warm?.30:.22,
+    depthWrite:false,
+    toneMapped:false
+  });
+  [.87,1.35].forEach(y=>{
+    const glow=new THREE.Mesh(
+      new THREE.BoxGeometry(.018,.018,2.22),
+      shelfGlowMat
+    );
+    glow.position.set(8.00,y+.055,z);
+    scene.add(glow);
+  });
 }
 
 createWindowDisplay(-10.6,'mori');
@@ -2539,6 +2630,35 @@ const cafeCeilingSlot=new THREE.Mesh(
 );
 cafeCeilingSlot.position.set(8.09,2.74,4.88);
 scene.add(cafeCeilingSlot);
+
+const cafeBackGlow=new THREE.Mesh(
+  new THREE.PlaneGeometry(5.90,.78),
+  new THREE.MeshBasicMaterial({
+    color:0xffc98f,
+    transparent:true,
+    opacity:.040,
+    depthWrite:false,
+    toneMapped:false
+  })
+);
+cafeBackGlow.position.set(8.375,1.54,4.92);
+cafeBackGlow.rotation.y=-Math.PI/2;
+scene.add(cafeBackGlow);
+
+[3.12,4.76,6.40].forEach(z=>{
+  const underShelfGlow=new THREE.Mesh(
+    new THREE.BoxGeometry(.020,.020,.92),
+    new THREE.MeshBasicMaterial({
+      color:0xffdfbd,
+      transparent:true,
+      opacity:.28,
+      depthWrite:false,
+      toneMapped:false
+    })
+  );
+  underShelfGlow.position.set(8.17,1.57,z);
+  scene.add(underShelfGlow);
+});
 
 const signCanvas=document.createElement('canvas');
 signCanvas.width=512;
@@ -4756,6 +4876,34 @@ const storefrontShade=new THREE.Mesh(
 storefrontShade.rotation.x=-Math.PI/2;
 storefrontShade.position.set(7.65,.048,-5);
 scene.add(storefrontShade);
+
+// A narrow, darker contact band grounds the long facade at the sidewalk joint.
+// It is intentionally much smaller than the broad storefront shade above.
+const storefrontContactCanvas=document.createElement('canvas');
+storefrontContactCanvas.width=128;
+storefrontContactCanvas.height=16;
+const storefrontContactCtx=storefrontContactCanvas.getContext('2d');
+const storefrontContactGradient=storefrontContactCtx.createLinearGradient(0,0,128,0);
+storefrontContactGradient.addColorStop(0,'rgba(61,54,48,.14)');
+storefrontContactGradient.addColorStop(.38,'rgba(71,63,56,.07)');
+storefrontContactGradient.addColorStop(1,'rgba(71,63,56,0)');
+storefrontContactCtx.fillStyle=storefrontContactGradient;
+storefrontContactCtx.fillRect(0,0,128,16);
+const storefrontContactTexture=new THREE.CanvasTexture(storefrontContactCanvas);
+storefrontContactTexture.colorSpace=THREE.SRGBColorSpace;
+const storefrontContactShade=new THREE.Mesh(
+  new THREE.PlaneGeometry(.48,63.6),
+  new THREE.MeshBasicMaterial({
+    map:storefrontContactTexture,
+    transparent:true,
+    opacity:.82,
+    depthWrite:false,
+    toneMapped:false
+  })
+);
+storefrontContactShade.rotation.x=-Math.PI/2;
+storefrontContactShade.position.set(7.86,.052,-5);
+scene.add(storefrontContactShade);
 
 // Small flower dots keep the palette warm without becoming decorative noise.
 const flowerMat=new THREE.MeshStandardMaterial({color:0xf0eee2,roughness:.8});
