@@ -432,6 +432,13 @@ function makeMaterialTexture(kind,seed){
 
       r.strokeStyle='rgba(166,166,166,'+(.035+rnd()*.065).toFixed(3)+')';
       r.lineWidth=.8+rnd()*1.4;
+      r.beginPath();
+      r.moveTo(x,y);
+      r.bezierCurveTo(
+        x+len*.28,y+(rnd()-.5)*18,
+        x+len*.68,y+(rnd()-.5)*24,
+        x+len,y+(rnd()-.5)*15
+      );
       r.stroke();
     }
   }
@@ -688,20 +695,21 @@ function cloneTextureVariant(texture,offsetX,offsetY,repeatScaleX=1,repeatScaleY
 
 function makeFoliageMaterial(color,roughness=.91,bumpScale=.009,lightness=.020){
   const base=new THREE.Color(color);
-  const emissive=base.clone().multiplyScalar(.22);
   return new THREE.MeshPhysicalMaterial({
     color:base,
-    roughness,
+    roughness:Math.max(.90,roughness),
     metalness:0,
     map:foliageSurface.map,
     bumpMap:foliageSurface.bump,
     bumpScale,
-    sheen:1,
-    sheenColor:base.clone().lerp(new THREE.Color(0xdce8c8),.34),
-    sheenRoughness:.86,
-    envMapIntensity:.16,
-    emissive,
-    emissiveIntensity:lightness
+    sheen:.10,
+    sheenColor:base.clone().lerp(new THREE.Color(0xd7e2c8),.22),
+    sheenRoughness:.96,
+    clearcoat:.015,
+    clearcoatRoughness:.92,
+    envMapIntensity:.08,
+    emissive:base.clone().multiplyScalar(.08),
+    emissiveIntensity:Math.min(.006,lightness*.22)
   });
 }
 
@@ -1199,18 +1207,21 @@ function addGlassEdgeDirt(w,h,x,y,z,ry=-Math.PI/2,opacity=.42){
 // player immediately reads this as a real street rather than a generic floor.
 const cityGround=plane(52,92,0xc7c4b9,0,-.045,-4);
 cityGround.material.map=pavementTexture;
+cityGround.material.roughnessMap=pavementRoughness;
 cityGround.material.bumpMap=pavementMicroBump;
 cityGround.material.bumpScale=.010;
-cityGround.material.envMapIntensity=.055;
+cityGround.material.roughness=.98;
+cityGround.material.envMapIntensity=.035;
 cityGround.material.color.set(0xc9c6bb);
 cityGround.material.needsUpdate=true;
 
 const road=plane(15,92,0xffffff,-6.7,.004,-4);
 road.material.map=asphaltTexture;
+road.material.roughnessMap=asphaltRoughness;
 road.material.bumpMap=roadMicroBump;
 road.material.bumpScale=.014;
-road.material.roughness=.965;
-road.material.envMapIntensity=.035;
+road.material.roughness=1.0;
+road.material.envMapIntensity=.018;
 road.material.needsUpdate=true;
 
 // Visual-only continuation beyond the playable bounds. Extending the surface
@@ -1220,11 +1231,16 @@ const distantRoadTexture=asphaltTexture.clone();
 distantRoadTexture.repeat.set(5,12);
 distantRoadTexture.offset.set(.17,.08);
 distantRoadTexture.needsUpdate=true;
+const distantRoadRoughness=asphaltRoughness.clone();
+distantRoadRoughness.repeat.set(5,12);
+distantRoadRoughness.offset.set(.17,.08);
+distantRoadRoughness.needsUpdate=true;
 const distantRoad=new THREE.Mesh(
   new THREE.PlaneGeometry(15,34),
   new THREE.MeshStandardMaterial({
     color:0xffffff,
     map:distantRoadTexture,
+    roughnessMap:distantRoadRoughness,
     bumpMap:roadMicroBump,
     bumpScale:.010,
     roughness:.97,
@@ -1240,11 +1256,16 @@ const distantSidewalkTexture=pavementTexture.clone();
 distantSidewalkTexture.repeat.set(4,9);
 distantSidewalkTexture.offset.set(.28,.11);
 distantSidewalkTexture.needsUpdate=true;
+const distantSidewalkRoughness=pavementRoughness.clone();
+distantSidewalkRoughness.repeat.set(4,9);
+distantSidewalkRoughness.offset.set(.28,.11);
+distantSidewalkRoughness.needsUpdate=true;
 const distantSidewalk=new THREE.Mesh(
   new THREE.PlaneGeometry(10.8,34),
   new THREE.MeshStandardMaterial({
     color:0xc7c4b9,
     map:distantSidewalkTexture,
+    roughnessMap:distantSidewalkRoughness,
     bumpMap:pavementMicroBump,
     bumpScale:.007,
     roughness:.97,
@@ -1258,10 +1279,11 @@ scene.add(distantSidewalk);
 
 const sidewalk=plane(10.8,92,0xffffff,4.2,.014,-4);
 sidewalk.material.map=pavementTexture;
+sidewalk.material.roughnessMap=pavementRoughness;
 sidewalk.material.bumpMap=pavementMicroBump;
 sidewalk.material.bumpScale=.011;
-sidewalk.material.roughness=.955;
-sidewalk.material.envMapIntensity=.055;
+sidewalk.material.roughness=.99;
+sidewalk.material.envMapIntensity=.030;
 sidewalk.material.needsUpdate=true;
 
 const curbsidePaving=new THREE.Mesh(
@@ -1294,6 +1316,7 @@ const curbsideEdgeMat=new THREE.MeshBasicMaterial({
 
 const curb=box(.30,.18,92,0xc4beb2,.05,.08,-4,.94);
 curb.material.map=concreteSurface.map;
+curb.material.roughnessMap=concreteSurface.roughness;
 curb.material.bumpMap=concreteSurface.bump;
 curb.material.bumpScale=.012;
 curb.material.needsUpdate=true;
@@ -1322,6 +1345,7 @@ const curbScuffMat=new THREE.MeshBasicMaterial({
 
 const curbCap=box(.09,.035,92,0xe9e3d7,.18,.185,-4,.90);
 curbCap.material.map=concreteSurface.map;
+curbCap.material.roughnessMap=concreteSurface.roughness;
 curbCap.material.bumpMap=concreteSurface.bump;
 curbCap.material.bumpScale=.008;
 curbCap.material.needsUpdate=true;
@@ -1335,6 +1359,7 @@ const curbNose=new THREE.Mesh(
     color:0xd8d1c5,
     roughness:.91,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.006,
     envMapIntensity:.055
@@ -1378,7 +1403,8 @@ const curbDrainMat=new THREE.MeshStandardMaterial({
   color:0x59605e,
   roughness:.64,
   metalness:.38,
-  map:metalWearTexture,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
   bumpMap:metalSurface.bump,
   bumpScale:.004
 });
@@ -1580,7 +1606,8 @@ const utilityMetalMat=new THREE.MeshStandardMaterial({
   color:0x51595a,
   roughness:.72,
   metalness:.30,
-  map:metalWearTexture,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
   bumpMap:metalSurface.bump,
   bumpScale:.005,
   side:THREE.DoubleSide
@@ -1600,7 +1627,8 @@ const utilityCenter=new THREE.Mesh(
     color:0x5d6464,
     roughness:.80,
     metalness:.22,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.006,
     side:THREE.DoubleSide
@@ -1644,6 +1672,7 @@ for(let i=0;i<4;i++){
 const rightFacade=box(3.4,7.6,66,0xddd5c7,10.15,3.75,-5,.82);
 rightFacade.castShadow=false;
 rightFacade.material.map=facadeSurface.map;
+rightFacade.material.roughnessMap=facadeSurface.roughness;
 rightFacade.material.bumpMap=facadeSurface.bump;
 rightFacade.material.bumpScale=.018;
 rightFacade.material.envMapIntensity=.10;
@@ -1655,6 +1684,7 @@ const upperRecess=new THREE.Mesh(
     color:0xc9c5bd,
     roughness:.88,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.012
   })
@@ -1670,6 +1700,7 @@ const topCornice=new THREE.Mesh(
     color:0xe6ded1,
     roughness:.84,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.010
   })
@@ -1687,6 +1718,7 @@ const corniceUnder=new THREE.Mesh(
     color:0xcac1b5,
     roughness:.90,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.008,
     envMapIntensity:.055
@@ -1702,6 +1734,7 @@ const corniceLip=new THREE.Mesh(
     color:0xeee6da,
     roughness:.86,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.006,
     envMapIntensity:.055
@@ -1717,6 +1750,7 @@ const facadeBaseBand=new THREE.Mesh(
     color:0xd1c6b6,
     roughness:.93,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.014
   })
@@ -1824,6 +1858,7 @@ const facadeRibMat=new THREE.MeshStandardMaterial({
   color:0xd6cec1,
   roughness:.87,
   map:facadeSurface.map,
+  roughnessMap:facadeSurface.roughness,
   bumpMap:facadeSurface.bump,
   bumpScale:.012
 });
@@ -1840,6 +1875,7 @@ const balconyStone=new THREE.MeshStandardMaterial({
   color:0xd8cfc2,
   roughness:.90,
   map:concreteSurface.map,
+  roughnessMap:concreteSurface.roughness,
   bumpMap:concreteSurface.bump,
   bumpScale:.010
 });
@@ -1862,7 +1898,8 @@ const balconyGreenMats=[
     color:0x9aa29e,
     roughness:.40,
     metalness:.38,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.0035,
     envMapIntensity:.90
@@ -1891,6 +1928,7 @@ const balconyGreenMats=[
         color:0xb9aa96,
         roughness:.94,
         map:concreteSurface.map,
+        roughnessMap:concreteSurface.roughness,
         bumpMap:concreteSurface.bump,
         bumpScale:.010
       })
@@ -1987,7 +2025,8 @@ facadeBayCenters.forEach((z,bayIndex)=>{
     color:z<-7?0x929e9b:(z>10?0xa69688:0x9b948b),
     roughness:.44,
     metalness:.30,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.003,
     envMapIntensity:.82
@@ -2017,6 +2056,7 @@ facadeBayCenters.forEach((z,bayIndex)=>{
       color:0xc3bbb0,
       roughness:.88,
       map:concreteSurface.map,
+      roughnessMap:concreteSurface.roughness,
       bumpMap:concreteSurface.bump,
       bumpScale:.008,
       envMapIntensity:.06
@@ -2060,6 +2100,7 @@ const portalStoneMat=new THREE.MeshStandardMaterial({
   color:0xd8d0c4,
   roughness:.90,
   map:facadeSurface.map,
+  roughnessMap:facadeSurface.roughness,
   bumpMap:facadeSurface.bump,
   bumpScale:.011
 });
@@ -2091,6 +2132,7 @@ const portalStoneMat=new THREE.MeshStandardMaterial({
     color:portalIndex===0?0xbab1a5:0xb5bbb3,
     roughness:.92,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.009,
     envMapIntensity:.055
@@ -2142,7 +2184,8 @@ const portalStoneMat=new THREE.MeshStandardMaterial({
       color:0x8c9692,
       roughness:.36,
       metalness:.58,
-      map:metalWearTexture,
+      map:metalSurface.map,
+      roughnessMap:metalSurface.roughness,
       bumpMap:metalSurface.bump,
       bumpScale:.0025
     })
@@ -2161,7 +2204,8 @@ const portalStoneMat=new THREE.MeshStandardMaterial({
     color:0x838d89,
     roughness:.40,
     metalness:.46,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.003,
     envMapIntensity:.86
@@ -2193,7 +2237,8 @@ const portalStoneMat=new THREE.MeshStandardMaterial({
         color:0x6f7773,
         roughness:.42,
         metalness:.40,
-        map:metalWearTexture,
+        map:metalSurface.map,
+        roughnessMap:metalSurface.roughness,
         bumpMap:metalSurface.bump,
         bumpScale:.0025,
         envMapIntensity:.78
@@ -2307,6 +2352,7 @@ const facadePlanterMat=new THREE.MeshStandardMaterial({
   color:0xb8aa97,
   roughness:.94,
   map:concreteSurface.map,
+  roughnessMap:concreteSurface.roughness,
   bumpMap:concreteSurface.bump,
   bumpScale:.014
 });
@@ -2376,6 +2422,7 @@ function createWindowDisplay(z,kind='mori'){
     color:warm?0xb99c82:0xa7b4a8,
     roughness:.82,
     map:woodSurface.map,
+    roughnessMap:woodSurface.roughness,
     bumpMap:woodSurface.bump,
     bumpScale:.010,
     envMapIntensity:.14
@@ -2385,6 +2432,7 @@ function createWindowDisplay(z,kind='mori'){
     color:warm?0xe2d3c2:0xd8dfd8,
     roughness:.94,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.006,
     envMapIntensity:.04
@@ -2393,6 +2441,7 @@ function createWindowDisplay(z,kind='mori'){
     color:warm?0xc8b39c:0xbac3b9,
     roughness:.92,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.007,
     envMapIntensity:.05
@@ -2639,6 +2688,7 @@ const cafeMullionMat=new THREE.MeshStandardMaterial({
   roughness:.42,
   metalness:.34,
   map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
   bumpMap:metalSurface.bump,
   bumpScale:.006,
   envMapIntensity:.88
@@ -2654,7 +2704,8 @@ const cafeDoorFrame=new THREE.MeshStandardMaterial({
   color:0x8e8378,
   roughness:.46,
   metalness:.30,
-  map:metalWearTexture,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
   bumpMap:metalSurface.bump,
   bumpScale:.004,
   envMapIntensity:.82
@@ -2681,7 +2732,8 @@ const cafeThreshold=new THREE.Mesh(
     color:0x8a8177,
     roughness:.52,
     metalness:.22,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.003,
     envMapIntensity:.72
@@ -2695,6 +2747,7 @@ const cafeDoorRevealMat=new THREE.MeshStandardMaterial({
   color:0xb8aa9a,
   roughness:.90,
   map:concreteSurface.map,
+  roughnessMap:concreteSurface.roughness,
   bumpMap:concreteSurface.bump,
   bumpScale:.008,
   envMapIntensity:.055
@@ -2712,7 +2765,8 @@ const cafeDoorHandle=new THREE.Mesh(
     color:0x9ba29f,
     roughness:.27,
     metalness:.68,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.0025,
     envMapIntensity:1.05
@@ -2741,6 +2795,7 @@ const cafeInteriorShellMat=new THREE.MeshStandardMaterial({
   color:0xe7d8c7,
   roughness:.94,
   map:concreteSurface.map,
+  roughnessMap:concreteSurface.roughness,
   bumpMap:concreteSurface.bump,
   bumpScale:.006,
   envMapIntensity:.04
@@ -2760,6 +2815,7 @@ const cafeInteriorFloor=new THREE.Mesh(
     color:0xb7a996,
     roughness:.91,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.008,
     envMapIntensity:.05
@@ -2868,10 +2924,10 @@ const awningCream=new THREE.MeshPhysicalMaterial({
   map:fabricColorTexture,
   bumpMap:fabricMicroBump,
   bumpScale:.007,
-  sheen:1,
+  sheen:.42,
   sheenColor:new THREE.Color(0xfff1dc),
-  sheenRoughness:.88,
-  envMapIntensity:.22
+  sheenRoughness:.96,
+  envMapIntensity:.10
 });
 const awningApricotMap=cloneTextureVariant(fabricColorTexture,.16,.04,1.03,.98);
 const awningApricot=new THREE.MeshPhysicalMaterial({
@@ -2881,10 +2937,10 @@ const awningApricot=new THREE.MeshPhysicalMaterial({
   map:awningApricotMap,
   bumpMap:fabricMicroBump,
   bumpScale:.007,
-  sheen:1,
+  sheen:.38,
   sheenColor:new THREE.Color(0xf4c9a8),
-  sheenRoughness:.86,
-  envMapIntensity:.20
+  sheenRoughness:.95,
+  envMapIntensity:.09
 });
 const awningCreamEdge=awningCream.clone();
 awningCreamEdge.color.multiplyScalar(.965);
@@ -2897,7 +2953,8 @@ const awningFrameMat=new THREE.MeshStandardMaterial({
   color:0x8b8178,
   roughness:.46,
   metalness:.32,
-  map:metalWearTexture,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
   bumpMap:metalSurface.bump,
   bumpScale:.003,
   envMapIntensity:.82
@@ -2976,6 +3033,7 @@ const cafeInteriorWood=new THREE.MeshStandardMaterial({
   color:0xb79473,
   roughness:.82,
   map:woodSurface.map,
+  roughnessMap:woodSurface.roughness,
   bumpMap:woodSurface.bump,
   bumpScale:.018
 });
@@ -2983,6 +3041,7 @@ const cafeInteriorWarm=new THREE.MeshStandardMaterial({
   color:0xe8d9c5,
   roughness:.91,
   map:concreteSurface.map,
+  roughnessMap:concreteSurface.roughness,
   bumpMap:concreteSurface.bump,
   bumpScale:.008
 });
@@ -2997,6 +3056,7 @@ const cafeCounterTop=new THREE.Mesh(
     color:0x735f50,
     roughness:.70,
     map:woodSurface.map,
+    roughnessMap:woodSurface.roughness,
     bumpMap:woodSurface.bump,
     bumpScale:.012,
     envMapIntensity:.22
@@ -3021,6 +3081,7 @@ const cafeBenchMat=new THREE.MeshStandardMaterial({
   color:0xb69b82,
   roughness:.87,
   map:woodSurface.map,
+  roughnessMap:woodSurface.roughness,
   bumpMap:woodSurface.bump,
   bumpScale:.017
 });
@@ -3057,6 +3118,7 @@ const cafeSmallTableMat=new THREE.MeshStandardMaterial({
   color:0xc9aa88,
   roughness:.83,
   map:woodSurface.map,
+  roughnessMap:woodSurface.roughness,
   bumpMap:woodSurface.bump,
   bumpScale:.017
 });
@@ -3202,6 +3264,7 @@ for(let i=0;i<10;i++){
     color:[0xc8d0cc,0xcbd3d1,0xd8d2c8][i%3],
     roughness:.91,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.007,
     envMapIntensity:.05
@@ -3248,7 +3311,8 @@ for(let i=0;i<10;i++){
         color:0x929b99,
         roughness:.68,
         metalness:.18,
-        map:metalWearTexture,
+        map:metalSurface.map,
+        roughnessMap:metalSurface.roughness,
         bumpMap:metalSurface.bump,
         bumpScale:.003,
         envMapIntensity:.45
@@ -3354,7 +3418,8 @@ function createGlassTower(x,z,w,d,h,tint){
     color:0x919e9f,
     roughness:.46,
     metalness:.22,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.003
   });
@@ -3373,7 +3438,8 @@ function createGlassTower(x,z,w,d,h,tint){
     color:0xaeb8b9,
     roughness:.58,
     metalness:.14,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.003,
     envMapIntensity:.58
@@ -3392,6 +3458,7 @@ function createGlassTower(x,z,w,d,h,tint){
       roughness:.78,
       metalness:.08,
       map:concreteSurface.map,
+      roughnessMap:concreteSurface.roughness,
       bumpMap:concreteSurface.bump,
       bumpScale:.005,
       envMapIntensity:.08
@@ -3584,6 +3651,7 @@ for(let i=0;i<9;i++){
         color:0xb8c0bd,
         roughness:.84,
         map:concreteSurface.map,
+        roughnessMap:concreteSurface.roughness,
         bumpMap:concreteSurface.bump,
         bumpScale:.004,
         envMapIntensity:.05
@@ -3598,7 +3666,8 @@ for(let i=0;i<9;i++){
         color:0xaeb9b8,
         roughness:.66,
         metalness:.12,
-        map:metalWearTexture,
+        map:metalSurface.map,
+        roughnessMap:metalSurface.roughness,
         bumpMap:metalSurface.bump,
         bumpScale:.002,
         envMapIntensity:.36
@@ -3614,6 +3683,7 @@ for(let i=0;i<9;i++){
         color:0xc8c5bd,
         roughness:.86,
         map:facadeSurface.map,
+        roughnessMap:facadeSurface.roughness,
         bumpMap:facadeSurface.bump,
         bumpScale:.004,
         envMapIntensity:.05
@@ -3639,6 +3709,7 @@ function createStreetTree(x,z,scale=1){
       color:0x897a66,
       roughness:1,
       map:concreteSurface.map,
+      roughnessMap:concreteSurface.roughness,
       bumpMap:concreteSurface.bump,
       bumpScale:.010,
       envMapIntensity:.035
@@ -3653,7 +3724,8 @@ function createStreetTree(x,z,scale=1){
     color:0x626b67,
     roughness:.58,
     metalness:.42,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.004,
     envMapIntensity:.84,
@@ -3688,6 +3760,7 @@ function createStreetTree(x,z,scale=1){
       color:0xb7aea0,
       roughness:.94,
       map:concreteSurface.map,
+      roughnessMap:concreteSurface.roughness,
       bumpMap:concreteSurface.bump,
       bumpScale:.008,
       side:THREE.DoubleSide
@@ -3994,6 +4067,7 @@ const pocketBorderMat=new THREE.MeshStandardMaterial({
   color:0xb8ad9d,
   roughness:.93,
   map:concreteSurface.map,
+  roughnessMap:concreteSurface.roughness,
   bumpMap:concreteSurface.bump,
   bumpScale:.012
 });
@@ -4036,6 +4110,7 @@ const seatStone=new THREE.MeshStandardMaterial({
   color:0xc0b6a6,
   roughness:.95,
   map:concreteSurface.map,
+  roughnessMap:concreteSurface.roughness,
   bumpMap:concreteSurface.bump,
   bumpScale:.014,
   envMapIntensity:.07
@@ -4090,7 +4165,8 @@ const drainMat=new THREE.MeshStandardMaterial({
   color:0x59615f,
   roughness:.46,
   metalness:.56,
-  map:metalWearTexture,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
   bumpMap:metalSurface.bump,
   bumpScale:.0035,
   envMapIntensity:.92
@@ -4113,6 +4189,7 @@ const focalPlanterBase=new THREE.Mesh(
     color:0xc3b6a3,
     roughness:.96,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.014,
     envMapIntensity:.065
@@ -4161,7 +4238,8 @@ function createLampPost(x,z,withBanner=true){
     color:0x687170,
     roughness:.45,
     metalness:.48,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.004,
     envMapIntensity:.94
@@ -4200,7 +4278,8 @@ function createLampPost(x,z,withBanner=true){
       color:0x7a8380,
       roughness:.38,
       metalness:.42,
-      map:metalWearTexture,
+      map:metalSurface.map,
+      roughnessMap:metalSurface.roughness,
       bumpMap:metalSurface.bump,
       bumpScale:.003,
       envMapIntensity:.90
@@ -4254,7 +4333,8 @@ const wayfindingPole=new THREE.Mesh(
     color:0x66716e,
     roughness:.47,
     metalness:.42,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.004,
     envMapIntensity:.90
@@ -4284,7 +4364,8 @@ const wayfindingSignFrame=new THREE.Mesh(
     color:0x6d7875,
     roughness:.44,
     metalness:.44,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.003,
     envMapIntensity:.88
@@ -4343,6 +4424,7 @@ const benchMetal=new THREE.MeshStandardMaterial({
   roughness:.44,
   metalness:.46,
   map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
   bumpMap:metalSurface.bump,
   bumpScale:.005,
   envMapIntensity:.92
@@ -4405,7 +4487,8 @@ function createStreetBike(x,z,rotation=.08){
     color:0x7f8d88,
     roughness:.40,
     metalness:.54,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.003,
     envMapIntensity:.88
@@ -4584,6 +4667,7 @@ const terraceTrimMat=new THREE.MeshStandardMaterial({
   color:0xcfc4b6,
   roughness:.94,
   map:concreteSurface.map,
+  roughnessMap:concreteSurface.roughness,
   bumpMap:concreteSurface.bump,
   bumpScale:.009,
   envMapIntensity:.06
@@ -4617,6 +4701,7 @@ const cafeTableWood=new THREE.MeshStandardMaterial({
   color:0xc39b78,
   roughness:.84,
   map:woodSurface.map,
+  roughnessMap:woodSurface.roughness,
   bumpMap:woodSurface.bump,
   bumpScale:.020
 });
@@ -4625,6 +4710,7 @@ const cafeTableMetal=new THREE.MeshStandardMaterial({
   roughness:.42,
   metalness:.48,
   map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
   bumpMap:metalSurface.bump,
   bumpScale:.005,
   envMapIntensity:.90
@@ -4633,6 +4719,7 @@ const cafeSeatMat=new THREE.MeshStandardMaterial({
   color:0xe5ddd0,
   roughness:.91,
   map:concreteSurface.map,
+  roughnessMap:concreteSurface.roughness,
   bumpMap:concreteSurface.bump,
   bumpScale:.010
 });
@@ -4694,6 +4781,7 @@ const terracePot=new THREE.Mesh(
     color:0xb98f76,
     roughness:.93,
     map:concreteSurface.map,
+    roughnessMap:concreteSurface.roughness,
     bumpMap:concreteSurface.bump,
     bumpScale:.010,
     envMapIntensity:.06
@@ -4734,7 +4822,8 @@ const cupMat=new THREE.MeshStandardMaterial({color:0xf0ece2,roughness:.72});
     color:0x596266,
     roughness:.42,
     metalness:.54,
-    map:metalWearTexture,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
     bumpMap:metalSurface.bump,
     bumpScale:.0035,
     envMapIntensity:.90
@@ -4782,7 +4871,8 @@ const binMat=new THREE.MeshStandardMaterial({
   color:0x4f5a58,
   roughness:.58,
   metalness:.30,
-  map:metalWearTexture,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
   bumpMap:metalSurface.bump,
   bumpScale:.004,
   envMapIntensity:.72
