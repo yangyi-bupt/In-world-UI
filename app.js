@@ -140,10 +140,17 @@ const shopBounce = new THREE.DirectionalLight(0xffe5c9, .18);
 shopBounce.position.set(9,5,6);
 scene.add(shopBounce);
 
-const faceLight = new THREE.SpotLight(0xffe7d2, 7.2, 9, Math.PI * .22, .76, 1.5);
+const faceLight = new THREE.SpotLight(0xffe7d2, 5.8, 9, Math.PI * .22, .78, 1.5);
 faceLight.position.set(1.1, 3.8, 3.2);
 faceLight.target.position.set(2.0, 1.45, -1.6);
 scene.add(faceLight, faceLight.target);
+
+// A broad, very soft bounce near Mira separates her from the storefront
+// without reading like a game spotlight. Its strength is modulated by player
+// distance later so she remains integrated with the street at long range.
+const miraPresenceLight=new THREE.PointLight(0xffe3cb,.34,5.4,2.0);
+miraPresenceLight.position.set(2.75,2.05,-.85);
+scene.add(miraPresenceLight);
 
 const miraWarmBounce=new THREE.DirectionalLight(0xffe3c8,.16);
 miraWarmBounce.position.set(7.2,5.4,3.4);
@@ -2359,6 +2366,8 @@ const worldAssetMixers=[];
 let worldGLBLoadStarted=false;
 let worldCoreAssetsReady=false;
 let miraGLBRoot=null;
+let miraGLBBasePosition=null;
+let miraIdleAction=null;
 let worldEnvironmentTexture=null;
 
 function ensureWorldAssetEnvironment(){
@@ -2514,10 +2523,51 @@ function tunePedestrianAsset(root,index=0){
     materials.forEach(material=>{
       if(!material) return;
       if('roughness' in material){
-        material.roughness=THREE.MathUtils.clamp(material.roughness ?? .78,.66,.92);
+        material.roughness=THREE.MathUtils.clamp(material.roughness ?? .78,.72,.94);
       }
       if('metalness' in material){
-        material.metalness=Math.min(material.metalness ?? 0,.04);
+        material.metalness=Math.min(material.metalness ?? 0,.025);
+      }
+      // Background pedestrians stay deliberately quieter than Mira. Slightly
+      // reducing saturated clothing prevents five equally strong color spots
+      // from competing with the focal character.
+      if(material.color){
+        const hsl={h:0,s:0,l:0};
+        material.color.getHSL(hsl);
+        if(hsl.s>.18){
+          material.color.setHSL(hsl.h,hsl.s*.82,THREE.MathUtils.lerp(hsl.l,.48,.035));
+        }
+      }
+      material.needsUpdate=true;
+    });
+  });
+}
+
+function tuneMiraAsset(root){
+  root.traverse(object=>{
+    if(!object.isMesh) return;
+    const materials=Array.isArray(object.material)?object.material:[object.material];
+    materials.forEach(material=>{
+      if(!material) return;
+      const key=((object.name||'')+' '+(material.name||'')).toLowerCase();
+
+      if('metalness' in material){
+        material.metalness=Math.min(material.metalness ?? 0,.035);
+      }
+
+      if(/skin|face|head|body/.test(key)){
+        if('roughness' in material) material.roughness=THREE.MathUtils.clamp(material.roughness ?? .68,.58,.72);
+        if(material.color){
+          material.color.lerp(new THREE.Color(0xd6a18c),.055);
+        }
+      }else if(/hair/.test(key)){
+        if('roughness' in material) material.roughness=THREE.MathUtils.clamp(material.roughness ?? .76,.70,.88);
+      }else if('roughness' in material){
+        material.roughness=THREE.MathUtils.clamp(material.roughness ?? .76,.68,.90);
+      }
+
+      if(worldEnvironmentTexture && (material.isMeshStandardMaterial || material.isMeshPhysicalMaterial)){
+        material.envMapIntensity=Math.max(material.envMapIntensity ?? 0,.30);
       }
       material.needsUpdate=true;
     });
@@ -2615,25 +2665,28 @@ function setWalkerMotionState(walker,nextState){
 
 function attachMiraAsset(source,animations){
   const root=cloneAssetScene(source);
-  prepareImportedModel(root,.34);
+  prepareImportedModel(root,.36);
   normalizeHumanAsset(root,1.72);
+  tuneMiraAsset(root);
   root.rotation.y=Math.PI-.12;
   root.position.z=.015;
   miraRig.visible=false;
   mira.add(root);
   miraGLBRoot=root;
+  miraGLBBasePosition=root.position.clone();
   if(!mira.userData.glbContactShadow){
-    mira.userData.glbContactShadow=createAttachedContactShadow(mira,.62,.42,.065);
+    mira.userData.glbContactShadow=createAttachedContactShadow(mira,.68,.48,.082);
   }
 
-  // Only play an explicitly named idle animation. A dancing/run clip would
-  // make the central character less believable than a restrained static pose.
+  // Only play an explicitly named idle animation. Keep it slower than the
+  // source clip so Mira feels present in the street rather than "performing".
   const idleClip=animations.find(clip=>/idle|stand|breath/i.test(clip.name));
   if(idleClip){
     const mixer=new THREE.AnimationMixer(root);
     const idleAction=mixer.clipAction(idleClip);
-    idleAction.setEffectiveTimeScale(.82);
+    idleAction.setEffectiveTimeScale(.72);
     idleAction.play();
+    miraIdleAction=idleAction;
     worldAssetMixers.push(mixer);
   }
 }
@@ -3019,7 +3072,7 @@ function animate(){
 
     if(walker.assetRoot){
       walker.group.position.y=0;
-      walker.group.position.x=walker.baseX+Math.sin(t*.27+walker.pacePhase)*.030;
+      walker.group.position.x=walker.baseX+Math.sin(t*.27+walker.pacePhase)*.020;
       const idleYaw=walker.motionState==='idle'?walker.idleFacingBias:0;
       walker.group.rotation.y=THREE.MathUtils.lerp(
         walker.group.rotation.y,
@@ -3049,26 +3102,53 @@ function animate(){
     }
   });
 
-  // Human idle: breathing, tiny weight shift and occasional attention toward player.
+  // Mira does not mechanically track the player. Attention grows naturally as
+  // the player approaches, with tiny lapses that keep her from feeling turret-like.
   const miraToCameraX=camera.position.x-mira.position.x;
   const miraToCameraZ=camera.position.z-mira.position.z;
   const miraDistance=Math.hypot(miraToCameraX,miraToCameraZ);
   const miraLookYaw=THREE.MathUtils.clamp(
     Math.atan2(miraToCameraX,miraToCameraZ),
-    miraBaseYaw-.22,
-    miraBaseYaw+.20
+    miraBaseYaw-.24,
+    miraBaseYaw+.22
   );
-  const miraYawTarget=miraDistance<12?miraLookYaw:miraBaseYaw;
+  const replyAttention=Math.max(0,Math.min(1,(miraReplyMotionUntil-performance.now())/850));
+  const distanceAttention=THREE.MathUtils.smoothstep(11.5,3.2,miraDistance);
+  const attentionDrift=.90+Math.sin(t*.23+1.4)*.07;
+  const miraAttention=THREE.MathUtils.clamp(
+    distanceAttention*attentionDrift+replyAttention*.28,
+    0,1
+  );
+  const miraYawTarget=THREE.MathUtils.lerp(miraBaseYaw,miraLookYaw,miraAttention);
   mira.rotation.y=THREE.MathUtils.lerp(
     mira.rotation.y,
     miraYawTarget,
-    1-Math.pow(.08,dt)
+    1-Math.pow(.10,dt)
   );
 
-  if(miraGLBRoot){
-    miraGLBRoot.position.y=Math.sin(t*.74)*.003;
-    miraGLBRoot.rotation.z=Math.sin(t*.42)*.0028;
-    miraGLBRoot.rotation.x=Math.sin(t*.29)*.0018;
+  // Focal lighting is distance-aware: enough facial separation up close, but
+  // almost indistinguishable from ordinary daylight from across the block.
+  const presence=THREE.MathUtils.smoothstep(10.5,2.4,miraDistance);
+  faceLight.intensity=5.25+presence*.95;
+  miraPresenceLight.intensity=.22+presence*.24;
+  miraWarmBounce.intensity=.13+presence*.055;
+  miraCoolRim.intensity=.075+presence*.040;
+
+  if(miraGLBRoot && miraGLBBasePosition){
+    const weightShift=Math.sin(t*.37+.6);
+    const slowBreath=Math.sin(t*.73);
+    miraGLBRoot.position.x=miraGLBBasePosition.x+weightShift*.0045;
+    miraGLBRoot.position.y=miraGLBBasePosition.y+slowBreath*.0016;
+    miraGLBRoot.position.z=miraGLBBasePosition.z+Math.sin(t*.29+1.1)*.0018;
+    miraGLBRoot.rotation.z=weightShift*.0024;
+    miraGLBRoot.rotation.x=Math.sin(t*.31)*.0014;
+
+    const shadow=mira.userData.glbContactShadow;
+    if(shadow){
+      const settle=.985+Math.cos(t*.37+.6)*.012;
+      shadow.scale.set(settle,settle,1);
+      shadow.material.opacity=.92+Math.sin(t*.37+.6)*.025;
+    }
   }
   const idleBreath=Math.sin(t*1.55);
   if(!miraGLBRoot){
