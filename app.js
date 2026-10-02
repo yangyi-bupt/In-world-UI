@@ -2107,8 +2107,70 @@ function createWindowDisplay(z,kind='mori'){
   const warm=kind==='atelier';
   const shelfMat=new THREE.MeshStandardMaterial({
     color:warm?0xb99c82:0xa7b4a8,
-    roughness:.82
+    roughness:.82,
+    map:woodSurface.map,
+    bumpMap:woodSurface.bump,
+    bumpScale:.010,
+    envMapIntensity:.14
   });
+
+  const interiorWallMat=new THREE.MeshStandardMaterial({
+    color:warm?0xe2d3c2:0xd8dfd8,
+    roughness:.94,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.006,
+    envMapIntensity:.04
+  });
+  const interiorFloorMat=new THREE.MeshStandardMaterial({
+    color:warm?0xc8b39c:0xbac3b9,
+    roughness:.92,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.007,
+    envMapIntensity:.05
+  });
+
+  const backWall=new THREE.Mesh(
+    new THREE.PlaneGeometry(2.92,1.92),
+    interiorWallMat
+  );
+  backWall.position.set(8.36,1.39,z);
+  backWall.rotation.y=-Math.PI/2;
+  backWall.receiveShadow=true;
+  scene.add(backWall);
+
+  const floor=new THREE.Mesh(
+    new THREE.PlaneGeometry(.56,2.88),
+    interiorFloorMat
+  );
+  floor.rotation.x=-Math.PI/2;
+  floor.position.set(8.08,.67,z);
+  floor.receiveShadow=true;
+  scene.add(floor);
+
+  [-1.40,1.40].forEach(side=>{
+    const returnWall=new THREE.Mesh(
+      new THREE.PlaneGeometry(.52,1.90),
+      interiorWallMat
+    );
+    returnWall.position.set(8.10,1.39,z+side);
+    returnWall.rotation.y=side<0?0:Math.PI;
+    returnWall.receiveShadow=true;
+    scene.add(returnWall);
+  });
+
+  const ceiling=new THREE.Mesh(
+    new THREE.PlaneGeometry(.52,2.86),
+    new THREE.MeshStandardMaterial({
+      color:warm?0xeee2d4:0xe8ece6,
+      roughness:.96,
+      envMapIntensity:.03
+    })
+  );
+  ceiling.rotation.x=Math.PI/2;
+  ceiling.position.set(8.08,2.30,z);
+  scene.add(ceiling);
   const objectMats=warm
     ? [
         new THREE.MeshStandardMaterial({color:0xd6b39a,roughness:.76}),
@@ -2122,10 +2184,18 @@ function createWindowDisplay(z,kind='mori'){
       ];
 
   [.90,1.38].forEach((y,shelfIndex)=>{
-    const shelf=new THREE.Mesh(new THREE.BoxGeometry(.30,.045,2.50),shelfMat);
-    shelf.position.set(8.10,y,z);
+    const shelf=new THREE.Mesh(new THREE.BoxGeometry(.34,.045,2.50),shelfMat);
+    shelf.position.set(8.16,y,z);
     shelf.castShadow=true;
     scene.add(shelf);
+
+    const shelfBack=new THREE.Mesh(
+      new THREE.BoxGeometry(.055,.30,2.48),
+      interiorWallMat
+    );
+    shelfBack.position.set(8.32,y+.12,z);
+    shelfBack.castShadow=true;
+    scene.add(shelfBack);
 
     [-.76,-.28,.22,.72].forEach((oz,i)=>{
       const mat=objectMats[(i+shelfIndex)%objectMats.length];
@@ -2135,7 +2205,7 @@ function createWindowDisplay(z,kind='mori'){
       }else{
         object=new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,.26+(i%2)*.07,12),mat);
       }
-      object.position.set(7.90,y+.15,z+oz);
+      object.position.set(8.02+(i%2)*.08,y+.15,z+oz);
       object.rotation.y=(i-1.5)*.12;
       object.castShadow=true;
       scene.add(object);
@@ -2155,6 +2225,18 @@ function createWindowDisplay(z,kind='mori'){
   displayLight.position.set(7.86,1.35,z);
   displayLight.rotation.y=-Math.PI/2;
   scene.add(displayLight);
+
+  const lightSlot=new THREE.Mesh(
+    new THREE.BoxGeometry(.055,.035,1.65),
+    new THREE.MeshBasicMaterial({
+      color:warm?0xffdfbd:0xe1eee5,
+      transparent:true,
+      opacity:.40,
+      toneMapped:false
+    })
+  );
+  lightSlot.position.set(8.18,2.23,z);
+  scene.add(lightSlot);
 }
 
 createWindowDisplay(-10.6,'mori');
@@ -2275,6 +2357,63 @@ const cafeInteriorGlow=new THREE.Mesh(
 cafeInteriorGlow.position.set(8.13,1.55,4.8);
 cafeInteriorGlow.rotation.y=-Math.PI/2;
 scene.add(cafeInteriorGlow);
+
+const cafeInteriorShellMat=new THREE.MeshStandardMaterial({
+  color:0xe7d8c7,
+  roughness:.94,
+  map:concreteSurface.map,
+  bumpMap:concreteSurface.bump,
+  bumpScale:.006,
+  envMapIntensity:.04
+});
+const cafeBackWall=new THREE.Mesh(
+  new THREE.PlaneGeometry(7.34,2.25),
+  cafeInteriorShellMat
+);
+cafeBackWall.position.set(8.39,1.52,4.80);
+cafeBackWall.rotation.y=-Math.PI/2;
+cafeBackWall.receiveShadow=true;
+scene.add(cafeBackWall);
+
+const cafeInteriorFloor=new THREE.Mesh(
+  new THREE.PlaneGeometry(.52,7.30),
+  new THREE.MeshStandardMaterial({
+    color:0xb7a996,
+    roughness:.91,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.008,
+    envMapIntensity:.05
+  })
+);
+cafeInteriorFloor.rotation.x=-Math.PI/2;
+cafeInteriorFloor.position.set(8.12,.065,4.80);
+cafeInteriorFloor.receiveShadow=true;
+scene.add(cafeInteriorFloor);
+
+const cafeInteriorCeiling=new THREE.Mesh(
+  new THREE.PlaneGeometry(.52,7.30),
+  new THREE.MeshStandardMaterial({
+    color:0xeee5da,
+    roughness:.97,
+    envMapIntensity:.025
+  })
+);
+cafeInteriorCeiling.rotation.x=Math.PI/2;
+cafeInteriorCeiling.position.set(8.12,2.78,4.80);
+scene.add(cafeInteriorCeiling);
+
+const cafeCeilingSlot=new THREE.Mesh(
+  new THREE.BoxGeometry(.045,.028,4.80),
+  new THREE.MeshBasicMaterial({
+    color:0xffd6aa,
+    transparent:true,
+    opacity:.34,
+    toneMapped:false
+  })
+);
+cafeCeilingSlot.position.set(8.09,2.74,4.88);
+scene.add(cafeCeilingSlot);
 
 const signCanvas=document.createElement('canvas');
 signCanvas.width=512;
@@ -2443,6 +2582,32 @@ const cafeCounter=new THREE.Mesh(new THREE.BoxGeometry(.32,.86,5.30),cafeInterio
 cafeCounter.position.set(8.18,.72,4.85);
 cafeCounter.castShadow=true;
 scene.add(cafeCounter);
+
+const cafeCounterTop=new THREE.Mesh(
+  new THREE.BoxGeometry(.40,.055,5.42),
+  new THREE.MeshStandardMaterial({
+    color:0x735f50,
+    roughness:.70,
+    map:woodSurface.map,
+    bumpMap:woodSurface.bump,
+    bumpScale:.012,
+    envMapIntensity:.22
+  })
+);
+cafeCounterTop.position.set(8.15,1.175,4.85);
+cafeCounterTop.castShadow=true;
+scene.add(cafeCounterTop);
+
+const cafeCounterToe=new THREE.Mesh(
+  new THREE.BoxGeometry(.055,.13,5.18),
+  new THREE.MeshStandardMaterial({
+    color:0x75695d,
+    roughness:.82,
+    envMapIntensity:.08
+  })
+);
+cafeCounterToe.position.set(8.00,.17,4.85);
+scene.add(cafeCounterToe);
 
 const cafeBenchMat=new THREE.MeshStandardMaterial({
   color:0xb69b82,
