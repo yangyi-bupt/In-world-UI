@@ -1964,6 +1964,8 @@ function createAmbientWalker(x,z,direction,color,speed=.58,assetVariant='primary
     modelYawOffset:0,
     pacePhase:Math.random()*Math.PI*2,
     phase:Math.random()*Math.PI*2,
+    strollOffset:ambientWalkers.length*6.25+2.5,
+    motionState:'walk',
     placeholderChildren:[...group.children],
     assetRoot:null,
     mixer:null
@@ -2166,7 +2168,7 @@ const WORLD_GLB_ASSETS={
   // Quaternius civilian characters are CC0 and read as ordinary pedestrians,
   // not armored / robotic demo characters.
   pedestrianPrimary:'https://cdn.jsdelivr.net/gh/MrArun005/3D-Games-AmusementPark@2d827a479ef7a44938372ca07d24c0faffb43b1d/public/models/characters/civilian_man.glb',
-  pedestrianSecondary:'https://cdn.jsdelivr.net/gh/MrArun005/3D-Games-AmusementPark@2d827a479ef7a44938372ca07d24c0faffb43b1d/public/models/characters/civilian_casual.glb',
+  pedestrianSecondary:'https://cdn.jsdelivr.net/gh/MrArun005/3D-Games-AmusementPark@2d827a479ef7a44938372ca07d24c0faffb43b1d/public/models/characters/civilian_longsleeve.glb',
   pedestrianTertiary:'https://cdn.jsdelivr.net/gh/MrArun005/3D-Games-AmusementPark@2d827a479ef7a44938372ca07d24c0faffb43b1d/public/models/characters/civilian_woman.glb',
   mira:'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r159/examples/models/gltf/Michelle.glb'
 };
@@ -2195,6 +2197,7 @@ function prepareImportedModel(root,envIntensity=.42){
     if(!object.isMesh) return;
     object.castShadow=true;
     object.receiveShadow=true;
+    if(object.isSkinnedMesh) object.frustumCulled=false;
     if(Array.isArray(object.material)){
       object.material=object.material.map(material=>material?.clone?.() || material);
     }else if(object.material?.clone){
@@ -2366,9 +2369,13 @@ function attachWalkerAsset(entry,source,animations,index){
   }
 
   const walkClip=
-    animations.find(clip=>/^(walk|walking)$/i.test(clip.name)) ||
+    animations.find(clip=>/walk$/i.test(clip.name)) ||
     animations.find(clip=>/walk/i.test(clip.name)) ||
     (animations.length===1?animations[0]:null);
+  const idleClip=
+    animations.find(clip=>/idle$/i.test(clip.name)) ||
+    animations.find(clip=>/idle|stand/i.test(clip.name));
+
   if(walkClip){
     const mixer=new THREE.AnimationMixer(root);
     const action=mixer.clipAction(walkClip);
@@ -2377,11 +2384,44 @@ function attachWalkerAsset(entry,source,animations,index){
     action.time=(index*.73+entry.phase*.19)%Math.max(.01,walkClip.duration);
     entry.mixer=mixer;
     entry.walkAction=action;
+
+    if(idleClip){
+      const idleAction=mixer.clipAction(idleClip);
+      idleAction.enabled=true;
+      idleAction.setEffectiveWeight(0);
+      idleAction.play();
+      entry.idleAction=idleAction;
+    }
+
     worldAssetMixers.push(mixer);
   }else{
     entry.speed=0;
     entry.baseSpeed=0;
   }
+}
+
+function setWalkerMotionState(walker,nextState){
+  if(walker.motionState===nextState) return;
+  const fade=.42;
+
+  if(nextState==='idle' && walker.idleAction && walker.walkAction){
+    walker.walkAction.fadeOut(fade);
+    walker.idleAction
+      .reset()
+      .setEffectiveTimeScale(.92)
+      .setEffectiveWeight(1)
+      .fadeIn(fade)
+      .play();
+  }else if(nextState==='walk' && walker.walkAction){
+    walker.idleAction?.fadeOut(fade);
+    walker.walkAction
+      .reset()
+      .setEffectiveWeight(1)
+      .fadeIn(fade)
+      .play();
+  }
+
+  walker.motionState=nextState;
 }
 
 function attachMiraAsset(source,animations){
@@ -2687,24 +2727,52 @@ function animate(){
 
   ambientWalkers.forEach((walker,index)=>{
     const pace=1+Math.sin(t*.21+walker.pacePhase)*.038;
-    walker.speed=walker.baseSpeed*pace;
+    const cycleLength=19+index*2.8;
+    const cycle=(t+walker.strollOffset)%cycleLength;
+    const farFromMira=Math.abs(walker.group.position.z-mira.position.z)>9.0;
+    const pauseDuration=1.7+index*.35;
+    const shouldPause=Boolean(
+      walker.assetRoot &&
+      walker.idleAction &&
+      farFromMira &&
+      cycle>cycleLength-pauseDuration
+    );
+
+    setWalkerMotionState(walker,shouldPause?'idle':'walk');
+
+    const targetSpeed=shouldPause?0:walker.baseSpeed*pace;
+    walker.speed=THREE.MathUtils.lerp(
+      walker.speed,
+      targetSpeed,
+      1-Math.pow(.035,dt)
+    );
     walker.group.position.z+=walker.direction*walker.speed*dt;
-    walker.phase+=dt*(3.8+index*.35)*pace;
+    walker.phase+=dt*(3.8+index*.35)*Math.max(.18,pace);
+
     if(walker.assetRoot){
       walker.group.position.y=0;
       walker.group.position.x=walker.baseX+Math.sin(t*.27+walker.pacePhase)*.030;
       walker.group.rotation.z=0;
-      if(walker.walkAction){
+      if(walker.walkAction && walker.motionState==='walk'){
         walker.walkAction.setEffectiveTimeScale(
-          THREE.MathUtils.clamp(walker.speed/.70,.68,.90)
+          THREE.MathUtils.clamp(Math.max(.01,walker.speed)/.70,.68,.90)
         );
       }
     }else{
       walker.group.position.y=Math.abs(Math.sin(walker.phase))*0.012;
       walker.group.rotation.z=Math.sin(walker.phase)*.012;
     }
-    if(walker.direction>0 && walker.group.position.z>31) walker.group.position.z=-30-index*1.5;
-    if(walker.direction<0 && walker.group.position.z<-30) walker.group.position.z=31+index*1.5;
+
+    if(walker.direction>0 && walker.group.position.z>31){
+      walker.group.position.z=-30-index*1.5;
+      walker.speed=walker.baseSpeed;
+      setWalkerMotionState(walker,'walk');
+    }
+    if(walker.direction<0 && walker.group.position.z<-30){
+      walker.group.position.z=31+index*1.5;
+      walker.speed=walker.baseSpeed;
+      setWalkerMotionState(walker,'walk');
+    }
   });
 
   // Human idle: breathing, tiny weight shift and occasional attention toward player.
