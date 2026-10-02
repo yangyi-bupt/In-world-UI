@@ -33,6 +33,7 @@
         let chassisGlow=null;
         let cornerGlow=null;
         let bezelGlint=null;
+        let innerShadow=null;
 
         if(screen){
           screen.position.z=.102;
@@ -200,6 +201,36 @@
           bezelGlint.renderOrder=16;
           bezelGlint.raycast=()=>{};
           capturedRig.add(bezelGlint);
+
+          // A thin dynamic shadow just inside the cover glass makes the display
+          // feel physically recessed. It only occupies the outermost pixels.
+          const shadowMaterial=()=>new THREE.MeshBasicMaterial({
+            color:0x000000,
+            transparent:true,
+            opacity:.05,
+            depthTest:false,
+            depthWrite:false,
+            toneMapped:false,
+            blending:THREE.NormalBlending
+          });
+
+          innerShadow={
+            top:new THREE.Mesh(new THREE.PlaneGeometry(2.42,.026),shadowMaterial()),
+            bottom:new THREE.Mesh(new THREE.PlaneGeometry(2.42,.026),shadowMaterial()),
+            left:new THREE.Mesh(new THREE.PlaneGeometry(.026,1.58),shadowMaterial()),
+            right:new THREE.Mesh(new THREE.PlaneGeometry(.026,1.58),shadowMaterial())
+          };
+
+          innerShadow.top.position.set(0,.812,.123);
+          innerShadow.bottom.position.set(0,-.812,.123);
+          innerShadow.left.position.set(-1.212,0,.123);
+          innerShadow.right.position.set(1.212,0,.123);
+
+          Object.values(innerShadow).forEach(part=>{
+            part.renderOrder=15;
+            part.raycast=()=>{};
+            capturedRig.add(part);
+          });
         }
 
         controller.screenTexture=textureController;
@@ -209,6 +240,7 @@
         controller.chassisGlow=chassisGlow;
         controller.cornerGlow=cornerGlow;
         controller.bezelGlint=bezelGlint;
+        controller.innerShadow=innerShadow;
 
         const pointerCanvas=controller.renderer?.domElement ||
           (canvas && typeof canvas.getContext==='function' ? canvas : canvas?.querySelector?.('canvas'));
@@ -378,6 +410,25 @@
                   metalBase+Math.max(0,-glassY)*.075+angleX*.028+pressFlash*.7+
                   motionFlash*Math.max(.2,.45-Math.min(0,motionY))+
                   sweepEnvelope*.035+waveBottom*.03;
+              }
+
+              if(innerShadow){
+                const shadowBase=open?.045:.02;
+                const pressDepth=Math.max(0,screenPress)*.028;
+
+                innerShadow.left.material.opacity=
+                  shadowBase+Math.max(0,glassX)*.050+pressDepth;
+                innerShadow.right.material.opacity=
+                  shadowBase+Math.max(0,-glassX)*.050+pressDepth;
+                innerShadow.top.material.opacity=
+                  shadowBase+Math.max(0,-glassY)*.042+pressDepth*.8;
+                innerShadow.bottom.material.opacity=
+                  shadowBase+Math.max(0,glassY)*.042+pressDepth*.8;
+
+                innerShadow.left.scale.x=1+Math.max(0,glassX)*.35+pressDepth*2;
+                innerShadow.right.scale.x=1+Math.max(0,-glassX)*.35+pressDepth*2;
+                innerShadow.top.scale.y=1+Math.max(0,-glassY)*.30+pressDepth*2;
+                innerShadow.bottom.scale.y=1+Math.max(0,glassY)*.30+pressDepth*2;
               }
 
               if(bezelGlint){
