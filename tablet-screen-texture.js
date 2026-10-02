@@ -188,6 +188,11 @@
       ctx.restore();
     }
 
+    function appMeta(appId){
+      const app=apps.find(item=>item.id===appId) || apps[0];
+      return app;
+    }
+
     function pill(...args){
       let x,y,w,h,label,accent,active=false,fg;
 
@@ -230,10 +235,25 @@
       return w;
     }
 
-    function appShell(accent='#8fc5ff'){
-      ctx.fillStyle='rgba(7,11,18,.58)';
+    function appShell(accent='#8fc5ff',rgb='127,214,255'){
+      ctx.fillStyle='rgba(7,11,18,.60)';
       roundedRect(44,194,936,468,34,true);
       strokeRoundRect(44,194,936,468,34,'rgba(255,255,255,.055)',1);
+
+      // A very faint pointer-driven light stays under the content hierarchy.
+      // It reads as light moving inside cover glass without washing out text.
+      ctx.save();
+      roundedRect(45,195,934,466,33,false);
+      ctx.clip();
+      const px=THREE.MathUtils.clamp(state.pointerX,44,980);
+      const py=THREE.MathUtils.clamp(state.pointerY,194,662);
+      const shellLight=ctx.createRadialGradient(px,py,0,px,py,360);
+      shellLight.addColorStop(0,'rgba('+rgb+','+(state.pointerAlpha*.030).toFixed(3)+')');
+      shellLight.addColorStop(.42,'rgba('+rgb+','+(state.pointerAlpha*.010).toFixed(3)+')');
+      shellLight.addColorStop(1,'rgba('+rgb+',0)');
+      ctx.fillStyle=shellLight;
+      ctx.fillRect(44,194,936,468);
+      ctx.restore();
 
       const glow=ctx.createLinearGradient(44,194,980,194);
       glow.addColorStop(0,'rgba(255,255,255,0)');
@@ -244,6 +264,69 @@
       ctx.fillStyle=glow;
       roundedRect(74,194,340,1.5,.75,true);
       ctx.globalAlpha=1;
+
+      // Recessed lower edge gives the large app surface a little physical depth.
+      const lower=ctx.createLinearGradient(0,614,0,662);
+      lower.addColorStop(0,'rgba(0,0,0,0)');
+      lower.addColorStop(1,'rgba(0,0,0,.16)');
+      ctx.fillStyle=lower;
+      roundedRect(45,594,934,67,0,true);
+    }
+
+    function drawAppBackdrop(appId,accent,rgb){
+      ctx.save();
+      ctx.globalAlpha=.34;
+      ctx.strokeStyle='rgba('+rgb+',.10)';
+      ctx.fillStyle='rgba('+rgb+',.055)';
+      ctx.lineWidth=1;
+
+      if(appId==='messages'){
+        const drift=Math.sin(state.uiTime*.75)*5;
+        [0,1,2].forEach(i=>{
+          const y=350+i*44;
+          roundedRect(730+drift*.25,y,150-i*18,28,14,false);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(900+drift,y+14,2.4+i*.4,0,Math.PI*2);
+          ctx.fill();
+        });
+      }else if(appId==='tasks'){
+        [0,1,2].forEach(i=>{
+          const x=738+i*54;
+          ctx.fillStyle='rgba('+rgb+','+(.035+i*.012).toFixed(3)+')';
+          roundedRect(x,354,16,178-i*24,8,true);
+          ctx.strokeStyle='rgba('+rgb+',.09)';
+          roundedRect(x,354,16,178-i*24,8,false);
+          ctx.stroke();
+        });
+      }else if(appId==='map'){
+        const cx=830,cy=430;
+        [36,68,100].forEach((radius,i)=>{
+          ctx.strokeStyle='rgba('+rgb+','+(.12-i*.025).toFixed(3)+')';
+          ctx.beginPath();
+          ctx.arc(cx,cy,radius,0,Math.PI*2);
+          ctx.stroke();
+        });
+        const a=state.uiTime*.30;
+        ctx.fillStyle=accent;
+        ctx.beginPath();
+        ctx.arc(cx+Math.cos(a)*68,cy+Math.sin(a)*68,3,0,Math.PI*2);
+        ctx.fill();
+      }else{
+        const x=830,y=430,d=70,l=22;
+        [[-d,-d,1,1],[d,-d,-1,1],[-d,d,1,-1],[d,d,-1,-1]].forEach(([ox,oy,sx,sy])=>{
+          ctx.beginPath();
+          ctx.moveTo(x+ox+sx*l,y+oy);
+          ctx.lineTo(x+ox,y+oy);
+          ctx.lineTo(x+ox,y+oy+sy*l);
+          ctx.stroke();
+        });
+        const sweepY=y-d+((state.uiTime*.22)%1)*d*2;
+        ctx.fillStyle='rgba('+rgb+',.08)';
+        ctx.fillRect(x-d,sweepY,d*2,1);
+      }
+
+      ctx.restore();
     }
 
     function drawSystemFooter(context='HOME'){
@@ -252,6 +335,10 @@
       ctx.fillStyle='rgba(255,255,255,.050)';
       roundedRect(438,681,148,4,2,true);
 
+      const phase=(state.uiTime*.42)%1;
+      ctx.fillStyle='rgba(127,214,255,.18)';
+      roundedRect(438+phase*118,681,30,4,2,true);
+
       text('POINTER',864,684,10,'650','#56667d');
       ctx.fillStyle='rgba(127,214,255,.30)';
       ctx.beginPath();
@@ -259,7 +346,7 @@
       ctx.fill();
     }
 
-    function appHeader(title,subtitle,accent='#8fc5ff'){
+    function appHeader(title,subtitle,accent='#8fc5ff',appId=null){
       text(title.toUpperCase(),70,220,11,'800',accent);
       text(subtitle,70,246,14,'520','#70809a');
       text(title,70,289,40,'690','#f5f8ff');
@@ -267,13 +354,26 @@
       ctx.fillStyle='rgba(255,255,255,.050)';
       roundedRect(70,308,884,1,1,true);
 
+      if(appId){
+        ctx.fillStyle='rgba(255,255,255,.030)';
+        roundedRect(812,210,42,42,14,true);
+        strokeRoundRect(812,210,42,42,14,'rgba(255,255,255,.055)',1);
+        appIcon(appId,833,231,21,accent,.14);
+      }
+
       ctx.fillStyle='rgba(255,255,255,.035)';
       roundedRect(866,214,88,30,15,true);
       strokeRoundRect(866,214,88,30,15,'rgba(255,255,255,.060)',1);
+
+      const readyPulse=.62+.38*((Math.sin(state.uiTime*2.4)+1)*.5);
+      ctx.save();
+      ctx.globalAlpha=readyPulse;
       ctx.fillStyle=accent;
       ctx.beginPath();
       ctx.arc(883,229,3.2,0,Math.PI*2);
       ctx.fill();
+      ctx.restore();
+
       text('READY',894,233,10,'800','#8192aa');
     }
 
@@ -621,7 +721,7 @@
         ctx.fillStyle='rgba(127,214,255,'+(state.actionPulse*.035).toFixed(3)+')';
         roundedRect(48,204,928,438,30,true);
       }
-      appHeader('Messages','Mira · online','#7fd6ff');
+      appHeader('Messages','Mira · online','#7fd6ff','messages');
 
       ctx.fillStyle='rgba(127,214,255,.09)';
       roundedRect(70,306,44,44,22,true);
@@ -678,7 +778,7 @@
         ctx.fillStyle='rgba(158,255,196,'+(state.actionPulse*.032).toFixed(3)+')';
         roundedRect(48,204,928,438,30,true);
       }
-      appHeader('Tasks','Today · focused mode','#9effc4');
+      appHeader('Tasks','Today · focused mode','#9effc4','tasks');
 
       const doneCount=state.completedTasks.filter(Boolean).length;
       ctx.fillStyle='rgba(158,255,196,.055)';
@@ -736,7 +836,7 @@
         ctx.fillStyle='rgba(205,183,255,'+(state.actionPulse*.028).toFixed(3)+')';
         roundedRect(48,204,928,438,30,true);
       }
-      appHeader('Map','Apartment · Level 01','#cdb7ff');
+      appHeader('Map','Apartment · Level 01','#cdb7ff','map');
 
       ctx.fillStyle='rgba(255,255,255,.030)';
       roundedRect(70,306,884,316,28,true);
@@ -795,7 +895,7 @@
       const status=state.scanning
         ? 'SCANNING '+Math.round(state.scannerProgress*100)+'%'
         : (state.scannerComplete?'SCAN COMPLETE':'LIVE OBJECT ANALYSIS');
-      appHeader('Scanner',status,state.scannerComplete?'#9effc4':'#ffc98a');
+      appHeader('Scanner',status,state.scannerComplete?'#9effc4':'#ffc98a','scanner');
 
       ctx.fillStyle='rgba(255,255,255,.026)';
       roundedRect(184,304,656,258,30,true);
@@ -853,13 +953,12 @@
     }
 
     function drawApp(appId=state.activeApp){
-      const accent=appId==='messages'
-        ? '#7fd6ff'
-        : (appId==='tasks'
-          ? '#9effc4'
-          : (appId==='map' ? '#cdb7ff' : '#ffc98a'));
+      const meta=appMeta(appId);
+      const accent=meta.accent;
+      const rgb=meta.rgb;
 
-      appShell(accent);
+      appShell(accent,rgb);
+      drawAppBackdrop(appId,accent,rgb);
       drawBack();
 
       if(appId==='messages') drawMessages();
