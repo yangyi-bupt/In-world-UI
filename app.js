@@ -6140,59 +6140,87 @@ function tuneVehicleAsset(root,bodyColor){
       const key=((object.name||'')+' '+(material.name||'')).toLowerCase();
 
       if(/glass|window|windshield|windscreen/.test(key)){
-        if(material.color) material.color.lerp(new THREE.Color(0xb5c8ca),.44);
+        if(material.color) material.color.lerp(new THREE.Color(0xb5c8ca),.36);
         material.transparent=true;
-        material.opacity=.68;
-        material.roughness=.12;
-        if('metalness' in material) material.metalness=.015;
-        if('envMapIntensity' in material) material.envMapIntensity=1.02;
+        material.opacity=.62;
+        material.roughness=.16;
+        if('metalness' in material) material.metalness=0;
+        if('envMapIntensity' in material) material.envMapIntensity=.92;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=glassRoughnessTexture;
+        }
+        if(material.isMeshPhysicalMaterial){
+          material.transmission=Math.max(material.transmission ?? 0,.08);
+          material.ior=1.50;
+          material.thickness=.008;
+          material.clearcoat=.02;
+          material.clearcoatRoughness=.40;
         }
         material.depthWrite=false;
       }else if(/head.?light|lamp_front|front.?light/.test(key)){
         if(material.color) material.color.lerp(new THREE.Color(0xf4ecdc),.76);
         if(material.emissive) material.emissive.set(0x988a70);
         if('emissiveIntensity' in material) material.emissiveIntensity=.075;
-        material.roughness=.18;
-        if('envMapIntensity' in material) material.envMapIntensity=.88;
+        material.roughness=.20;
+        if('metalness' in material) material.metalness=.02;
+        if('envMapIntensity' in material) material.envMapIntensity=.78;
       }else if(/tail.?light|rear.?light|brake/.test(key)){
         if(material.color) material.color.lerp(new THREE.Color(0xa26059),.76);
         if(material.emissive) material.emissive.set(0x64231f);
         if('emissiveIntensity' in material) material.emissiveIntensity=.055;
-        material.roughness=.22;
-        if('envMapIntensity' in material) material.envMapIntensity=.82;
+        material.roughness=.24;
+        if('metalness' in material) material.metalness=.01;
+        if('envMapIntensity' in material) material.envMapIntensity=.74;
       }else if(/tire|tyre|rubber/.test(key)){
         if(material.color) material.color.set(0x292d2d);
-        material.roughness=.94;
+        material.roughness=.98;
         if('metalness' in material) material.metalness=0;
-        if('envMapIntensity' in material) material.envMapIntensity=.18;
+        if('envMapIntensity' in material) material.envMapIntensity=.08;
         if(hasUv && 'bumpMap' in material && !material.bumpMap){
           material.bumpMap=rubberMicroBump;
           material.bumpScale=.018;
         }
       }else if(/wheel|rim/.test(key)){
-        if(material.color) material.color.lerp(new THREE.Color(0xa5aaa7),.62);
-        material.roughness=.34;
-        if('metalness' in material) material.metalness=.58;
-        if('envMapIntensity' in material) material.envMapIntensity=.84;
+        if(material.color) material.color.lerp(new THREE.Color(0xa5aaa7),.54);
+        material.roughness=.38;
+        if('metalness' in material) material.metalness=.68;
+        if('envMapIntensity' in material) material.envMapIntensity=.78;
+        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
+          material.roughnessMap=metalSurface.roughness;
+        }
       }else if(/body|paint|carpaint|car_paint|coachwork|exterior/.test(key)){
-        if(material.color) material.color.lerp(mutedTint,.76);
-        material.roughness=THREE.MathUtils.clamp(material.roughness ?? .31,.245,.34);
-        if('metalness' in material) material.metalness=THREE.MathUtils.clamp(material.metalness ?? .18,.14,.24);
-        if('envMapIntensity' in material) material.envMapIntensity=.96;
+        if(material.color) material.color.lerp(mutedTint,.72);
+
+        // Automotive paint is a dielectric colored layer under a glossy clear
+        // coat, not a bulk metal. Keeping metalness near zero avoids the
+        // metallic-plastic look produced by the previous values.
+        material.roughness=THREE.MathUtils.clamp(material.roughness ?? .31,.28,.36);
+        if('metalness' in material) material.metalness=.025;
+        if('envMapIntensity' in material) material.envMapIntensity=.82;
+
+        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
+          material.roughnessMap=vehiclePaintRoughness;
+        }
         if(hasUv && 'bumpMap' in material && !material.bumpMap){
           material.bumpMap=vehiclePaintMicroBump;
-          material.bumpScale=.0026;
+          material.bumpScale=.0022;
+        }
+        if(material.isMeshPhysicalMaterial){
+          material.clearcoat=.72;
+          material.clearcoatRoughness=.18;
+          if('specularIntensity' in material) material.specularIntensity=.72;
         }
       }else if(material.color){
         const hsl={h:0,s:0,l:0};
         material.color.getHSL(hsl);
         if(hsl.s>.46 && hsl.l>.12){
-          material.color.lerp(mutedTint,.34);
+          material.color.lerp(mutedTint,.30);
         }
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .60,.42,.82);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .60,.48,.86);
+        }
+        if('metalness' in material){
+          material.metalness=Math.min(material.metalness ?? 0,.12);
         }
       }
       material.needsUpdate=true;
@@ -6243,27 +6271,75 @@ function tunePedestrianAsset(root,index=0){
 function tuneMiraAsset(root){
   root.traverse(object=>{
     if(!object.isMesh) return;
+    const hasUv=Boolean(object.geometry?.attributes?.uv);
     const materials=Array.isArray(object.material)?object.material:[object.material];
+
     materials.forEach(material=>{
       if(!material) return;
       const key=((object.name||'')+' '+(material.name||'')).toLowerCase();
 
       if('metalness' in material){
-        material.metalness=Math.min(material.metalness ?? 0,.035);
+        material.metalness=0;
       }
 
-      if(/skin|face|head|body/.test(key)){
-        if('roughness' in material) material.roughness=THREE.MathUtils.clamp(material.roughness ?? .68,.60,.74);
+      if(/eye|cornea|iris/.test(key)){
+        if('roughness' in material) material.roughness=.24;
+        if('envMapIntensity' in material) material.envMapIntensity=.28;
+        if(material.isMeshPhysicalMaterial){
+          material.clearcoat=.16;
+          material.clearcoatRoughness=.20;
+          if('specularIntensity' in material) material.specularIntensity=.72;
+        }
+      }else if(/skin|face|head|body/.test(key)){
+        if('roughness' in material){
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .70,.66,.76);
+        }
         if(material.color){
-          material.color.lerp(new THREE.Color(0xd6a18c),.055);
+          material.color.lerp(new THREE.Color(0xd6a18c),.040);
+        }
+        if('envMapIntensity' in material) material.envMapIntensity=.16;
+        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
+          material.roughnessMap=skinRoughnessTexture;
+        }
+        if(material.isMeshPhysicalMaterial){
+          material.clearcoat=0;
+          if('specularIntensity' in material) material.specularIntensity=.50;
+        }
+      }else if(/hair/.test(key)){
+        if('roughness' in material){
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .74,.68,.80);
         }
         if('envMapIntensity' in material) material.envMapIntensity=.22;
-      }else if(/hair/.test(key)){
-        if('roughness' in material) material.roughness=THREE.MathUtils.clamp(material.roughness ?? .76,.68,.84);
-        if('envMapIntensity' in material) material.envMapIntensity=.34;
-      }else if('roughness' in material){
-        material.roughness=THREE.MathUtils.clamp(material.roughness ?? .76,.68,.90);
-        if('envMapIntensity' in material) material.envMapIntensity=.28;
+        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
+          material.roughnessMap=hairRoughnessTexture;
+        }
+        if(material.isMeshPhysicalMaterial){
+          material.sheen=.18;
+          material.sheenRoughness=.84;
+          if(material.sheenColor && material.color){
+            material.sheenColor.copy(material.color).lerp(new THREE.Color(0x8a766c),.20);
+          }
+          if('anisotropy' in material) material.anisotropy=.12;
+        }
+      }else{
+        // Treat the remaining character materials as fabric/leather rather than
+        // generic smooth plastic. Existing authored roughness maps are kept.
+        if('roughness' in material){
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .82,.78,.94);
+        }
+        if('envMapIntensity' in material) material.envMapIntensity=.14;
+        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
+          material.roughnessMap=clothRoughnessTexture;
+        }
+        if(material.isMeshPhysicalMaterial){
+          material.clearcoat=0;
+          material.sheen=.18;
+          material.sheenRoughness=.95;
+          if(material.sheenColor && material.color){
+            material.sheenColor.copy(material.color).lerp(new THREE.Color(0xd8d1c8),.12);
+          }
+          if('specularIntensity' in material) material.specularIntensity=.28;
+        }
       }
 
       if(worldEnvironmentTexture && (material.isMeshStandardMaterial || material.isMeshPhysicalMaterial)){
