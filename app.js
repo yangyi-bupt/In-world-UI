@@ -618,6 +618,33 @@ storefrontPavingBand.position.set(7.62,.047,-5);
 storefrontPavingBand.receiveShadow=true;
 scene.add(storefrontPavingBand);
 
+const facadeShadeCanvas=document.createElement('canvas');
+facadeShadeCanvas.width=256;
+facadeShadeCanvas.height=32;
+const facadeShadeCtx=facadeShadeCanvas.getContext('2d');
+const facadeShadeGradient=facadeShadeCtx.createLinearGradient(0,0,256,0);
+facadeShadeGradient.addColorStop(0,'rgba(79,72,65,.16)');
+facadeShadeGradient.addColorStop(.30,'rgba(86,79,71,.085)');
+facadeShadeGradient.addColorStop(.72,'rgba(92,86,78,.025)');
+facadeShadeGradient.addColorStop(1,'rgba(92,86,78,0)');
+facadeShadeCtx.fillStyle=facadeShadeGradient;
+facadeShadeCtx.fillRect(0,0,256,32);
+const facadeShadeTexture=new THREE.CanvasTexture(facadeShadeCanvas);
+facadeShadeTexture.colorSpace=THREE.SRGBColorSpace;
+const facadeSoftShade=new THREE.Mesh(
+  new THREE.PlaneGeometry(2.30,61.8),
+  new THREE.MeshBasicMaterial({
+    map:facadeShadeTexture,
+    transparent:true,
+    opacity:.58,
+    depthWrite:false,
+    toneMapped:false
+  })
+);
+facadeSoftShade.rotation.x=-Math.PI/2;
+facadeSoftShade.position.set(6.95,.056,-5);
+scene.add(facadeSoftShade);
+
 const facadeRibMat=new THREE.MeshStandardMaterial({
   color:0xd6cec1,
   roughness:.82
@@ -873,6 +900,43 @@ const cafeGlass=glassPanel(7.75,2.55,8.05,1.62,4.8,-Math.PI/2,0xc3d8d7);
 cafeGlass.material.opacity=.48;
 cafeGlass.material.roughness=.31;
 
+const cafeMullionMat=new THREE.MeshStandardMaterial({
+  color:0x9c8e80,
+  roughness:.56,
+  metalness:.18
+});
+[2.15,3.80,5.45,7.10].forEach(z=>{
+  const mullion=new THREE.Mesh(new THREE.BoxGeometry(.055,2.42,.045),cafeMullionMat);
+  mullion.position.set(7.96,1.64,z);
+  mullion.castShadow=true;
+  scene.add(mullion);
+});
+
+const cafeDoorFrame=new THREE.MeshStandardMaterial({color:0x8e8378,roughness:.58,metalness:.16});
+[
+  [7.88,1.58,1.73,.055,2.42,.055],
+  [7.88,1.58,2.67,.055,2.42,.055],
+  [7.88,2.77,2.20,.055,.055,.98]
+].forEach(([x,y,z,w,h,d])=>{
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),cafeDoorFrame);
+  frame.position.set(x,y,z);
+  frame.castShadow=true;
+  scene.add(frame);
+});
+
+const cafeDoorGlass=glassPanel(.88,2.28,7.91,1.58,2.20,-Math.PI/2,0xc7d9d7);
+cafeDoorGlass.material.opacity=.40;
+cafeDoorGlass.material.roughness=.32;
+
+const cafeDoorHandle=new THREE.Mesh(
+  new THREE.CylinderGeometry(.018,.018,.42,10),
+  new THREE.MeshStandardMaterial({color:0x9ba29f,roughness:.40,metalness:.48})
+);
+cafeDoorHandle.rotation.z=Math.PI/2;
+cafeDoorHandle.position.set(7.84,1.52,2.48);
+cafeDoorHandle.castShadow=true;
+scene.add(cafeDoorHandle);
+
 const cafeInteriorGlow=new THREE.Mesh(
   new THREE.PlaneGeometry(7.25,2.18),
   new THREE.MeshBasicMaterial({
@@ -957,6 +1021,24 @@ const cafeCounter=new THREE.Mesh(new THREE.BoxGeometry(.32,.86,5.30),cafeInterio
 cafeCounter.position.set(8.18,.72,4.85);
 cafeCounter.castShadow=true;
 scene.add(cafeCounter);
+
+const cafeBenchMat=new THREE.MeshStandardMaterial({color:0xb69b82,roughness:.88});
+const cafeBench=new THREE.Mesh(new THREE.BoxGeometry(.34,.48,2.60),cafeBenchMat);
+cafeBench.position.set(8.18,.46,6.25);
+cafeBench.castShadow=true;
+scene.add(cafeBench);
+
+const cafeSmallTableMat=new THREE.MeshStandardMaterial({color:0xc9aa88,roughness:.82});
+[3.45,5.05,6.65].forEach(z=>{
+  const top=new THREE.Mesh(new THREE.CylinderGeometry(.20,.20,.035,18),cafeSmallTableMat);
+  top.position.set(7.92,.72,z);
+  top.castShadow=true;
+  scene.add(top);
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.022,.030,.64,8),cafeMullionMat);
+  stem.position.set(7.92,.39,z);
+  stem.castShadow=true;
+  scene.add(stem);
+});
 for(let z=2.95;z<=6.75;z+=1.90){
   const shelf=new THREE.Mesh(new THREE.BoxGeometry(.10,.065,1.15),cafeInteriorWarm);
   shelf.position.set(8.23,1.62,z);
@@ -971,6 +1053,17 @@ for(let i=0;i<10;i++){
   const h=5.2+(i%4)*1.6;
   const b=box(3.8,h,6.4,farBuildingColors[i%farBuildingColors.length],-15.2,h/2-.02,z,.72);
   b.castShadow=false;
+
+  const parapet=new THREE.Mesh(
+    new THREE.BoxGeometry(3.92,.12,6.52),
+    new THREE.MeshStandardMaterial({
+      color:[0xc8d0cc,0xcbd3d1,0xd8d2c8][i%3],
+      roughness:.88
+    })
+  );
+  parapet.position.set(-15.2,h+.06,z);
+  parapet.castShadow=false;
+  scene.add(parapet);
 
   for(let level=.9;level<h-.6;level+=1.22){
     const windowTone=(Math.floor(level*10)+i)%3;
@@ -1112,6 +1205,18 @@ function createStreetTree(x,z,scale=1){
     crown.add(leaf);
   });
 
+  const crownShadeMat=new THREE.MeshStandardMaterial({color:0x63875e,roughness:.97});
+  [
+    [-.32,-.22,.02,.38],
+    [.28,-.16,-.08,.34]
+  ].forEach(([ox,oy,oz,r])=>{
+    const shadeLeaf=new THREE.Mesh(new THREE.IcosahedronGeometry(r*scale,1),crownShadeMat);
+    shadeLeaf.position.set(ox*scale,oy*scale,oz*scale);
+    shadeLeaf.scale.set(1.05,.72,.92);
+    shadeLeaf.castShadow=true;
+    crown.add(shadeLeaf);
+  });
+
   const highlightMat=new THREE.MeshStandardMaterial({color:0xa8c895,roughness:.94});
   [
     [-.26,.62,.18,.28],
@@ -1202,6 +1307,23 @@ miraPocket.rotation.x=-Math.PI/2;
 miraPocket.position.set(3.75,.044,-1.55);
 miraPocket.receiveShadow=true;
 scene.add(miraPocket);
+
+const pocketInlayMat=new THREE.MeshBasicMaterial({
+  color:0xf2ece2,
+  transparent:true,
+  opacity:.16,
+  depthWrite:false
+});
+[
+  [2.05,-3.95,1.10,.025],
+  [3.86,-3.95,1.58,.025],
+  [5.20,.86,1.12,.025]
+].forEach(([x,z,w,d])=>{
+  const inlay=new THREE.Mesh(new THREE.PlaneGeometry(w,d),pocketInlayMat);
+  inlay.rotation.x=-Math.PI/2;
+  inlay.position.set(x,.052,z);
+  scene.add(inlay);
+});
 
 const pocketLineMat=new THREE.MeshBasicMaterial({
   color:0xc7bfb3,
@@ -1325,8 +1447,8 @@ for(let i=0;i<7;i++){
 
 createDapplePatch(2.15,-2.10,4.3,5.1,-.10,.68);
 createDapplePatch(4.75,5.15,3.8,4.4,.16,.62);
-createSunPool(2.85,-1.72,4.8,4.5,.22);
-createSunPool(5.85,6.40,3.6,5.8,.18);
+createSunPool(2.85,-1.72,4.8,4.5,.18);
+createSunPool(5.85,6.40,3.6,5.8,.14);
 
 const focalPlanterBase=new THREE.Mesh(
   new THREE.BoxGeometry(1.95,.34,.58),
