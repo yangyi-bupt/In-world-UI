@@ -179,35 +179,66 @@ function makeSurfaceTexture(kind){
   const rnd=makeSeededRandom(kind==='asphalt'?0x6d2b79f5:0x1b873593);
 
   if(kind==='asphalt'){
-    g.fillStyle='#62696a';
+    g.fillStyle='#61696a';
     g.fillRect(0,0,size,size);
-    for(let i=0;i<760;i++){
-      const v=82+Math.floor(rnd()*30);
-      const a=.015+rnd()*.022;
-      g.fillStyle='rgba('+v+','+v+','+v+','+a.toFixed(3)+')';
-      const r=.35+rnd()*.90;
+
+    // Low-frequency variation stops the road reading as one flat grey slab.
+    for(let i=0;i<42;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const radius=12+rnd()*44;
+      const grad=g.createRadialGradient(x,y,0,x,y,radius);
+      const light=rnd()>.5;
+      grad.addColorStop(0,light?'rgba(118,124,124,.050)':'rgba(31,37,38,.045)');
+      grad.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=grad;
+      g.fillRect(x-radius,y-radius,radius*2,radius*2);
+    }
+
+    for(let i=0;i<1350;i++){
+      const v=64+Math.floor(rnd()*54);
+      const a=.016+rnd()*.040;
+      g.fillStyle='rgba('+v+','+(v+2)+','+(v+2)+','+a.toFixed(3)+')';
+      const r=.28+rnd()*1.20;
       g.fillRect(rnd()*size,rnd()*size,r,r);
     }
-    for(let i=0;i<10;i++){
-      g.strokeStyle='rgba(55,60,61,'+(.016+rnd()*.012).toFixed(3)+')';
-      g.lineWidth=.40+rnd()*.55;
+
+    for(let i=0;i<18;i++){
+      g.strokeStyle='rgba(40,46,47,'+(.020+rnd()*.026).toFixed(3)+')';
+      g.lineWidth=.35+rnd()*.65;
       g.beginPath();
       const x=rnd()*size;
       const y=rnd()*size;
       g.moveTo(x,y);
-      g.lineTo(x+(rnd()-.5)*30,y+(rnd()-.5)*30);
+      g.bezierCurveTo(
+        x+(rnd()-.5)*18,y+(rnd()-.5)*16,
+        x+(rnd()-.5)*34,y+(rnd()-.5)*26,
+        x+(rnd()-.5)*46,y+(rnd()-.5)*34
+      );
       g.stroke();
     }
   }else{
     g.fillStyle='#dedbd0';
     g.fillRect(0,0,size,size);
-    for(let i=0;i<620;i++){
+
+    for(let i=0;i<34;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const radius=14+rnd()*48;
+      const grad=g.createRadialGradient(x,y,0,x,y,radius);
+      grad.addColorStop(0,rnd()>.5?'rgba(195,189,178,.050)':'rgba(244,239,226,.055)');
+      grad.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=grad;
+      g.fillRect(x-radius,y-radius,radius*2,radius*2);
+    }
+
+    for(let i=0;i<980;i++){
       const warm=rnd()>.56;
-      const base=warm?205:215;
-      const a=.010+rnd()*.016;
-      g.fillStyle='rgba('+(base+5)+','+(base+3)+','+base+','+a.toFixed(3)+')';
+      const base=warm?196:210;
+      const a=.012+rnd()*.026;
+      g.fillStyle='rgba('+(base+8)+','+(base+5)+','+base+','+a.toFixed(3)+')';
       g.beginPath();
-      g.arc(rnd()*size,rnd()*size,.30+rnd()*.78,0,Math.PI*2);
+      g.arc(rnd()*size,rnd()*size,.24+rnd()*.92,0,Math.PI*2);
       g.fill();
     }
   }
@@ -220,10 +251,116 @@ function makeSurfaceTexture(kind){
   return texture;
 }
 
+function makeMaterialTexture(kind,seed){
+  const size=256;
+  const colorCanvas=document.createElement('canvas');
+  const bumpCanvas=document.createElement('canvas');
+  colorCanvas.width=colorCanvas.height=size;
+  bumpCanvas.width=bumpCanvas.height=size;
+  const g=colorCanvas.getContext('2d');
+  const b=bumpCanvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  const palettes={
+    stone:['#d7d0c4','#c9c1b5','#e3ddd2'],
+    concrete:['#c5c1b8','#b7b2a8','#d0cbc1'],
+    wood:['#b58f70','#9f795e','#c39b78'],
+    metal:['#8f9895','#7f8986','#a2aaa7']
+  };
+  const palette=palettes[kind] || palettes.concrete;
+  g.fillStyle=palette[0];
+  g.fillRect(0,0,size,size);
+  b.fillStyle='#808080';
+  b.fillRect(0,0,size,size);
+
+  if(kind==='wood'){
+    for(let y=0;y<size;y++){
+      const wave=Math.sin(y*.14)+Math.sin(y*.037+1.4)*.55;
+      const shade=Math.round(128+wave*10);
+      g.fillStyle=y%7===0?'rgba(83,55,39,.040)':'rgba(255,241,222,.018)';
+      g.fillRect(0,y,size,1);
+      b.fillStyle='rgb('+shade+','+shade+','+shade+')';
+      b.fillRect(0,y,size,1);
+    }
+    for(let i=0;i<18;i++){
+      const y=rnd()*size;
+      g.strokeStyle='rgba(77,48,34,'+(.025+rnd()*.035).toFixed(3)+')';
+      g.lineWidth=.45+rnd()*.55;
+      g.beginPath();
+      g.moveTo(0,y);
+      g.bezierCurveTo(64,y+(rnd()-.5)*8,166,y+(rnd()-.5)*12,256,y+(rnd()-.5)*7);
+      g.stroke();
+    }
+  }else if(kind==='metal'){
+    for(let x=0;x<size;x++){
+      const a=.012+((x%5===0)?.018:0);
+      g.fillStyle='rgba(255,255,255,'+a.toFixed(3)+')';
+      g.fillRect(x,0,1,size);
+      const v=124+(x%7===0?6:0);
+      b.fillStyle='rgb('+v+','+v+','+v+')';
+      b.fillRect(x,0,1,size);
+    }
+    for(let i=0;i<120;i++){
+      g.fillStyle='rgba(45,52,52,'+(.012+rnd()*.020).toFixed(3)+')';
+      g.fillRect(rnd()*size,rnd()*size,.4+rnd()*1.2,.4);
+    }
+  }else{
+    for(let i=0;i<1050;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const r=.25+rnd()*1.15;
+      const dark=rnd()>.52;
+      g.fillStyle=dark
+        ? 'rgba(91,84,75,'+(.010+rnd()*.028).toFixed(3)+')'
+        : 'rgba(255,249,238,'+(.012+rnd()*.026).toFixed(3)+')';
+      g.beginPath();
+      g.arc(x,y,r,0,Math.PI*2);
+      g.fill();
+      const v=Math.floor(116+rnd()*28);
+      b.fillStyle='rgb('+v+','+v+','+v+')';
+      b.fillRect(x,y,1+rnd()*1.2,1+rnd()*1.2);
+    }
+
+    if(kind==='stone'){
+      for(let i=0;i<12;i++){
+        const y=rnd()*size;
+        g.strokeStyle='rgba(111,101,91,'+(.018+rnd()*.018).toFixed(3)+')';
+        g.lineWidth=.35+rnd()*.35;
+        g.beginPath();
+        g.moveTo(0,y);
+        g.bezierCurveTo(72,y+(rnd()-.5)*5,168,y+(rnd()-.5)*6,256,y+(rnd()-.5)*4);
+        g.stroke();
+      }
+    }
+  }
+
+  const map=new THREE.CanvasTexture(colorCanvas);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.wrapS=map.wrapT=THREE.RepeatWrapping;
+  map.anisotropy=8;
+
+  const bump=new THREE.CanvasTexture(bumpCanvas);
+  bump.wrapS=bump.wrapT=THREE.RepeatWrapping;
+  bump.anisotropy=8;
+
+  return {map,bump};
+}
+
+function configureTexturePair(pair,repeatX,repeatY){
+  pair.map.repeat.set(repeatX,repeatY);
+  pair.bump.repeat.set(repeatX,repeatY);
+  return pair;
+}
+
 const asphaltTexture=makeSurfaceTexture('asphalt');
 asphaltTexture.repeat.set(5,26);
 const pavementTexture=makeSurfaceTexture('pavement');
 pavementTexture.repeat.set(5,22);
+
+const facadeSurface=configureTexturePair(makeMaterialTexture('stone',0x51a72d31),1.8,15);
+const concreteSurface=configureTexturePair(makeMaterialTexture('concrete',0x327c619b),2.2,5.6);
+const woodSurface=configureTexturePair(makeMaterialTexture('wood',0x78d0bc53),1.2,5.8);
+const metalSurface=configureTexturePair(makeMaterialTexture('metal',0x1165a2ef),5.5,1.2);
 
 const glassReflectionCanvas=document.createElement('canvas');
 glassReflectionCanvas.width=128;
@@ -587,12 +724,22 @@ utilityCenter.position.set(-8.55,.0305,2.8);
 scene.add(utilityCenter);
 
 // Street-facing buildings: warm stone + glass + shaded shopfronts.
-const rightFacade=box(3.4,7.6,66,0xddd5c7,10.15,3.75,-5,.78);
+const rightFacade=box(3.4,7.6,66,0xddd5c7,10.15,3.75,-5,.82);
 rightFacade.castShadow=false;
+rightFacade.material.map=facadeSurface.map;
+rightFacade.material.bumpMap=facadeSurface.bump;
+rightFacade.material.bumpScale=.018;
+rightFacade.material.needsUpdate=true;
 
 const upperRecess=new THREE.Mesh(
   new THREE.BoxGeometry(.18,2.10,63.9),
-  new THREE.MeshStandardMaterial({color:0xc9c5bd,roughness:.84})
+  new THREE.MeshStandardMaterial({
+    color:0xc9c5bd,
+    roughness:.88,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.012
+  })
 );
 upperRecess.position.set(8.47,6.18,-5);
 upperRecess.castShadow=true;
@@ -601,7 +748,13 @@ scene.add(upperRecess);
 
 const topCornice=new THREE.Mesh(
   new THREE.BoxGeometry(.56,.20,65.0),
-  new THREE.MeshStandardMaterial({color:0xe6ded1,roughness:.78})
+  new THREE.MeshStandardMaterial({
+    color:0xe6ded1,
+    roughness:.84,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.010
+  })
 );
 topCornice.position.set(8.25,7.42,-5);
 topCornice.castShadow=true;
@@ -609,7 +762,13 @@ scene.add(topCornice);
 
 const facadeBaseBand=new THREE.Mesh(
   new THREE.BoxGeometry(.36,.20,64.8),
-  new THREE.MeshStandardMaterial({color:0xd1c6b6,roughness:.90})
+  new THREE.MeshStandardMaterial({
+    color:0xd1c6b6,
+    roughness:.93,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.014
+  })
 );
 facadeBaseBand.position.set(8.36,.20,-5);
 facadeBaseBand.castShadow=true;
@@ -678,7 +837,10 @@ createFacadeZone(18.1,15.0,0xd2d4cb,.28);
 
 const facadeRibMat=new THREE.MeshStandardMaterial({
   color:0xd6cec1,
-  roughness:.82
+  roughness:.87,
+  map:facadeSurface.map,
+  bumpMap:facadeSurface.bump,
+  bumpScale:.012
 });
 [-34.2,-27.0,-18.9,-11.2,-3.7,4.1,12.4,20.7,27.3].forEach((z,i)=>{
   const ribWidth=i===4||i===5?.26:.18;
@@ -1015,8 +1177,11 @@ cafeGlass.material.roughness=.31;
 
 const cafeMullionMat=new THREE.MeshStandardMaterial({
   color:0x9c8e80,
-  roughness:.56,
-  metalness:.18
+  roughness:.50,
+  metalness:.24,
+  map:metalSurface.map,
+  bumpMap:metalSurface.bump,
+  bumpScale:.006
 });
 [2.15,3.80,5.45,7.10].forEach(z=>{
   const mullion=new THREE.Mesh(new THREE.BoxGeometry(.055,2.42,.045),cafeMullionMat);
@@ -1128,8 +1293,20 @@ for(let z=2.4;z<=7.2;z+=2.4){
   scene.add(pendant);
 }
 
-const cafeInteriorWood=new THREE.MeshStandardMaterial({color:0xb79473,roughness:.80});
-const cafeInteriorWarm=new THREE.MeshStandardMaterial({color:0xe8d9c5,roughness:.88});
+const cafeInteriorWood=new THREE.MeshStandardMaterial({
+  color:0xb79473,
+  roughness:.82,
+  map:woodSurface.map,
+  bumpMap:woodSurface.bump,
+  bumpScale:.018
+});
+const cafeInteriorWarm=new THREE.MeshStandardMaterial({
+  color:0xe8d9c5,
+  roughness:.91,
+  map:concreteSurface.map,
+  bumpMap:concreteSurface.bump,
+  bumpScale:.008
+});
 const cafeCounter=new THREE.Mesh(new THREE.BoxGeometry(.32,.86,5.30),cafeInteriorWood);
 cafeCounter.position.set(8.18,.72,4.85);
 cafeCounter.castShadow=true;
@@ -1575,7 +1752,13 @@ for(let dz=-.48;dz<=.48;dz+=.24){
   }
 }
 
-const seatStone=new THREE.MeshStandardMaterial({color:0xc0b6a6,roughness:.92});
+const seatStone=new THREE.MeshStandardMaterial({
+  color:0xc0b6a6,
+  roughness:.94,
+  map:concreteSurface.map,
+  bumpMap:concreteSurface.bump,
+  bumpScale:.014
+});
 const pocketSeat=new THREE.Mesh(new THREE.BoxGeometry(2.35,.34,.48),seatStone);
 pocketSeat.position.set(6.25,.20,-1.70);
 pocketSeat.castShadow=true;
@@ -1744,8 +1927,21 @@ scene.add(wayfindingSign);
 
 // A bench and bike rack near the cafe create readable points of interest for
 // future Scanner/Map interactions.
-const benchWood=new THREE.MeshStandardMaterial({color:0xb09073,roughness:.86});
-const benchMetal=new THREE.MeshStandardMaterial({color:0x707875,roughness:.60,metalness:.32});
+const benchWood=new THREE.MeshStandardMaterial({
+  color:0xb09073,
+  roughness:.86,
+  map:woodSurface.map,
+  bumpMap:woodSurface.bump,
+  bumpScale:.020
+});
+const benchMetal=new THREE.MeshStandardMaterial({
+  color:0x707875,
+  roughness:.54,
+  metalness:.34,
+  map:metalSurface.map,
+  bumpMap:metalSurface.bump,
+  bumpScale:.005
+});
 const benchSeat=new THREE.Mesh(new THREE.BoxGeometry(1.75,.10,.48),benchWood);
 benchSeat.position.set(6.15,.54,-5.55);benchSeat.castShadow=true;scene.add(benchSeat);
 const benchBack=new THREE.Mesh(new THREE.BoxGeometry(1.75,.48,.08),benchWood);
@@ -1887,9 +2083,28 @@ terraceEdgeLine.rotation.x=-Math.PI/2;
 terraceEdgeLine.position.set(4.39,.061,6.95);
 scene.add(terraceEdgeLine);
 
-const cafeTableWood=new THREE.MeshStandardMaterial({color:0xc39b78,roughness:.84});
-const cafeTableMetal=new THREE.MeshStandardMaterial({color:0x7f8783,roughness:.58,metalness:.30});
-const cafeSeatMat=new THREE.MeshStandardMaterial({color:0xe5ddd0,roughness:.88});
+const cafeTableWood=new THREE.MeshStandardMaterial({
+  color:0xc39b78,
+  roughness:.84,
+  map:woodSurface.map,
+  bumpMap:woodSurface.bump,
+  bumpScale:.020
+});
+const cafeTableMetal=new THREE.MeshStandardMaterial({
+  color:0x7f8783,
+  roughness:.52,
+  metalness:.34,
+  map:metalSurface.map,
+  bumpMap:metalSurface.bump,
+  bumpScale:.005
+});
+const cafeSeatMat=new THREE.MeshStandardMaterial({
+  color:0xe5ddd0,
+  roughness:.91,
+  map:concreteSurface.map,
+  bumpMap:concreteSurface.bump,
+  bumpScale:.010
+});
 
 function createCafeTable(x,z){
   const top=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.055,24),cafeTableWood);
