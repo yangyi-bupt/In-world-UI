@@ -611,6 +611,58 @@ const coarseConcreteSurface=configureTexturePair(makeMaterialTexture('concrete',
 const woodSurface=configureTexturePair(makeMaterialTexture('wood',0x78d0bc53),1.2,5.8);
 const metalSurface=configureTexturePair(makeMaterialTexture('metal',0x1165a2ef),5.5,1.2);
 
+function makeMetalEdgeRoughness(seed){
+  const size=256;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='#8b8b8b';
+  g.fillRect(0,0,size,size);
+
+  const edge=22;
+  const left=g.createLinearGradient(0,0,edge,0);
+  left.addColorStop(0,'#555555');
+  left.addColorStop(1,'rgba(139,139,139,0)');
+  g.fillStyle=left; g.fillRect(0,0,edge,size);
+
+  const right=g.createLinearGradient(size,0,size-edge,0);
+  right.addColorStop(0,'#555555');
+  right.addColorStop(1,'rgba(139,139,139,0)');
+  g.fillStyle=right; g.fillRect(size-edge,0,edge,size);
+
+  const top=g.createLinearGradient(0,0,0,edge);
+  top.addColorStop(0,'#5d5d5d');
+  top.addColorStop(1,'rgba(139,139,139,0)');
+  g.fillStyle=top; g.fillRect(0,0,size,edge);
+
+  const bottom=g.createLinearGradient(0,size,0,size-edge);
+  bottom.addColorStop(0,'#5d5d5d');
+  bottom.addColorStop(1,'rgba(139,139,139,0)');
+  g.fillStyle=bottom; g.fillRect(0,size-edge,size,edge);
+
+  for(let i=0;i<180;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const len=3+rnd()*25;
+    const v=105+Math.floor(rnd()*65);
+    g.strokeStyle='rgba('+v+','+v+','+v+','+(.06+rnd()*.12).toFixed(3)+')';
+    g.lineWidth=.35+rnd()*.8;
+    g.beginPath();
+    g.moveTo(x,y);
+    g.lineTo(x+len,y+(rnd()-.5)*1.5);
+    g.stroke();
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(3.5,3.5);
+  texture.anisotropy=8;
+  return texture;
+}
+const metalEdgeRoughness=makeMetalEdgeRoughness(0x75ae31c4);
+
 const pavementDetailSurface=configureTexturePair(
   makeMaterialTexture('concrete',0x4d84b271),
   8,
@@ -986,16 +1038,16 @@ function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x9fc7d6){
       color:tint,
       map:glassReflectionTexture,
       roughnessMap:glassRoughnessTexture,
-      roughness:.21,
-      metalness:.01,
+      roughness:.18,
+      metalness:0,
       transparent:true,
-      opacity:.42,
-      transmission:.10,
-      ior:1.45,
-      thickness:.012,
-      clearcoat:.34,
-      clearcoatRoughness:.20,
-      envMapIntensity:.84,
+      opacity:.39,
+      transmission:.14,
+      ior:1.50,
+      thickness:.014,
+      clearcoat:.03,
+      clearcoatRoughness:.38,
+      envMapIntensity:.92,
       side:THREE.DoubleSide
     })
   );
@@ -3119,7 +3171,7 @@ const cafeMullionMat=new THREE.MeshStandardMaterial({
   roughness:.42,
   metalness:.34,
   map:metalSurface.map,
-  roughnessMap:metalSurface.roughness,
+  roughnessMap:metalEdgeRoughness,
   normalMap:metalSurface.normal,
   normalScale:new THREE.Vector2(.10,.10),
   bumpMap:metalSurface.bump,
@@ -3138,7 +3190,7 @@ const cafeDoorFrame=new THREE.MeshStandardMaterial({
   roughness:.46,
   metalness:.30,
   map:metalSurface.map,
-  roughnessMap:metalSurface.roughness,
+  roughnessMap:metalEdgeRoughness,
   normalMap:metalSurface.normal,
   normalScale:new THREE.Vector2(.10,.10),
   bumpMap:metalSurface.bump,
@@ -3202,10 +3254,10 @@ const cafeDoorHandle=new THREE.Mesh(
   new THREE.CylinderGeometry(.018,.018,.42,10),
   new THREE.MeshStandardMaterial({
     color:0x9ba29f,
-    roughness:.27,
-    metalness:.68,
+    roughness:.24,
+    metalness:.72,
     map:metalSurface.map,
-    roughnessMap:metalSurface.roughness,
+    roughnessMap:metalEdgeRoughness,
     normalMap:metalSurface.normal,
     normalScale:new THREE.Vector2(.10,.10),
     bumpMap:metalSurface.bump,
@@ -3399,7 +3451,7 @@ const awningFrameMat=new THREE.MeshStandardMaterial({
   roughness:.46,
   metalness:.32,
   map:metalSurface.map,
-  roughnessMap:metalSurface.roughness,
+  roughnessMap:metalEdgeRoughness,
   normalMap:metalSurface.normal,
   normalScale:new THREE.Vector2(.10,.10),
   bumpMap:metalSurface.bump,
@@ -4954,7 +5006,7 @@ const benchMetal=new THREE.MeshStandardMaterial({
   roughness:.44,
   metalness:.46,
   map:metalSurface.map,
-  roughnessMap:metalSurface.roughness,
+  roughnessMap:metalEdgeRoughness,
   normalMap:metalSurface.normal,
   normalScale:new THREE.Vector2(.10,.10),
   bumpMap:metalSurface.bump,
