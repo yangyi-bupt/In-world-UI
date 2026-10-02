@@ -15,9 +15,30 @@
 </head>
 <body>
 <canvas id="game"></canvas>
-<div id="hud" class="hud"><div id="modeLabel"></div><div id="crosshair"></div><div id="hint"></div></div>
-<div id="tabletLayer" class="tablet-layer" aria-hidden="true"><div id="tablet" class="tablet"><button id="closeTablet" style="display:none">close</button><div id="tablet3d"></div><div id="screen" class="screen"><div class="tablet-header">NOVA PAD</div><div class="tablet-home"><button class="app" data-app="messages">Messages</button><button class="app" data-app="tasks">Tasks</button><button class="app" data-app="map">Map</button><button class="app" data-app="scanner">Scanner</button></div><div class="view active-view" id="messages"><h3>Messages</h3><div class="bubble theirs">Welcome back. Your world is ready.</div></div><div class="view" id="tasks"><h3>Tasks</h3><div>Explore the room</div><div>Talk with Mira</div></div><div class="view" id="map"><h3>Map</h3><div>Apartment Zone · Level 01</div></div><div class="view" id="scanner"><h3>Scanner</h3><div>Nearby objects detected</div></div></div></div></div>
-<div id="startOverlay" class="start-overlay"><button id="startBtn">Click to enter world</button></div>
+<div id="hud" class="hud">
+  <div class="world-chip">
+    <span class="world-chip-dot"></span>
+    <div><small>NOVA CITY</small><strong>STREET 01</strong></div>
+  </div>
+  <div id="modeLabel" class="mode-label">EXPLORE</div>
+  <div id="crosshair" class="crosshair"><i></i></div>
+  <div id="hint" class="hint"><span class="key">E</span><span>Raise NOVA Pad</span><b>·</b><span>WASD move</span></div>
+</div>
+<div id="tabletLayer" class="tablet-layer" aria-hidden="true"><div id="tablet" class="tablet"><button id="closeTablet" style="display:none">close</button><div id="tablet3d"></div><div id="screen" class="screen"><div class="tablet-header">NOVA PAD</div><div class="tablet-home"><button class="app" data-app="messages">Messages</button><button class="app" data-app="tasks">Tasks</button><button class="app" data-app="map">Map</button><button class="app" data-app="scanner">Scanner</button></div><div class="view active-view" id="messages"><h3>Messages</h3><div class="bubble theirs">I’m by the café. Come find me.</div></div><div class="view" id="tasks"><h3>Tasks</h3><div>Explore the block</div><div>Talk with Mira</div></div><div class="view" id="map"><h3>Map</h3><div>Nova Walk · Block 01</div></div><div class="view" id="scanner"><h3>Scanner</h3><div>Nearby world signals</div></div></div></div></div>
+<div id="startOverlay" class="start-overlay">
+  <div class="start-card">
+    <div class="start-topline"><span class="start-live-dot"></span><span>WORLD ONLINE</span><span class="start-separator"></span><span>NOVA · STREET 01</span></div>
+    <div class="start-copy">
+      <div class="start-kicker">A LIVING AI WORLD</div>
+      <h1>Step into<br><em>Nova City.</em></h1>
+      <p>Mira is already here. Walk the street, notice what is happening around you, and raise the Pad when you want to interact with the world.</p>
+    </div>
+    <div class="start-actions">
+      <button id="startBtn">Click to enter world</button>
+      <div class="start-controls"><span><kbd>WASD</kbd> move</span><span><kbd>Mouse</kbd> look</span><span><kbd>E</kbd> Pad</span></div>
+    </div>
+  </div>
+</div>
 <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
 <script type="importmap">
 {
