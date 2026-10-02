@@ -1093,6 +1093,181 @@ function makeVehicleDustRoughness(seed){
 }
 const vehicleDustRoughness=makeVehicleDustRoughness(0x8b6e24d1);
 
+function makeWoodFinishRoughness(seed,repeatX=2,repeatY=8){
+  const size=256;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='#c5c5c5';
+  g.fillRect(0,0,size,size);
+
+  // Long polished lanes simulate years of hands, cups and clothing rubbing the
+  // finish without turning the timber into glossy lacquer.
+  for(let i=0;i<34;i++){
+    const y=rnd()*size;
+    const x=rnd()*size;
+    const rx=18+rnd()*70;
+    const ry=3+rnd()*12;
+    const v=128+Math.floor(rnd()*42);
+    const grad=g.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+    grad.addColorStop(0,'rgba('+v+','+v+','+v+','+(.10+rnd()*.18).toFixed(3)+')');
+    grad.addColorStop(1,'rgba('+v+','+v+','+v+',0)');
+    g.fillStyle=grad;
+    g.fillRect(x-rx,y-ry,rx*2,ry*2);
+  }
+
+  for(let i=0;i<210;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const len=3+rnd()*28;
+    const v=190+Math.floor(rnd()*54);
+    g.strokeStyle='rgba('+v+','+v+','+v+','+(.04+rnd()*.11).toFixed(3)+')';
+    g.lineWidth=.35+rnd()*.65;
+    g.beginPath();
+    g.moveTo(x,y);
+    g.lineTo(x+len,y+(rnd()-.5)*1.7);
+    g.stroke();
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(repeatX,repeatY);
+  texture.anisotropy=8;
+  return texture;
+}
+
+function makeRubberAgingMaps(seed){
+  const size=256;
+  const bumpCanvas=document.createElement('canvas');
+  const roughCanvas=document.createElement('canvas');
+  bumpCanvas.width=bumpCanvas.height=size;
+  roughCanvas.width=roughCanvas.height=size;
+  const b=bumpCanvas.getContext('2d');
+  const r=roughCanvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  b.fillStyle='#808080';
+  b.fillRect(0,0,size,size);
+  r.fillStyle='#f0f0f0';
+  r.fillRect(0,0,size,size);
+
+  // Slight sidewall bloom and tiny ozone cracks.
+  for(let i=0;i<115;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const len=4+rnd()*18;
+    const angle=(rnd()-.5)*.55;
+    const dx=Math.cos(angle)*len;
+    const dy=Math.sin(angle)*len;
+    b.strokeStyle='rgba(97,97,97,'+(.14+rnd()*.20).toFixed(3)+')';
+    b.lineWidth=.35+rnd()*.55;
+    b.beginPath();
+    b.moveTo(x,y);
+    b.lineTo(x+dx,y+dy);
+    b.stroke();
+
+    r.strokeStyle='rgba(205,205,205,'+(.08+rnd()*.14).toFixed(3)+')';
+    r.lineWidth=.55+rnd()*.80;
+    r.beginPath();
+    r.moveTo(x,y);
+    r.lineTo(x+dx,y+dy);
+    r.stroke();
+  }
+
+  for(let i=0;i<1100;i++){
+    const v=215+Math.floor(rnd()*38);
+    r.fillStyle='rgba('+v+','+v+','+v+','+(.035+rnd()*.07).toFixed(3)+')';
+    const rr=.25+rnd()*.85;
+    r.fillRect(rnd()*size,rnd()*size,rr,rr);
+  }
+
+  const bump=new THREE.CanvasTexture(bumpCanvas);
+  bump.wrapS=bump.wrapT=THREE.RepeatWrapping;
+  bump.repeat.set(5,5);
+  bump.anisotropy=8;
+
+  const roughness=new THREE.CanvasTexture(roughCanvas);
+  roughness.wrapS=roughness.wrapT=THREE.RepeatWrapping;
+  roughness.repeat.set(5,5);
+  roughness.anisotropy=8;
+  return {bump,roughness};
+}
+
+const benchWoodFinishRoughness=makeWoodFinishRoughness(0x6c91ab24,2.2,7.5);
+const cafeWoodFinishRoughness=makeWoodFinishRoughness(0x1fd3b785,2.8,5.2);
+const rubberAging=makeRubberAgingMaps(0x934ab1d7);
+
+function makePaperTexture(seed){
+  const size=256;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+  g.fillStyle='#ece5d7';
+  g.fillRect(0,0,size,size);
+  for(let i=0;i<1650;i++){
+    const warm=rnd()>.52;
+    g.fillStyle=warm
+      ? 'rgba(152,133,105,'+(.008+rnd()*.018).toFixed(3)+')'
+      : 'rgba(255,252,242,'+(.010+rnd()*.018).toFixed(3)+')';
+    const len=.5+rnd()*2.8;
+    g.fillRect(rnd()*size,rnd()*size,len,.25+rnd()*.45);
+  }
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(4,4);
+  texture.anisotropy=8;
+  return texture;
+}
+const paperFiberTexture=makePaperTexture(0x7b521ace);
+
+function makeDisplayMaterial(type,color){
+  if(type==='ceramic'){
+    return new THREE.MeshPhysicalMaterial({
+      color,
+      roughness:.46,
+      metalness:0,
+      clearcoat:.14,
+      clearcoatRoughness:.34,
+      envMapIntensity:.40
+    });
+  }
+  if(type==='paper'){
+    return new THREE.MeshStandardMaterial({
+      color,
+      map:paperFiberTexture,
+      roughness:.98,
+      metalness:0,
+      envMapIntensity:.025
+    });
+  }
+  if(type==='leather'){
+    return new THREE.MeshPhysicalMaterial({
+      color,
+      roughness:.82,
+      roughnessMap:clothRoughnessTexture,
+      metalness:0,
+      bumpMap:fabricMicroBump,
+      bumpScale:.0016,
+      sheen:.08,
+      sheenRoughness:.96,
+      clearcoat:.015,
+      envMapIntensity:.08
+    });
+  }
+  return new THREE.MeshStandardMaterial({
+    color,
+    roughness:.92,
+    roughnessMap:clothRoughnessTexture,
+    bumpMap:fabricMicroBump,
+    bumpScale:.0022,
+    envMapIntensity:.04
+  });
+}
+
 function makeSubjectRoughnessTexture(kind,seed,repeatX,repeatY){
   const size=256;
   const canvas=document.createElement('canvas');
@@ -3996,9 +4171,9 @@ scene.add(cafeCounterToe);
 
 const cafeBenchMat=new THREE.MeshStandardMaterial({
   color:0xb69b82,
-  roughness:.87,
+  roughness:.90,
   map:woodSurface.map,
-  roughnessMap:woodSurface.roughness,
+  roughnessMap:cafeWoodFinishRoughness,
   normalMap:woodSurface.normal,
   normalScale:new THREE.Vector2(.20,.20),
   bumpMap:woodSurface.bump,
@@ -4039,9 +4214,9 @@ scene.add(cafeBenchCushion);
 
 const cafeSmallTableMat=new THREE.MeshStandardMaterial({
   color:0xc9aa88,
-  roughness:.83,
+  roughness:.88,
   map:woodSurface.map,
-  roughnessMap:woodSurface.roughness,
+  roughnessMap:cafeWoodFinishRoughness,
   normalMap:woodSurface.normal,
   normalScale:new THREE.Vector2(.20,.20),
   bumpMap:woodSurface.bump,
@@ -5390,7 +5565,7 @@ const benchWood=new THREE.MeshStandardMaterial({
   color:0xb09073,
   roughness:.90,
   map:benchWoodMap,
-  roughnessMap:benchWoodRoughness,
+  roughnessMap:benchWoodFinishRoughness,
   normalMap:benchWoodNormal,
   normalScale:new THREE.Vector2(.16,.16),
   bumpMap:benchWoodBump,
@@ -5477,12 +5652,13 @@ for(let i=0;i<3;i++){
 function createStreetBike(x,z,rotation=.08){
   const bike=new THREE.Group();
   const tireMat=new THREE.MeshStandardMaterial({
-    color:0x333a39,
-    roughness:.96,
+    color:0x303534,
+    roughness:.99,
+    roughnessMap:rubberAging.roughness,
     metalness:0,
-    bumpMap:rubberMicroBump,
-    bumpScale:.010,
-    envMapIntensity:.08
+    bumpMap:rubberAging.bump,
+    bumpScale:.008,
+    envMapIntensity:.035
   });
   const frameMat=new THREE.MeshStandardMaterial({
     color:0x7f8d88,
@@ -5502,12 +5678,7 @@ function createStreetBike(x,z,rotation=.08){
     metalness:.66,
     envMapIntensity:.95
   });
-  const seatMat=new THREE.MeshStandardMaterial({
-    color:0x574b43,
-    roughness:.91,
-    metalness:0,
-    envMapIntensity:.10
-  });
+  const seatMat=makeDisplayMaterial('leather',0x574b43);
 
   [-.42,.42].forEach(wz=>{
     const wheel=new THREE.Mesh(new THREE.TorusGeometry(.26,.022,8,32),tireMat);
@@ -6514,9 +6685,12 @@ function tuneVehicleAsset(root,bodyColor){
         material.roughness=.98;
         if('metalness' in material) material.metalness=0;
         if('envMapIntensity' in material) material.envMapIntensity=.08;
+        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
+          material.roughnessMap=rubberAging.roughness;
+        }
         if(hasUv && 'bumpMap' in material && !material.bumpMap){
-          material.bumpMap=rubberMicroBump;
-          material.bumpScale=.018;
+          material.bumpMap=rubberAging.bump;
+          material.bumpScale=.014;
         }
       }else if(/wheel|rim/.test(key)){
         if(material.color) material.color.lerp(new THREE.Color(0xa5aaa7),.54);
