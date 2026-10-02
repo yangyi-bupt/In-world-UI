@@ -114,10 +114,10 @@ let cameraFovTarget = 69.5;
 // ---------- daylight ----------
 renderer.toneMappingExposure = 1.02;
 
-const skyLight = new THREE.HemisphereLight(0xeaf5f7, 0xb9ad98, 1.62);
+const skyLight = new THREE.HemisphereLight(0xeaf5f7, 0xb9ad98, 1.70);
 scene.add(skyLight);
 
-const sun = new THREE.DirectionalLight(0xfff2dc, 3.05);
+const sun = new THREE.DirectionalLight(0xfff2dc, 2.82);
 sun.position.set(-11, 15, 10);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -129,10 +129,10 @@ sun.shadow.camera.near = 1;
 sun.shadow.camera.far = 52;
 sun.shadow.bias = -0.00028;
 sun.shadow.normalBias = .022;
-sun.shadow.radius = 3.2;
+sun.shadow.radius = 3.8;
 scene.add(sun);
 
-const daylightFill = new THREE.DirectionalLight(0xd4e3ed, .46);
+const daylightFill = new THREE.DirectionalLight(0xd4e3ed, .54);
 daylightFill.position.set(10, 8, -12);
 scene.add(daylightFill);
 
@@ -2847,7 +2847,15 @@ for(let i=0;i<7;i++){
 
 // Drainage slots and dappled tree shade add foreground realism where the player
 // spends the most time.
-const drainMat=new THREE.MeshStandardMaterial({color:0x59615f,roughness:.60,metalness:.48});
+const drainMat=new THREE.MeshStandardMaterial({
+  color:0x59615f,
+  roughness:.46,
+  metalness:.56,
+  map:metalWearTexture,
+  bumpMap:metalSurface.bump,
+  bumpScale:.0035,
+  envMapIntensity:.92
+});
 for(let i=0;i<7;i++){
   const slot=new THREE.Mesh(new THREE.BoxGeometry(.045,.018,.30),drainMat);
   slot.position.set(-.02,.065,-2.25+i*.24);
@@ -3038,9 +3046,29 @@ for(let i=0;i<3;i++){
 
 function createStreetBike(x,z,rotation=.08){
   const bike=new THREE.Group();
-  const tireMat=new THREE.MeshStandardMaterial({color:0x333a39,roughness:.90});
-  const frameMat=new THREE.MeshStandardMaterial({color:0x7f8d88,roughness:.56,metalness:.28});
-  const seatMat=new THREE.MeshStandardMaterial({color:0x574b43,roughness:.84});
+  const tireMat=new THREE.MeshStandardMaterial({
+    color:0x333a39,
+    roughness:.96,
+    metalness:0,
+    bumpMap:rubberMicroBump,
+    bumpScale:.010,
+    envMapIntensity:.08
+  });
+  const frameMat=new THREE.MeshStandardMaterial({
+    color:0x7f8d88,
+    roughness:.40,
+    metalness:.54,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.003,
+    envMapIntensity:.88
+  });
+  const seatMat=new THREE.MeshStandardMaterial({
+    color:0x574b43,
+    roughness:.91,
+    metalness:0,
+    envMapIntensity:.10
+  });
 
   [-.42,.42].forEach(wz=>{
     const wheel=new THREE.Mesh(new THREE.TorusGeometry(.26,.022,8,28),tireMat);
@@ -3126,14 +3154,28 @@ const menuLegMat=new THREE.MeshStandardMaterial({color:0x8c8174,roughness:.72});
 
 const cafeTerrace=new THREE.Mesh(
   new THREE.PlaneGeometry(3.25,6.15),
-  new THREE.MeshStandardMaterial({color:0xe9e1d5,roughness:.96})
+  new THREE.MeshStandardMaterial({
+    color:0xe9e1d5,
+    roughness:.965,
+    map:pavementTexture,
+    bumpMap:pavementMicroBump,
+    bumpScale:.009,
+    envMapIntensity:.05
+  })
 );
 cafeTerrace.rotation.x=-Math.PI/2;
 cafeTerrace.position.set(5.95,.046,6.95);
 cafeTerrace.receiveShadow=true;
 scene.add(cafeTerrace);
 
-const terraceTrimMat=new THREE.MeshStandardMaterial({color:0xcfc4b6,roughness:.92});
+const terraceTrimMat=new THREE.MeshStandardMaterial({
+  color:0xcfc4b6,
+  roughness:.94,
+  map:concreteSurface.map,
+  bumpMap:concreteSurface.bump,
+  bumpScale:.009,
+  envMapIntensity:.06
+});
 [
   [5.95,.050,3.89,3.28,.045],
   [5.95,.050,10.01,3.28,.045],
@@ -3168,11 +3210,12 @@ const cafeTableWood=new THREE.MeshStandardMaterial({
 });
 const cafeTableMetal=new THREE.MeshStandardMaterial({
   color:0x7f8783,
-  roughness:.52,
-  metalness:.34,
+  roughness:.42,
+  metalness:.48,
   map:metalSurface.map,
   bumpMap:metalSurface.bump,
-  bumpScale:.005
+  bumpScale:.005,
+  envMapIntensity:.90
 });
 const cafeSeatMat=new THREE.MeshStandardMaterial({
   color:0xe5ddd0,
@@ -3210,18 +3253,19 @@ createCafeTable(5.9,8.2);
 
 const terracePot=new THREE.Mesh(
   new THREE.CylinderGeometry(.15,.12,.22,14),
-  new THREE.MeshStandardMaterial({color:0xb98f76,roughness:.88})
+  new THREE.MeshStandardMaterial({
+    color:0xb98f76,
+    roughness:.93,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.010,
+    envMapIntensity:.06
+  })
 );
 terracePot.position.set(6.72,.16,7.05);
 terracePot.castShadow=true;
 scene.add(terracePot);
-const terracePlantMat=new THREE.MeshStandardMaterial({
-  color:0x789b70,
-  roughness:.92,
-  map:foliageSurface.map,
-  bumpMap:foliageSurface.bump,
-  bumpScale:.009
-});
+const terracePlantMat=makeFoliageMaterial(0x789b70,.91,.009,.019);
 for(let i=0;i<4;i++){
   const leaf=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),terracePlantMat);
   leaf.scale.set(.75,1.25,.55);
@@ -3245,7 +3289,15 @@ const cupMat=new THREE.MeshStandardMaterial({color:0xf0ece2,roughness:.72});
 [-9.5,8.7].forEach(z=>{
   const bollard=new THREE.Mesh(
     new THREE.CylinderGeometry(.065,.075,.72,12),
-    new THREE.MeshStandardMaterial({color:0x596266,roughness:.50,metalness:.48})
+    new THREE.MeshStandardMaterial({
+      color:0x596266,
+      roughness:.42,
+      metalness:.54,
+      map:metalWearTexture,
+      bumpMap:metalSurface.bump,
+      bumpScale:.0035,
+      envMapIntensity:.90
+    })
   );
   bollard.position.set(.35,.36,z);
   bollard.castShadow=true;
@@ -3254,7 +3306,15 @@ const cupMat=new THREE.MeshStandardMaterial({color:0xf0ece2,roughness:.72});
 
 const bin=new THREE.Mesh(
   new THREE.CylinderGeometry(.20,.23,.72,14),
-  new THREE.MeshStandardMaterial({color:0x4f5a58,roughness:.66,metalness:.22})
+  new THREE.MeshStandardMaterial({
+    color:0x4f5a58,
+    roughness:.58,
+    metalness:.30,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.004,
+    envMapIntensity:.72
+  })
 );
 bin.position.set(6.85,.36,-7.0);
 bin.castShadow=true;
@@ -3860,6 +3920,9 @@ function tunePedestrianAsset(root,index=0){
       if('metalness' in material){
         material.metalness=Math.min(material.metalness ?? 0,.025);
       }
+      if('envMapIntensity' in material){
+        material.envMapIntensity=Math.min(material.envMapIntensity ?? .24,.26);
+      }
       // Background pedestrians stay deliberately quieter than Mira. Slightly
       // reducing saturated clothing prevents five equally strong color spots
       // from competing with the focal character.
@@ -3888,18 +3951,21 @@ function tuneMiraAsset(root){
       }
 
       if(/skin|face|head|body/.test(key)){
-        if('roughness' in material) material.roughness=THREE.MathUtils.clamp(material.roughness ?? .68,.58,.72);
+        if('roughness' in material) material.roughness=THREE.MathUtils.clamp(material.roughness ?? .68,.60,.74);
         if(material.color){
           material.color.lerp(new THREE.Color(0xd6a18c),.055);
         }
+        if('envMapIntensity' in material) material.envMapIntensity=.22;
       }else if(/hair/.test(key)){
-        if('roughness' in material) material.roughness=THREE.MathUtils.clamp(material.roughness ?? .76,.70,.88);
+        if('roughness' in material) material.roughness=THREE.MathUtils.clamp(material.roughness ?? .76,.68,.84);
+        if('envMapIntensity' in material) material.envMapIntensity=.34;
       }else if('roughness' in material){
         material.roughness=THREE.MathUtils.clamp(material.roughness ?? .76,.68,.90);
+        if('envMapIntensity' in material) material.envMapIntensity=.28;
       }
 
       if(worldEnvironmentTexture && (material.isMeshStandardMaterial || material.isMeshPhysicalMaterial)){
-        material.envMapIntensity=Math.max(material.envMapIntensity ?? 0,.30);
+        material.envMap=worldEnvironmentTexture;
       }
       material.needsUpdate=true;
     });
