@@ -34,7 +34,8 @@
       pointerX:width*.5,
       pointerY:height*.5,
       pointerVisible:false,
-      pointerAlpha:0
+      pointerAlpha:0,
+      appHover:[0,0,0,0]
     };
 
     const apps=[
@@ -412,20 +413,25 @@
 
         const hovered=isHover(rect.key);
         const pressed=isPressed(rect.key);
-        const yLift=pressed?1:(hovered?-2:0);
+        const hoverMix=state.appHover[i] || 0;
+        const yLift=pressed?1:-2*hoverMix;
+        const localX=THREE.MathUtils.clamp((state.pointerX-(x+210))/210,-1,1);
+        const localY=THREE.MathUtils.clamp((state.pointerY-(y+63))/63,-1,1);
+        const magnetX=localX*hoverMix*2.4;
+        const magnetY=localY*hoverMix*1.5;
 
         ctx.save();
         ctx.translate(0,yLift);
 
-        if(hovered){
-          ctx.shadowColor='rgba('+app.rgb+',.15)';
-          ctx.shadowBlur=24;
-          ctx.shadowOffsetY=8;
+        if(hoverMix>.01){
+          ctx.shadowColor='rgba('+app.rgb+','+(.05+.11*hoverMix).toFixed(3)+')';
+          ctx.shadowBlur=14+12*hoverMix;
+          ctx.shadowOffsetY=5+4*hoverMix;
         }
 
         const surface=ctx.createLinearGradient(x,y,x+420,y+126);
-        surface.addColorStop(0,hovered?'rgba(18,26,39,.94)':'rgba(11,17,26,.88)');
-        surface.addColorStop(1,hovered?'rgba(11,18,29,.96)':'rgba(8,13,22,.90)');
+        surface.addColorStop(0,'rgba('+(11+7*hoverMix).toFixed(1)+','+(17+9*hoverMix).toFixed(1)+','+(26+13*hoverMix).toFixed(1)+','+(.88+.06*hoverMix).toFixed(3)+')');
+        surface.addColorStop(1,'rgba('+(8+3*hoverMix).toFixed(1)+','+(13+5*hoverMix).toFixed(1)+','+(22+7*hoverMix).toFixed(1)+','+(.90+.06*hoverMix).toFixed(3)+')');
         ctx.fillStyle=surface;
         roundedRect(x,y,420,126,28,true);
 
@@ -435,25 +441,44 @@
 
         strokeRoundRect(
           x,y,420,126,28,
-          hovered?'rgba('+app.rgb+',.28)':'rgba(255,255,255,.065)',
-          hovered?1.3:1
+          hoverMix>.01
+            ? 'rgba('+app.rgb+','+(.065+.215*hoverMix).toFixed(3)+')'
+            : 'rgba(255,255,255,.065)',
+          1+.3*hoverMix
         );
 
+        if(hoverMix>.01){
+          ctx.save();
+          roundedRect(x+1,y+1,418,124,27,false);
+          ctx.clip();
+          const edgeX=THREE.MathUtils.clamp(state.pointerX,x,x+420);
+          const edgeGlow=ctx.createLinearGradient(edgeX-90,y,edgeX+90,y);
+          edgeGlow.addColorStop(0,'rgba('+app.rgb+',0)');
+          edgeGlow.addColorStop(.5,'rgba('+app.rgb+','+(.06*hoverMix).toFixed(3)+')');
+          edgeGlow.addColorStop(1,'rgba('+app.rgb+',0)');
+          ctx.fillStyle=edgeGlow;
+          ctx.fillRect(x,y,420,2);
+          ctx.restore();
+        }
+
         // Restrained accent wash lives behind the icon rather than across text.
-        const glow=ctx.createRadialGradient(x+62,y+55,2,x+62,y+55,105);
-        glow.addColorStop(0,'rgba('+app.rgb+','+(hovered?'.17':'.095')+')');
+        const glow=ctx.createRadialGradient(x+62+magnetX,y+55+magnetY,2,x+62+magnetX,y+55+magnetY,105);
+        glow.addColorStop(0,'rgba('+app.rgb+','+(.095+.075*hoverMix).toFixed(3)+')');
         glow.addColorStop(.55,'rgba('+app.rgb+',.025)');
         glow.addColorStop(1,'rgba('+app.rgb+',0)');
         ctx.fillStyle=glow;
         roundedRect(x+1,y+1,418,124,27,true);
 
-        ctx.fillStyle='rgba('+app.rgb+','+(hovered?'.16':'.10')+')';
+        ctx.save();
+        ctx.translate(magnetX,magnetY);
+        ctx.fillStyle='rgba('+app.rgb+','+(.10+.06*hoverMix).toFixed(3)+')';
         roundedRect(x+20,y+20,70,70,20,true);
-        strokeRoundRect(x+20,y+20,70,70,20,'rgba('+app.rgb+','+(hovered?'.30':'.17')+')',1);
+        strokeRoundRect(x+20,y+20,70,70,20,'rgba('+app.rgb+','+(.17+.13*hoverMix).toFixed(3)+')',1);
         appIcon(app.id,x+55,y+55,38,app.accent);
+        ctx.restore();
 
-        text(app.label,x+112,y+49,23,'690','#f4f7fc');
-        text(app.short,x+112,y+72,13,'520','#72829a');
+        text(app.label,x+112+magnetX*.35,y+49+magnetY*.22,23,'690','#f4f7fc');
+        text(app.short,x+112+magnetX*.22,y+72+magnetY*.16,13,'520','#72829a');
 
         // System state on every tile makes the deck feel coherent and alive.
         ctx.fillStyle='rgba(255,255,255,.035)';
@@ -466,20 +491,20 @@
 
         text('0'+(i+1),x+24,y+111,10,'800','rgba('+app.rgb+',.60)');
 
-        ctx.strokeStyle=hovered?app.accent:'#4e5e73';
+        ctx.strokeStyle=hoverMix>.01
+          ? 'rgba('+app.rgb+','+(.28+.72*hoverMix).toFixed(3)+')'
+          : '#4e5e73';
         ctx.lineWidth=1.4;
         ctx.beginPath();
         ctx.arc(x+386,y+34,11,0,Math.PI*2);
         ctx.stroke();
-        text('›',x+382,y+39,15,'700',hovered?app.accent:'#617087');
+        text('›',x+382+magnetX*.45,y+39+magnetY*.2,15,'700',hoverMix>.01?app.accent:'#617087');
 
         // Short activity trace animates subtly on the hovered module.
         ctx.fillStyle='rgba(255,255,255,.045)';
         roundedRect(x+228,y+98,122,2,1,true);
-        const trace=hovered
-          ? 72+Math.sin(state.uiTime*4+i)*18
-          : 34+i*8;
-        ctx.fillStyle='rgba('+app.rgb+','+(hovered?'.65':'.32')+')';
+        const trace=(34+i*8)*(1-hoverMix)+(72+Math.sin(state.uiTime*4+i)*18)*hoverMix;
+        ctx.fillStyle='rgba('+app.rgb+','+(.32+.33*hoverMix).toFixed(3)+')';
         roundedRect(x+228,y+98,trace,2,1,true);
 
         if(app.id==='messages' && state.messageUnread){
@@ -1078,6 +1103,12 @@
       state.pointerX=THREE.MathUtils.lerp(state.pointerX,state.pointerTargetX,pointerFollow);
       state.pointerY=THREE.MathUtils.lerp(state.pointerY,state.pointerTargetY,pointerFollow);
       state.pointerAlpha=THREE.MathUtils.lerp(state.pointerAlpha,state.pointerVisible?1:0,alphaFollow);
+
+      const hoverFollow=1-Math.pow(.00045,Math.max(.001,dt));
+      state.appHover.forEach((value,i)=>{
+        const target=state.hoverKey==='app:'+apps[i].id ? 1 : 0;
+        state.appHover[i]=THREE.MathUtils.lerp(value,target,hoverFollow);
+      });
 
       if(state.messageReplyPending){
         state.messageReplyTimer+=dt;
