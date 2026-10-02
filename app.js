@@ -941,6 +941,64 @@ const facadeLeafMats=[
   });
 });
 
+function createWindowDisplay(z,kind='mori'){
+  const warm=kind==='atelier';
+  const shelfMat=new THREE.MeshStandardMaterial({
+    color:warm?0xb99c82:0xa7b4a8,
+    roughness:.82
+  });
+  const objectMats=warm
+    ? [
+        new THREE.MeshStandardMaterial({color:0xd6b39a,roughness:.76}),
+        new THREE.MeshStandardMaterial({color:0x8a6f62,roughness:.82}),
+        new THREE.MeshStandardMaterial({color:0xe4d7c5,roughness:.86})
+      ]
+    : [
+        new THREE.MeshStandardMaterial({color:0x829a86,roughness:.84}),
+        new THREE.MeshStandardMaterial({color:0xd9d7c9,roughness:.88}),
+        new THREE.MeshStandardMaterial({color:0x66746d,roughness:.80})
+      ];
+
+  [.90,1.38].forEach((y,shelfIndex)=>{
+    const shelf=new THREE.Mesh(new THREE.BoxGeometry(.30,.045,2.50),shelfMat);
+    shelf.position.set(8.10,y,z);
+    shelf.castShadow=true;
+    scene.add(shelf);
+
+    [-.76,-.28,.22,.72].forEach((oz,i)=>{
+      const mat=objectMats[(i+shelfIndex)%objectMats.length];
+      let object;
+      if((i+shelfIndex)%2===0){
+        object=new THREE.Mesh(new THREE.BoxGeometry(.20,.22+(i%2)*.08,.18),mat);
+      }else{
+        object=new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,.26+(i%2)*.07,12),mat);
+      }
+      object.position.set(7.90,y+.15,z+oz);
+      object.rotation.y=(i-1.5)*.12;
+      object.castShadow=true;
+      scene.add(object);
+    });
+  });
+
+  const displayLight=new THREE.Mesh(
+    new THREE.PlaneGeometry(2.55,1.55),
+    new THREE.MeshBasicMaterial({
+      color:warm?0xf2d4b7:0xd7e6dc,
+      transparent:true,
+      opacity:warm?.055:.042,
+      depthWrite:false,
+      toneMapped:false
+    })
+  );
+  displayLight.position.set(7.86,1.35,z);
+  displayLight.rotation.y=-Math.PI/2;
+  scene.add(displayLight);
+}
+
+createWindowDisplay(-10.6,'mori');
+createWindowDisplay(13.8,'atelier');
+
+
 // Ground-floor cafe corner.
 const cafeFrame=box(.48,3.0,8.5,0xb58e70,8.33,1.55,4.8,.72);
 cafeFrame.castShadow=false;
@@ -1092,6 +1150,63 @@ for(let z=2.95;z<=6.75;z+=1.90){
   shelf.position.set(8.23,1.62,z);
   scene.add(shelf);
 }
+
+const cafeDecalCanvas=document.createElement('canvas');
+cafeDecalCanvas.width=256;
+cafeDecalCanvas.height=512;
+const cafeDecalCtx=cafeDecalCanvas.getContext('2d');
+cafeDecalCtx.clearRect(0,0,256,512);
+cafeDecalCtx.fillStyle='rgba(244,238,225,.92)';
+cafeDecalCtx.textAlign='center';
+cafeDecalCtx.font='700 30px Inter, sans-serif';
+cafeDecalCtx.fillText('OPEN',128,152);
+cafeDecalCtx.font='500 18px Inter, sans-serif';
+cafeDecalCtx.fillStyle='rgba(244,238,225,.72)';
+cafeDecalCtx.fillText('08 — 18',128,186);
+cafeDecalCtx.strokeStyle='rgba(244,238,225,.42)';
+cafeDecalCtx.lineWidth=2;
+cafeDecalCtx.beginPath();
+cafeDecalCtx.moveTo(76,212);
+cafeDecalCtx.lineTo(180,212);
+cafeDecalCtx.stroke();
+cafeDecalCtx.font='600 16px Inter, sans-serif';
+cafeDecalCtx.fillText('COFFEE · BAKES',128,246);
+const cafeDecalTexture=new THREE.CanvasTexture(cafeDecalCanvas);
+cafeDecalTexture.colorSpace=THREE.SRGBColorSpace;
+const cafeWindowDecal=new THREE.Mesh(
+  new THREE.PlaneGeometry(.70,1.38),
+  new THREE.MeshBasicMaterial({
+    map:cafeDecalTexture,
+    transparent:true,
+    opacity:.76,
+    depthWrite:false,
+    toneMapped:false
+  })
+);
+cafeWindowDecal.position.set(7.78,1.56,6.78);
+cafeWindowDecal.rotation.y=-Math.PI/2;
+scene.add(cafeWindowDecal);
+
+const pastryMat=new THREE.MeshStandardMaterial({color:0xc9996d,roughness:.88});
+const trayMat=new THREE.MeshStandardMaterial({color:0x8d8175,roughness:.60,metalness:.16});
+[3.25,4.45,5.65].forEach((z,section)=>{
+  const tray=new THREE.Mesh(new THREE.BoxGeometry(.26,.025,.72),trayMat);
+  tray.position.set(7.87,1.08,z);
+  tray.castShadow=true;
+  scene.add(tray);
+
+  [-.22,0,.22].forEach((oz,i)=>{
+    const pastry=new THREE.Mesh(
+      new THREE.CylinderGeometry(.055+(i%2)*.012,.065,.055,12),
+      pastryMat
+    );
+    pastry.position.set(7.72,1.14,z+oz);
+    pastry.rotation.z=Math.PI/2;
+    pastry.castShadow=true;
+    scene.add(pastry);
+  });
+});
+
 
 // Buildings across the road give the boulevard depth but stay light enough for
 // the AI character to remain the visual focus.
@@ -1366,6 +1481,10 @@ miraPocket.position.set(3.75,.044,-1.55);
 miraPocket.receiveShadow=true;
 scene.add(miraPocket);
 
+const miraAmbientPool=createSunPool(3.18,-1.62,3.5,3.9,.10);
+miraAmbientPool.position.y=.056;
+
+
 const pocketInlayMat=new THREE.MeshBasicMaterial({
   color:0xf2ece2,
   transparent:true,
@@ -1637,6 +1756,53 @@ for(let i=0;i<3;i++){
   rack.castShadow=true;
   scene.add(rack);
 }
+
+function createStreetBike(x,z,rotation=.08){
+  const bike=new THREE.Group();
+  const tireMat=new THREE.MeshStandardMaterial({color:0x333a39,roughness:.90});
+  const frameMat=new THREE.MeshStandardMaterial({color:0x7f8d88,roughness:.56,metalness:.28});
+  const seatMat=new THREE.MeshStandardMaterial({color:0x574b43,roughness:.84});
+
+  [-.42,.42].forEach(wz=>{
+    const wheel=new THREE.Mesh(new THREE.TorusGeometry(.26,.022,8,28),tireMat);
+    wheel.rotation.y=Math.PI/2;
+    wheel.position.set(0,.30,wz);
+    wheel.castShadow=true;
+    bike.add(wheel);
+  });
+
+  const points=[
+    [new THREE.Vector3(0,.30,-.36),new THREE.Vector3(0,.62,-.05)],
+    [new THREE.Vector3(0,.62,-.05),new THREE.Vector3(0,.30,.34)],
+    [new THREE.Vector3(0,.30,.34),new THREE.Vector3(0,.30,-.36)],
+    [new THREE.Vector3(0,.62,-.05),new THREE.Vector3(0,.72,.24)]
+  ];
+  points.forEach(([a,b])=>{
+    const d=b.clone().sub(a);
+    const tube=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,d.length(),8),frameMat);
+    tube.position.copy(a).add(b).multiplyScalar(.5);
+    tube.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());
+    tube.castShadow=true;
+    bike.add(tube);
+  });
+
+  const seat=new THREE.Mesh(new THREE.BoxGeometry(.10,.045,.23),seatMat);
+  seat.position.set(0,.67,-.12);
+  seat.rotation.x=.06;
+  bike.add(seat);
+
+  const handle=new THREE.Mesh(new THREE.BoxGeometry(.055,.055,.30),frameMat);
+  handle.position.set(0,.76,.31);
+  bike.add(handle);
+
+  bike.position.set(x,0,z);
+  bike.rotation.y=rotation;
+  scene.add(bike);
+  return bike;
+}
+createStreetBike(5.93,-9.72,.08);
+createStreetBike(6.48,-9.88,-.10);
+
 
 // Small outdoor cafe setup turns the building edge into a believable place,
 // not just a facade.
