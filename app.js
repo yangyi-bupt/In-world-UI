@@ -970,6 +970,26 @@ const patchMat=new THREE.MeshBasicMaterial({
   scene.add(patch);
 });
 
+const pavementWearMat=new THREE.MeshBasicMaterial({
+  map:roadWearTexture,
+  transparent:true,
+  opacity:.18,
+  depthWrite:false,
+  toneMapped:false
+});
+[
+  [6.55,2.45,1.45,2.10,.05],
+  [5.95,6.90,2.55,5.30,-.02],
+  [3.65,-1.55,3.50,3.20,.10],
+  [6.15,-5.55,2.15,1.20,-.08]
+].forEach(([x,z,w,d,rot])=>{
+  const wear=new THREE.Mesh(new THREE.PlaneGeometry(w,d),pavementWearMat);
+  wear.rotation.x=-Math.PI/2;
+  wear.rotation.z=rot;
+  wear.position.set(x,.043,z);
+  scene.add(wear);
+});
+
 // Road lane markings and a distant crossing make the street continue beyond
 // the playable slice.
 const stripeMat=new THREE.MeshBasicMaterial({color:0xe8e6dc,transparent:true,opacity:.78});
@@ -1704,13 +1724,25 @@ cafeCounter.position.set(8.18,.72,4.85);
 cafeCounter.castShadow=true;
 scene.add(cafeCounter);
 
-const cafeBenchMat=new THREE.MeshStandardMaterial({color:0xb69b82,roughness:.88});
+const cafeBenchMat=new THREE.MeshStandardMaterial({
+  color:0xb69b82,
+  roughness:.87,
+  map:woodSurface.map,
+  bumpMap:woodSurface.bump,
+  bumpScale:.017
+});
 const cafeBench=new THREE.Mesh(new THREE.BoxGeometry(.34,.48,2.60),cafeBenchMat);
 cafeBench.position.set(8.18,.46,6.25);
 cafeBench.castShadow=true;
 scene.add(cafeBench);
 
-const cafeSmallTableMat=new THREE.MeshStandardMaterial({color:0xc9aa88,roughness:.82});
+const cafeSmallTableMat=new THREE.MeshStandardMaterial({
+  color:0xc9aa88,
+  roughness:.83,
+  map:woodSurface.map,
+  bumpMap:woodSurface.bump,
+  bumpScale:.017
+});
 [3.45,5.05,6.65].forEach(z=>{
   const top=new THREE.Mesh(new THREE.CylinderGeometry(.20,.20,.035,18),cafeSmallTableMat);
   top.position.set(7.92,.72,z);
@@ -2033,7 +2065,11 @@ const curbGroundcoverMat=new THREE.MeshStandardMaterial({
 ].forEach(([x,z,scale])=>createStreetTree(x,z,scale));
 
 function createPlanter(x,z,w=1.8){
-  box(w,.42,.72,0xbcb09d,x,.22,z,.92);
+  const planterBase=box(w,.42,.72,0xbcb09d,x,.22,z,.94);
+  planterBase.material.map=concreteSurface.map;
+  planterBase.material.bumpMap=concreteSurface.bump;
+  planterBase.material.bumpScale=.014;
+  planterBase.material.needsUpdate=true;
   const greens=[
     new THREE.MeshStandardMaterial({
       color:0x789d70,roughness:.93,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.009
@@ -2070,8 +2106,12 @@ const lowHedgeMat=new THREE.MeshStandardMaterial({
   bumpMap:foliageSurface.bump,
   bumpScale:.009
 });
-const hedgeBed=box(3.6,.22,.82,0xaa9d88,5.65,.11,-13.0,.94);
+const hedgeBed=box(3.6,.22,.82,0xaa9d88,5.65,.11,-13.0,.95);
 hedgeBed.castShadow=false;
+hedgeBed.material.map=concreteSurface.map;
+hedgeBed.material.bumpMap=concreteSurface.bump;
+hedgeBed.material.bumpScale=.013;
+hedgeBed.material.needsUpdate=true;
 for(let i=0;i<9;i++){
   const shrub=new THREE.Mesh(new THREE.SphereGeometry(.24+(i%3)*.025,12,9),lowHedgeMat);
   shrub.scale.set(1.12,.72,1);
@@ -2190,7 +2230,13 @@ const pocketBorderMat=new THREE.MeshStandardMaterial({
 // practical urban detail at the exact focal area.
 const ramp=new THREE.Mesh(
   new THREE.PlaneGeometry(1.35,1.55),
-  new THREE.MeshStandardMaterial({color:0xcec8bb,roughness:.94})
+  new THREE.MeshStandardMaterial({
+    color:0xcec8bb,
+    roughness:.96,
+    map:pavementTexture,
+    bumpMap:pavementMicroBump,
+    bumpScale:.010
+  })
 );
 ramp.rotation.x=-Math.PI/2;
 ramp.position.set(.76,.050,-1.55);
@@ -2276,7 +2322,13 @@ createSunPool(5.85,6.40,3.6,5.8,.14);
 
 const focalPlanterBase=new THREE.Mesh(
   new THREE.BoxGeometry(1.95,.34,.58),
-  new THREE.MeshStandardMaterial({color:0xc3b6a3,roughness:.93})
+  new THREE.MeshStandardMaterial({
+    color:0xc3b6a3,
+    roughness:.95,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.014
+  })
 );
 focalPlanterBase.position.set(4.95,.18,-4.72);
 focalPlanterBase.castShadow=true;
