@@ -74,9 +74,26 @@
       ctx.stroke();
     }
 
-    function appIcon(id,x,y,size,accent){
+    function appIcon(id,x,y,size,accent,energy=0){
       ctx.save();
       ctx.translate(x,y);
+
+      // The glyph now lives inside its own tiny "material" layer. Energy comes
+      // from hover and stays subtle at rest so icons feel embedded, not drawn on.
+      if(energy>.002){
+        const halo=ctx.createRadialGradient(0,0,size*.05,0,0,size*.62);
+        halo.addColorStop(0,accent);
+        halo.addColorStop(.28,'rgba(255,255,255,'+(.055*energy).toFixed(3)+')');
+        halo.addColorStop(1,'rgba(255,255,255,0)');
+        ctx.save();
+        ctx.globalAlpha=.08+.09*energy;
+        ctx.fillStyle=halo;
+        ctx.beginPath();
+        ctx.arc(0,0,size*.62,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+
       ctx.strokeStyle=accent;
       ctx.fillStyle=accent;
       ctx.lineWidth=Math.max(2,size*.055);
@@ -91,6 +108,13 @@
         ctx.lineTo(-size*.20,size*.36);
         ctx.lineTo(size*.02,size*.25);
         ctx.stroke();
+
+        const pulse=(Math.sin(state.uiTime*4.2)+1)*.5*energy;
+        ctx.globalAlpha=.35+.65*pulse;
+        ctx.beginPath();
+        ctx.arc(size*.18,-size*.03,size*.045+size*.018*pulse,0,Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha=1;
       }else if(id==='tasks'){
         [-.22,.05,.32].forEach((offset,i)=>{
           const yy=offset*size;
@@ -108,6 +132,13 @@
           ctx.lineTo(size*.34,yy);
           ctx.stroke();
         });
+
+        if(energy>.01){
+          const scanY=(-.30+.60*((state.uiTime*.55)%1))*size;
+          ctx.globalAlpha=.18+.28*energy;
+          ctx.fillRect(-size*.31,scanY,size*.62,Math.max(1,size*.025));
+          ctx.globalAlpha=1;
+        }
       }else if(id==='map'){
         ctx.beginPath();
         ctx.arc(0,-size*.06,size*.19,0,Math.PI*2);
@@ -119,6 +150,20 @@
         ctx.moveTo(-size*.14,size*.08);
         ctx.quadraticCurveTo(0,size*.34,size*.14,size*.08);
         ctx.stroke();
+
+        if(energy>.01){
+          const a=state.uiTime*.95;
+          ctx.globalAlpha=.20+.34*energy;
+          ctx.beginPath();
+          ctx.arc(
+            Math.cos(a)*size*.30,
+            Math.sin(a)*size*.16-size*.03,
+            size*.035,
+            0,Math.PI*2
+          );
+          ctx.fill();
+          ctx.globalAlpha=1;
+        }
       }else{
         const d=size*.30;
         const l=size*.14;
@@ -132,6 +177,13 @@
         ctx.beginPath();
         ctx.arc(0,0,size*.07,0,Math.PI*2);
         ctx.fill();
+
+        if(energy>.01){
+          const sweep=(state.uiTime*.72)%1;
+          ctx.globalAlpha=.16+.30*energy;
+          ctx.fillRect(-size*.25,(-.24+.48*sweep)*size,size*.50,Math.max(1,size*.022));
+          ctx.globalAlpha=1;
+        }
       }
       ctx.restore();
     }
@@ -394,15 +446,28 @@
       ctx.stroke();
       text('01',orbitX-9,orbitY+5,13,'800','#bdeaff');
 
-      text('LINK',906,154,10,'800','#5e718c');
-      text('98%',906,174,16,'720','#dce9f7');
-      text('ROOM',906,201,10,'800','#5e718c');
-      text('LIVE',906,221,16,'720','#9effc4');
+      const statusItems=[
+        ['MIRA','ONLINE','#7fd6ff'],
+        ['ROOM','ACTIVE','#9effc4'],
+        ['SYNC','98%','#cdb7ff']
+      ];
+      statusItems.forEach((item,i)=>{
+        const sy=142+i*29;
+        ctx.fillStyle='rgba(255,255,255,.030)';
+        roundedRect(894,sy,60,22,11,true);
+        ctx.fillStyle=item[2];
+        ctx.beginPath();
+        ctx.arc(905,sy+11,2.5,0,Math.PI*2);
+        ctx.fill();
+        text(item[0],914,sy+9,8,'800','#5f7088');
+        text(item[1],914,sy+18,9,'720','#c8d3e4');
+      });
 
       text('APPLICATION DECK',62,280,11,'800','#60718a');
       text('04 modules',854,280,11,'650','#55667d');
 
       appRects.length=0;
+      const focusLevel=Math.max(...state.appHover);
       apps.forEach((app,i)=>{
         const col=i%2;
         const row=Math.floor(i/2);
@@ -421,6 +486,8 @@
         const magnetY=localY*hoverMix*1.5;
 
         ctx.save();
+        const focusAlpha=1-focusLevel*(1-hoverMix)*.28;
+        ctx.globalAlpha=focusAlpha;
         ctx.translate(0,yLift);
 
         if(hoverMix>.01){
@@ -474,7 +541,22 @@
         ctx.fillStyle='rgba('+app.rgb+','+(.10+.06*hoverMix).toFixed(3)+')';
         roundedRect(x+20,y+20,70,70,20,true);
         strokeRoundRect(x+20,y+20,70,70,20,'rgba('+app.rgb+','+(.17+.13*hoverMix).toFixed(3)+')',1);
-        appIcon(app.id,x+55,y+55,38,app.accent);
+
+        if(hoverMix>.01){
+          ctx.save();
+          roundedRect(x+21,y+21,68,68,19,false);
+          ctx.clip();
+          const sweepX=x+2+((state.uiTime*.18+i*.21)%1)*110;
+          const iconSheen=ctx.createLinearGradient(sweepX-26,y+22,sweepX+26,y+88);
+          iconSheen.addColorStop(0,'rgba(255,255,255,0)');
+          iconSheen.addColorStop(.5,'rgba(255,255,255,'+(.055*hoverMix).toFixed(3)+')');
+          iconSheen.addColorStop(1,'rgba(255,255,255,0)');
+          ctx.fillStyle=iconSheen;
+          ctx.fillRect(x+20,y+20,70,70);
+          ctx.restore();
+        }
+
+        appIcon(app.id,x+55,y+55,38,app.accent,hoverMix);
         ctx.restore();
 
         text(app.label,x+112+magnetX*.35,y+49+magnetY*.22,23,'690','#f4f7fc');
@@ -788,6 +870,47 @@
       drawSystemFooter(appId || 'APP');
     }
 
+    function drawTransitionPortal(raw,kind,appId){
+      const index=apps.findIndex(app=>app.id===appId);
+      if(index<0) return;
+
+      const cardX=62+(index%2)*480;
+      const cardY=298+Math.floor(index/2)*146;
+      const cardW=420;
+      const cardH=126;
+      const shellX=44;
+      const shellY=194;
+      const shellW=936;
+      const shellH=468;
+
+      const openProgress=kind==='open' ? easeInOut(raw) : 1-easeInOut(raw);
+      const x=THREE.MathUtils.lerp(cardX,shellX,openProgress);
+      const y=THREE.MathUtils.lerp(cardY,shellY,openProgress);
+      const w=THREE.MathUtils.lerp(cardW,shellW,openProgress);
+      const h=THREE.MathUtils.lerp(cardH,shellH,openProgress);
+      const radius=THREE.MathUtils.lerp(28,34,openProgress);
+      const app=apps[index];
+      const envelope=Math.sin(Math.PI*THREE.MathUtils.clamp(raw,0,1));
+
+      ctx.save();
+      ctx.globalCompositeOperation='screen';
+      ctx.globalAlpha=.30*envelope;
+
+      const bloom=ctx.createRadialGradient(
+        x+w*.18,y+h*.22,4,
+        x+w*.18,y+h*.22,Math.max(w,h)*.60
+      );
+      bloom.addColorStop(0,'rgba('+app.rgb+',.26)');
+      bloom.addColorStop(.42,'rgba('+app.rgb+',.07)');
+      bloom.addColorStop(1,'rgba('+app.rgb+',0)');
+      ctx.fillStyle=bloom;
+      roundedRect(x,y,w,h,radius,true);
+
+      ctx.globalAlpha=.52*envelope;
+      strokeRoundRect(x,y,w,h,radius,'rgba('+app.rgb+',.42)',1.4);
+      ctx.restore();
+    }
+
     function easeOutCubic(t){
       return 1-Math.pow(1-t,3);
     }
@@ -913,10 +1036,17 @@
             drawHome,
             {dx:-54*p,dy:-3*p,scale:1-.018*p,alpha:1-p*.82}
           );
+          const contentP=THREE.MathUtils.clamp((raw-.08)/.92,0,1);
           drawLayer(
             ()=>drawApp(state.transitionApp),
-            {dx:86*(1-p),dy:4*(1-p),scale:.965+.035*easeOutCubic(raw),alpha:.18+.82*p}
+            {
+              dx:74*(1-p),
+              dy:3*(1-p),
+              scale:.972+.028*easeOutCubic(raw),
+              alpha:.10+.90*contentP
+            }
           );
+          drawTransitionPortal(raw,'open',state.transitionApp);
         }else{
           drawLayer(
             ()=>drawApp(state.transitionApp),
@@ -924,8 +1054,9 @@
           );
           drawLayer(
             drawHome,
-            {dx:-76*(1-p),dy:3*(1-p),scale:.972+.028*easeOutCubic(raw),alpha:.18+.82*p}
+            {dx:-66*(1-p),dy:3*(1-p),scale:.976+.024*easeOutCubic(raw),alpha:.16+.84*p}
           );
+          drawTransitionPortal(raw,'close',state.transitionApp);
         }
       }else if(state.activeApp){
         drawApp();
