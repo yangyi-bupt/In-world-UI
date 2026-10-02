@@ -470,6 +470,7 @@ function makeMicroBump(seed,repeat=8){
 
 const vehiclePaintMicroBump=makeMicroBump(0x26a4bd73,10);
 const rubberMicroBump=makeMicroBump(0x9f4c713a,6);
+const fabricMicroBump=makeMicroBump(0xc72e5b91,18);
 
 const glassReflectionCanvas=document.createElement('canvas');
 glassReflectionCanvas.width=128;
@@ -1035,8 +1036,12 @@ const facadeRibMat=new THREE.MeshStandardMaterial({
 
 const balconyStone=new THREE.MeshStandardMaterial({color:0xd8cfc2,roughness:.86});
 const balconyGreenMats=[
-  new THREE.MeshStandardMaterial({color:0x789a70,roughness:.96}),
-  new THREE.MeshStandardMaterial({color:0x93ad80,roughness:.95})
+  new THREE.MeshStandardMaterial({
+    color:0x789a70,roughness:.93,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
+  }),
+  new THREE.MeshStandardMaterial({
+    color:0x93ad80,roughness:.91,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
+  })
 ];
 [-15.2,-.8,13.6].forEach((z,balconyIndex)=>{
   const slab=new THREE.Mesh(new THREE.BoxGeometry(.82,.10,3.20),balconyStone);
@@ -1254,8 +1259,12 @@ const facadePlanterMat=new THREE.MeshStandardMaterial({
   bumpScale:.014
 });
 const facadeLeafMats=[
-  new THREE.MeshStandardMaterial({color:0x78986f,roughness:.96}),
-  new THREE.MeshStandardMaterial({color:0x91ad80,roughness:.95})
+  new THREE.MeshStandardMaterial({
+    color:0x78986f,roughness:.93,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
+  }),
+  new THREE.MeshStandardMaterial({
+    color:0x91ad80,roughness:.91,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
+  })
 ];
 [-10.6,13.8].forEach((z,groupIndex)=>{
   const interiorWash=new THREE.Mesh(
@@ -1438,8 +1447,18 @@ cafeSign.position.set(7.77,3.38,4.8);
 cafeSign.rotation.y=-Math.PI/2;
 scene.add(cafeSign);
 
-const awningCream=new THREE.MeshStandardMaterial({color:0xf0e5d3,roughness:.78});
-const awningApricot=new THREE.MeshStandardMaterial({color:0xd8aa86,roughness:.76});
+const awningCream=new THREE.MeshStandardMaterial({
+  color:0xf0e5d3,
+  roughness:.84,
+  bumpMap:fabricMicroBump,
+  bumpScale:.007
+});
+const awningApricot=new THREE.MeshStandardMaterial({
+  color:0xd8aa86,
+  roughness:.82,
+  bumpMap:fabricMicroBump,
+  bumpScale:.007
+});
 const awningDepth=5.18/7;
 for(let i=0;i<7;i++){
   const slat=new THREE.Mesh(
@@ -1806,7 +1825,13 @@ function createStreetTree(x,z,scale=1){
   [.92,16.65,.93]
 ].forEach(([x,z,scale])=>createStreetTree(x,z,scale));
 
-const curbGroundcoverMat=new THREE.MeshStandardMaterial({color:0x8ea27a,roughness:.98});
+const curbGroundcoverMat=new THREE.MeshStandardMaterial({
+  color:0x8ea27a,
+  roughness:.94,
+  map:foliageSurface.map,
+  bumpMap:foliageSurface.bump,
+  bumpScale:.009
+});
 [-6.4,10.8].forEach(z=>{
   [-.31,-.15,.14,.30].forEach((dx,i)=>{
     const tuft=new THREE.Mesh(new THREE.ConeGeometry(.055,.20,7),curbGroundcoverMat);
@@ -1825,9 +1850,15 @@ const curbGroundcoverMat=new THREE.MeshStandardMaterial({color:0x8ea27a,roughnes
 function createPlanter(x,z,w=1.8){
   box(w,.42,.72,0xbcb09d,x,.22,z,.92);
   const greens=[
-    new THREE.MeshStandardMaterial({color:0x789d70,roughness:.96}),
-    new THREE.MeshStandardMaterial({color:0x91b77e,roughness:.95}),
-    new THREE.MeshStandardMaterial({color:0x6f9765,roughness:.97})
+    new THREE.MeshStandardMaterial({
+      color:0x789d70,roughness:.93,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.009
+    }),
+    new THREE.MeshStandardMaterial({
+      color:0x91b77e,roughness:.91,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
+    }),
+    new THREE.MeshStandardMaterial({
+      color:0x6f9765,roughness:.94,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.010
+    })
   ];
   const offsets=[
     [-.34,-.05,.94],
@@ -1847,7 +1878,13 @@ function createPlanter(x,z,w=1.8){
 createPlanter(6.6,-8.3,2.2);
 createPlanter(6.6,11.8,2.5);
 
-const lowHedgeMat=new THREE.MeshStandardMaterial({color:0x78956e,roughness:.96});
+const lowHedgeMat=new THREE.MeshStandardMaterial({
+  color:0x78956e,
+  roughness:.93,
+  map:foliageSurface.map,
+  bumpMap:foliageSurface.bump,
+  bumpScale:.009
+});
 const hedgeBed=box(3.6,.22,.82,0xaa9d88,5.65,.11,-13.0,.94);
 hedgeBed.castShadow=false;
 for(let i=0;i<9;i++){
@@ -2019,8 +2056,12 @@ pocketCup.castShadow=true;
 scene.add(pocketCup);
 
 const pocketGreenMats=[
-  new THREE.MeshStandardMaterial({color:0x789a70,roughness:.95}),
-  new THREE.MeshStandardMaterial({color:0x86a879,roughness:.94})
+  new THREE.MeshStandardMaterial({
+    color:0x789a70,roughness:.92,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.009
+  }),
+  new THREE.MeshStandardMaterial({
+    color:0x86a879,roughness:.90,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
+  })
 ];
 for(let i=0;i<7;i++){
   const shrub=new THREE.Mesh(
@@ -2058,8 +2099,12 @@ focalPlanterBase.receiveShadow=true;
 scene.add(focalPlanterBase);
 
 const focalPlantMats=[
-  new THREE.MeshStandardMaterial({color:0x7d9f72,roughness:.96}),
-  new THREE.MeshStandardMaterial({color:0x91ad7e,roughness:.95})
+  new THREE.MeshStandardMaterial({
+    color:0x7d9f72,roughness:.92,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.009
+  }),
+  new THREE.MeshStandardMaterial({
+    color:0x91ad7e,roughness:.90,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
+  })
 ];
 [
   [-.70,.00,.92],
@@ -2370,7 +2415,13 @@ const terracePot=new THREE.Mesh(
 terracePot.position.set(6.72,.16,7.05);
 terracePot.castShadow=true;
 scene.add(terracePot);
-const terracePlantMat=new THREE.MeshStandardMaterial({color:0x789b70,roughness:.95});
+const terracePlantMat=new THREE.MeshStandardMaterial({
+  color:0x789b70,
+  roughness:.92,
+  map:foliageSurface.map,
+  bumpMap:foliageSurface.bump,
+  bumpScale:.009
+});
 for(let i=0;i<4;i++){
   const leaf=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),terracePlantMat);
   leaf.scale.set(.75,1.25,.55);
