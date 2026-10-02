@@ -471,6 +471,33 @@ function makeMaterialTexture(kind,seed){
       r.lineTo(x+len,y+(rnd()-.5)*2);
       r.stroke();
     }
+
+    // Subtle oxidation blooms vary both albedo and roughness. They stay faint
+    // enough for maintained street furniture, but stop large metal surfaces
+    // from reading as perfectly uniform factory-fresh paint.
+    for(let i=0;i<28;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const radius=8+rnd()*36;
+      const warm=rnd()>.58;
+      const grad=g.createRadialGradient(x,y,0,x,y,radius);
+      grad.addColorStop(
+        0,
+        warm
+          ? 'rgba(126,82,51,'+(.010+rnd()*.026).toFixed(3)+')'
+          : 'rgba(79,103,92,'+(.009+rnd()*.022).toFixed(3)+')'
+      );
+      grad.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=grad;
+      g.fillRect(x-radius,y-radius,radius*2,radius*2);
+
+      const rv=158+Math.floor(rnd()*42);
+      const rg=r.createRadialGradient(x,y,0,x,y,radius);
+      rg.addColorStop(0,'rgba('+rv+','+rv+','+rv+','+(.08+rnd()*.16).toFixed(3)+')');
+      rg.addColorStop(1,'rgba('+rv+','+rv+','+rv+',0)');
+      r.fillStyle=rg;
+      r.fillRect(x-radius,y-radius,radius*2,radius*2);
+    }
   }else{
     const pores=isLimestone
       ? 1500
@@ -899,6 +926,34 @@ function makeMicroBump(seed,repeat=8){
 const vehiclePaintMicroBump=makeMicroBump(0x26a4bd73,10);
 const rubberMicroBump=makeMicroBump(0x9f4c713a,6);
 const fabricMicroBump=makeMicroBump(0xc72e5b91,18);
+const skinMicroBump=makeMicroBump(0x39ae72c1,7);
+
+function makeOrangePeelNormal(seed,repeat=9){
+  const size=192;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+  g.fillStyle='#808080';
+  g.fillRect(0,0,size,size);
+
+  for(let i=0;i<1750;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const radius=.35+rnd()*1.25;
+    const v=121+Math.floor(rnd()*18);
+    g.fillStyle='rgba('+v+','+v+','+v+','+(.22+rnd()*.34).toFixed(3)+')';
+    g.beginPath();
+    g.arc(x,y,radius,0,Math.PI*2);
+    g.fill();
+  }
+
+  const normal=makeNormalTextureFromHeight(canvas,.72);
+  normal.repeat.set(repeat,repeat);
+  normal.anisotropy=8;
+  return normal;
+}
+const vehicleClearcoatNormal=makeOrangePeelNormal(0x7ea14d92,10);
 
 function makeSubjectRoughnessTexture(kind,seed,repeatX,repeatY){
   const size=256;
@@ -6330,6 +6385,8 @@ function tuneVehicleAsset(root,bodyColor){
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=.72;
           material.clearcoatRoughness=.18;
+          material.clearcoatNormalMap=vehicleClearcoatNormal;
+          material.clearcoatNormalScale?.set(.045,.045);
           if('specularIntensity' in material) material.specularIntensity=.72;
         }
       }else if(material.color){
@@ -6382,6 +6439,10 @@ function tunePedestrianAsset(root,index=0){
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=skinRoughnessTexture;
         }
+        if(hasUv && 'bumpMap' in material && !material.bumpMap){
+          material.bumpMap=skinMicroBump;
+          material.bumpScale=.0008;
+        }
       }else if(/hair/.test(key)){
         if('roughness' in material){
           material.roughness=THREE.MathUtils.clamp(material.roughness ?? .78,.72,.86);
@@ -6397,6 +6458,10 @@ function tunePedestrianAsset(root,index=0){
         if('envMapIntensity' in material) material.envMapIntensity=.10;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=clothRoughnessTexture;
+        }
+        if(hasUv && 'bumpMap' in material && !material.bumpMap){
+          material.bumpMap=fabricMicroBump;
+          material.bumpScale=.0020;
         }
       }
 
@@ -6446,6 +6511,10 @@ function tuneMiraAsset(root){
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=skinRoughnessTexture;
         }
+        if(hasUv && 'bumpMap' in material && !material.bumpMap){
+          material.bumpMap=skinMicroBump;
+          material.bumpScale=.0012;
+        }
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=0;
           if('specularIntensity' in material) material.specularIntensity=.50;
@@ -6475,6 +6544,10 @@ function tuneMiraAsset(root){
         if('envMapIntensity' in material) material.envMapIntensity=.14;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=clothRoughnessTexture;
+        }
+        if(hasUv && 'bumpMap' in material && !material.bumpMap){
+          material.bumpMap=fabricMicroBump;
+          material.bumpScale=.0028;
         }
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=0;
