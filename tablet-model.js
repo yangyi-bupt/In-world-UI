@@ -640,6 +640,17 @@
       const hold=holdAmount*holdAmount*(3-2*holdAmount);
       const hidden=1-hold;
 
+      // The two hands do not establish contact on the exact same frame. The
+      // dominant/right side catches the lower rail first, then the left hand
+      // closes a fraction later. On the way down the same offsets naturally
+      // unwind in reverse without introducing timers or input latency.
+      const rightGripRaw=THREE.MathUtils.clamp((holdAmount+.035)/1.035,0,1);
+      const leftGripRaw=THREE.MathUtils.clamp((holdAmount-.045)/.955,0,1);
+      const rightGrip=rightGripRaw*rightGripRaw*(3-2*rightGripRaw);
+      const leftGrip=leftGripRaw*leftGripRaw*(3-2*leftGripRaw);
+      const leftGripHidden=1-leftGrip;
+      const rightGripHidden=1-rightGrip;
+
       // The hardware and hands now share one physical raise/lower pose. Pointer
       // parallax is intentionally subtle so the tablet still reads as a held object.
       rig.scale.setScalar(.965+.035*hold);
@@ -667,8 +678,8 @@
       rig.position.y=hidden*.115 + swayY - pointerY*.006*hold + inertiaY*.16*hold - catchDirectionY*catchAmount*.0010*hold - impact*.0035 + impactY*.0015;
       rig.position.z=-hidden*.055-impact*.014-catchAmount*.0065*hold;
 
-      leftHand.rotation.z=-pointerX*.004*hold-inertiaX*.11*hold;
-      rightHand.rotation.z=-pointerX*.004*hold-inertiaX*.11*hold;
+      leftHand.rotation.z=-.010*leftGripHidden-pointerX*.004*leftGrip-inertiaX*.11*leftGrip;
+      rightHand.rotation.z=.008*rightGripHidden-pointerX*.004*rightGrip-inertiaX*.11*rightGrip;
 
       const leftSide=leftHand.userData.side;
       const rightSide=rightHand.userData.side;
@@ -686,10 +697,12 @@
       const rightBreath=(Math.sin(t*.67+2.6)+Math.sin(t*1.33+1.7)*.18)*.0010*hold*(.45+.55*steady);
 
       const catchGrip=catchAmount*.0028*hold;
-      leftHand.position.x=leftSide*.042*hidden-leftSide*(leftLoad*.005+leftSupport*.0018+catchGrip);
-      rightHand.position.x=rightSide*.042*hidden-rightSide*(rightLoad*.005+rightSupport*.0018+catchGrip);
-      leftHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-leftLoad*.0022+leftBreath-verticalBias*.0022;
-      rightHand.position.y=-.035*hidden+Math.sin(t*.83)*.0015*hold-rightLoad*.0022+rightBreath+verticalBias*.0022;
+      leftHand.position.x=leftSide*.050*leftGripHidden-leftSide*(leftLoad*.0055+leftSupport*.0020+catchGrip);
+      rightHand.position.x=rightSide*.047*rightGripHidden-rightSide*(rightLoad*.0055+rightSupport*.0020+catchGrip);
+      leftHand.position.y=-.043*leftGripHidden+Math.sin(t*.83)*.0015*leftGrip-leftLoad*.0024+leftBreath-verticalBias*.0022;
+      rightHand.position.y=-.038*rightGripHidden+Math.sin(t*.83+.18)*.0014*rightGrip-rightLoad*.0024+rightBreath+verticalBias*.0022;
+      leftHand.position.z=-.020*leftGripHidden-leftLoad*.0016-catchAmount*.0012;
+      rightHand.position.z=-.016*rightGripHidden-rightLoad*.0016-catchAmount*.0012;
 
       // Wrists counter-rotate against tablet inertia; palms and thumb roots
       // compress by different amounts so the device feels supported, not glued.
@@ -700,12 +713,18 @@
 
       leftHand.userData.palm.rotation.z=leftSide*(.09+leftSupport*.010+impact*.006);
       rightHand.userData.palm.rotation.z=rightSide*(.09+rightSupport*.010+impact*.006);
-      leftHand.userData.palmHeel.rotation.z=leftSide*(.18+leftSupport*.012+leftLoad*.010);
-      rightHand.userData.palmHeel.rotation.z=rightSide*(.18+rightSupport*.012+rightLoad*.010);
+      leftHand.userData.palmHeel.rotation.z=leftSide*(.18+leftSupport*.014+leftLoad*.012);
+      rightHand.userData.palmHeel.rotation.z=rightSide*(.18+rightSupport*.014+rightLoad*.012);
+      leftHand.userData.palmHeel.scale.x=.76-leftLoad*.020-catchAmount*.008;
+      rightHand.userData.palmHeel.scale.x=.76-rightLoad*.020-catchAmount*.008;
       leftHand.userData.knucklePad.scale.y=1-leftLoad*.035-catchAmount*.016;
       rightHand.userData.knucklePad.scale.y=1-rightLoad*.035-catchAmount*.016;
-      leftHand.userData.thumbRoot.rotation.z=leftSide*(.18+leftSupport*.020+leftLoad*.018);
-      rightHand.userData.thumbRoot.rotation.z=rightSide*(.18+rightSupport*.020+rightLoad*.018);
+      leftHand.userData.thumbRoot.rotation.z=leftSide*(.18+leftSupport*.022+leftLoad*.020);
+      rightHand.userData.thumbRoot.rotation.z=rightSide*(.18+rightSupport*.022+rightLoad*.020);
+      leftHand.userData.thumbRoot.position.x=leftSide*(1.455-leftLoad*.0038-catchAmount*.0018);
+      rightHand.userData.thumbRoot.position.x=rightSide*(1.455-rightLoad*.0038-catchAmount*.0018);
+      leftHand.userData.thumbRoot.position.z=-.070+leftLoad*.0030;
+      rightHand.userData.thumbRoot.position.z=-.070+rightLoad*.0030;
 
       leftHand.userData.rearFingers.forEach((finger,index)=>{
         finger.rotation.x=.30+index*.055+leftLoad*(.028+index*.005)+catchAmount*.010;
@@ -716,10 +735,16 @@
         finger.position.x=rightSide*(1.438+index*.006-rightLoad*.0022);
       });
 
-      leftHand.userData.thumb.rotation.x=.28+.06*hold+leftLoad*.055+leftSupport*.010+catchAmount*.018;
-      rightHand.userData.thumb.rotation.x=.28+.06*hold+rightLoad*.055+rightSupport*.010+catchAmount*.018;
-      leftHand.userData.thumb.rotation.z=leftSide*(.76+.08*hold+leftLoad*.042+leftSupport*.012);
-      rightHand.userData.thumb.rotation.z=rightSide*(.76+.08*hold+rightLoad*.042+rightSupport*.012);
+      leftHand.userData.thumb.rotation.x=.27+.07*leftGrip+leftLoad*.060+leftSupport*.011+catchAmount*.020;
+      rightHand.userData.thumb.rotation.x=.27+.07*rightGrip+rightLoad*.060+rightSupport*.011+catchAmount*.020;
+      leftHand.userData.thumb.rotation.z=leftSide*(.75+.09*leftGrip+leftLoad*.046+leftSupport*.013);
+      rightHand.userData.thumb.rotation.z=rightSide*(.75+.09*rightGrip+rightLoad*.046+rightSupport*.013);
+      leftHand.userData.thumb.position.x=leftSide*(1.455-leftLoad*.0045-catchAmount*.0020);
+      rightHand.userData.thumb.position.x=rightSide*(1.455-rightLoad*.0045-catchAmount*.0020);
+      leftHand.userData.thumb.position.z=-.012+leftLoad*.0040;
+      rightHand.userData.thumb.position.z=-.012+rightLoad*.0040;
+      leftHand.userData.nail.position.x=leftSide*(1.407-leftLoad*.0040);
+      rightHand.userData.nail.position.x=rightSide*(1.407-rightLoad*.0040);
 
       // Material response: the metal gets slightly sharper at steeper pointer
       // angles, while the camera lens catches a moving pin-prick reflection.
