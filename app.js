@@ -2618,19 +2618,47 @@ function createStreetTree(x,z,scale=1){
     makeFoliageMaterial(0x6f9765,.93,.011,.016)
   ];
   [
-    [0,.02,0,.86,1.08,.92],
-    [-.42,.02,.06,.62,1.12,.88],
-    [.40,.10,-.06,.68,1.06,.90],
-    [-.18,.46,-.02,.60,1.14,.86],
-    [.24,.50,.04,.57,1.12,.88],
-    [0,.82,0,.49,1.16,.84]
-  ].forEach(([ox,oy,oz,r,sy,sz],index)=>{
+    [0,.02,0,.86,1.08,.92,.04],
+    [-.42,.02,.06,.62,1.12,.88,-.12],
+    [.40,.10,-.06,.68,1.06,.90,.11],
+    [-.18,.46,-.02,.60,1.14,.86,-.08],
+    [.24,.50,.04,.57,1.12,.88,.10],
+    [0,.82,0,.49,1.16,.84,-.04]
+  ].forEach(([ox,oy,oz,r,sy,sz,rz],index)=>{
     const leaf=new THREE.Mesh(new THREE.IcosahedronGeometry(r*scale,2),leafMats[index%leafMats.length]);
     leaf.position.set(ox*scale,oy*scale,oz*scale);
     leaf.scale.set(.86,sy*1.06,sz*.90);
+    leaf.rotation.z=rz;
+    leaf.rotation.y=(index-2.5)*.08;
     leaf.castShadow=true;
     leaf.receiveShadow=true;
     crown.add(leaf);
+  });
+
+  // Smaller outer clusters interrupt the six-lobed "balloon" silhouette and
+  // create twig-scale depth without the cost of thousands of leaf cards.
+  [
+    [-.66,.18,.18,.25,.82,1.18,.72],
+    [.63,.26,.12,.28,.88,1.12,.76],
+    [-.49,.68,-.14,.24,.80,1.22,.70],
+    [.46,.78,-.10,.22,.84,1.20,.74],
+    [-.10,1.02,.08,.21,.78,1.24,.68],
+    [.18,-.20,.16,.27,.92,1.06,.80]
+  ].forEach(([ox,oy,oz,r,sx,sy,sz],index)=>{
+    const cluster=new THREE.Mesh(
+      new THREE.IcosahedronGeometry(r*scale,1),
+      leafMats[(index+1)%leafMats.length]
+    );
+    cluster.position.set(ox*scale,oy*scale,oz*scale);
+    cluster.scale.set(sx,sy,sz);
+    cluster.rotation.set(
+      (index%2?.08:-.06),
+      index*.31,
+      (index%3-1)*.10
+    );
+    cluster.castShadow=true;
+    cluster.receiveShadow=true;
+    crown.add(cluster);
   });
 
   const crownShadeMat=makeFoliageMaterial(0x63875e,.94,.010,.012);
@@ -2696,18 +2724,33 @@ function createPlanter(x,z,w=1.8){
     makeFoliageMaterial(0x6f9765,.94,.010,.014)
   ];
   const offsets=[
-    [-.34,-.05,.94],
-    [-.18,.04,1.08],
-    [0,-.03,.98],
-    [.19,.05,1.12],
-    [.35,-.02,.92]
+    [-.34,-.05,.94,-.10],
+    [-.18,.04,1.08,.08],
+    [0,-.03,.98,-.05],
+    [.19,.05,1.12,.12],
+    [.35,-.02,.92,-.08]
   ];
-  offsets.forEach(([nx,nz,ss],i)=>{
-    const shrub=new THREE.Mesh(new THREE.SphereGeometry(.25,12,9),greens[i%greens.length]);
-    shrub.scale.set(1.14*ss,.76*ss,.94*ss);
+  offsets.forEach(([nx,nz,ss,tilt],i)=>{
+    const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.25,1),greens[i%greens.length]);
+    shrub.scale.set(1.18*ss,.78*ss,.92*ss);
     shrub.position.set(x+w*nx,.54+(i%2)*.035,z+nz);
+    shrub.rotation.set(tilt*.4,(i-2)*.28,tilt);
     shrub.castShadow=true;
     scene.add(shrub);
+
+    const tip=new THREE.Mesh(
+      new THREE.IcosahedronGeometry(.13,1),
+      greens[(i+1)%greens.length]
+    );
+    tip.scale.set(.78,1.10,.72);
+    tip.position.set(
+      x+w*nx+(i%2?.055:-.045),
+      .70+(i%2)*.030,
+      z+nz+(i%2?-.025:.035)
+    );
+    tip.rotation.z=-tilt;
+    tip.castShadow=true;
+    scene.add(tip);
   });
 }
 createPlanter(6.6,-8.3,2.2);
@@ -2721,9 +2764,10 @@ hedgeBed.material.bumpMap=concreteSurface.bump;
 hedgeBed.material.bumpScale=.013;
 hedgeBed.material.needsUpdate=true;
 for(let i=0;i<9;i++){
-  const shrub=new THREE.Mesh(new THREE.SphereGeometry(.24+(i%3)*.025,12,9),lowHedgeMat);
-  shrub.scale.set(1.12,.72,1);
+  const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.24+(i%3)*.025,1),lowHedgeMat);
+  shrub.scale.set(1.14,.74,.98);
   shrub.position.set(4.20+i*.36,.42+(i%3)*.018,-13.0+([-.06,.03,.08][i%3]));
+  shrub.rotation.set((i%2?1:-1)*.05,i*.21,(i%3-1)*.07);
   shrub.castShadow=true;
   scene.add(shrub);
 }
@@ -2901,11 +2945,12 @@ const pocketGreenMats=[
 ];
 for(let i=0;i<7;i++){
   const shrub=new THREE.Mesh(
-    new THREE.SphereGeometry(.25+(i%2)*.035,12,9),
+    new THREE.IcosahedronGeometry(.25+(i%2)*.035,1),
     pocketGreenMats[i%2]
   );
-  shrub.scale.set(1.05,.74,.90);
+  shrub.scale.set(1.08,.76,.90);
   shrub.position.set(5.30+i*.31,.66,-2.27+(i%2)*.035);
+  shrub.rotation.set((i%2?.06:-.05),i*.27,(i%3-1)*.08);
   shrub.castShadow=true;
   scene.add(shrub);
 }
@@ -2961,9 +3006,10 @@ const focalPlantMats=[
   [.48,-.02,.98],
   [.72,.03,.90]
 ].forEach(([ox,oz,ss],i)=>{
-  const plant=new THREE.Mesh(new THREE.SphereGeometry(.24,12,9),focalPlantMats[i%2]);
-  plant.scale.set(1.05*ss,.72*ss,.92*ss);
+  const plant=new THREE.Mesh(new THREE.IcosahedronGeometry(.24,1),focalPlantMats[i%2]);
+  plant.scale.set(1.08*ss,.74*ss,.92*ss);
   plant.position.set(4.95+ox,.48+(i%2)*.035,-4.72+oz);
+  plant.rotation.set((i%2?.07:-.05),i*.35,(i%3-1)*.09);
   plant.castShadow=true;
   scene.add(plant);
 });
@@ -3356,11 +3402,17 @@ terracePot.position.set(6.72,.16,7.05);
 terracePot.castShadow=true;
 scene.add(terracePot);
 const terracePlantMat=makeFoliageMaterial(0x789b70,.91,.009,.019);
-for(let i=0;i<4;i++){
-  const leaf=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),terracePlantMat);
-  leaf.scale.set(.75,1.25,.55);
-  leaf.position.set(6.72+(i-1.5)*.055,.34+(i%2)*.045,7.05+(i%2?-.03:.03));
-  leaf.rotation.z=(i-1.5)*.34;
+for(let i=0;i<5;i++){
+  const leaf=new THREE.Mesh(new THREE.IcosahedronGeometry(.11+(i%2)*.012,1),terracePlantMat);
+  leaf.scale.set(.64,1.34,.48);
+  leaf.position.set(
+    6.72+(i-2)*.050,
+    .34+(i%3)*.040,
+    7.05+(i%2?-.035:.035)
+  );
+  leaf.rotation.z=(i-2)*.30;
+  leaf.rotation.x=(i%2?.10:-.08);
+  leaf.rotation.y=i*.55;
   leaf.castShadow=true;
   scene.add(leaf);
 }
