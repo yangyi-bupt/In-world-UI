@@ -1016,6 +1016,28 @@ curb.material.bumpMap=concreteSurface.bump;
 curb.material.bumpScale=.012;
 curb.material.needsUpdate=true;
 
+// Soft curb scuffs collect near wheel height and break the otherwise perfectly
+// even ninety-metre concrete edge.
+const curbScuffMat=new THREE.MeshBasicMaterial({
+  map:roadWearTexture,
+  transparent:true,
+  opacity:.18,
+  depthWrite:false,
+  toneMapped:false
+});
+[
+  [-17.5,8.6],
+  [-2.2,10.4],
+  [12.8,7.0],
+  [26.1,6.5]
+].forEach(([z,length],index)=>{
+  const scuff=new THREE.Mesh(new THREE.PlaneGeometry(.105,length),curbScuffMat);
+  scuff.position.set(-.103,.095,z);
+  scuff.rotation.y=Math.PI/2;
+  scuff.rotation.z=(index%2?1:-1)*.015;
+  scene.add(scuff);
+});
+
 const curbCap=box(.09,.035,92,0xe9e3d7,.18,.185,-4,.90);
 curbCap.material.map=concreteSurface.map;
 curbCap.material.bumpMap=concreteSurface.bump;
@@ -1239,9 +1261,18 @@ for(let x=-12.6;x<-1.0;x+=1.45){
   scene.add(cross);
 }
 
+const utilityMetalMat=new THREE.MeshStandardMaterial({
+  color:0x51595a,
+  roughness:.72,
+  metalness:.30,
+  map:metalWearTexture,
+  bumpMap:metalSurface.bump,
+  bumpScale:.005,
+  side:THREE.DoubleSide
+});
 const utilityCover=new THREE.Mesh(
   new THREE.RingGeometry(.27,.39,28),
-  new THREE.MeshStandardMaterial({color:0x51595a,roughness:.86,metalness:.20,side:THREE.DoubleSide})
+  utilityMetalMat
 );
 utilityCover.rotation.x=-Math.PI/2;
 utilityCover.position.set(-8.55,.031,2.8);
@@ -1250,11 +1281,49 @@ scene.add(utilityCover);
 
 const utilityCenter=new THREE.Mesh(
   new THREE.CircleGeometry(.265,28),
-  new THREE.MeshStandardMaterial({color:0x5d6464,roughness:.92,metalness:.12,side:THREE.DoubleSide})
+  new THREE.MeshStandardMaterial({
+    color:0x5d6464,
+    roughness:.80,
+    metalness:.22,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.006,
+    side:THREE.DoubleSide
+  })
 );
 utilityCenter.rotation.x=-Math.PI/2;
 utilityCenter.position.set(-8.55,.0305,2.8);
 scene.add(utilityCenter);
+
+// Concentric wear and shallow grooves help the cover read as cast metal instead
+// of a grey disc without increasing its silhouette.
+const utilityGrooveMat=new THREE.MeshBasicMaterial({
+  color:0x2f3535,
+  transparent:true,
+  opacity:.26,
+  depthWrite:false,
+  side:THREE.DoubleSide
+});
+[.10,.17,.235].forEach(radius=>{
+  const ring=new THREE.Mesh(new THREE.RingGeometry(radius,radius+.008,28),utilityGrooveMat);
+  ring.rotation.x=-Math.PI/2;
+  ring.position.set(-8.55,.033,2.8);
+  scene.add(ring);
+});
+for(let i=0;i<4;i++){
+  const slot=new THREE.Mesh(
+    new THREE.PlaneGeometry(.11,.016),
+    new THREE.MeshBasicMaterial({color:0x2d3333,transparent:true,opacity:.30,depthWrite:false})
+  );
+  slot.rotation.x=-Math.PI/2;
+  slot.rotation.z=i*Math.PI/2+.22;
+  slot.position.set(
+    -8.55+Math.cos(i*Math.PI/2+.22)*.14,
+    .034,
+    2.8+Math.sin(i*Math.PI/2+.22)*.14
+  );
+  scene.add(slot);
+}
 
 // Street-facing buildings: warm stone + glass + shaded shopfronts.
 const rightFacade=box(3.4,7.6,66,0xddd5c7,10.15,3.75,-5,.82);
@@ -1614,19 +1683,48 @@ function createStorePlaque(label,z,bg,fg){
   c.width=384;
   c.height=128;
   const g=c.getContext('2d');
+  const rnd=makeSeededRandom(label==='MORI'?0x1f8a6c43:0x7b253fe1);
+
   g.fillStyle=bg;
   g.fillRect(0,0,384,128);
+
+  // Enamel/paper-like surface variation keeps the sign integrated with the
+  // physical storefront instead of reading as a flat UI card.
+  for(let i=0;i<420;i++){
+    const v=rnd()>.5?255:65;
+    g.fillStyle='rgba('+v+','+v+','+v+','+(.006+rnd()*.016).toFixed(3)+')';
+    const r=.3+rnd()*.9;
+    g.fillRect(rnd()*384,rnd()*128,r,r);
+  }
+
+  const edge=g.createLinearGradient(0,0,384,0);
+  edge.addColorStop(0,'rgba(54,52,48,.08)');
+  edge.addColorStop(.06,'rgba(255,255,255,.025)');
+  edge.addColorStop(.94,'rgba(255,255,255,.018)');
+  edge.addColorStop(1,'rgba(54,52,48,.075)');
+  g.fillStyle=edge;
+  g.fillRect(0,0,384,128);
+  g.strokeStyle='rgba(70,68,62,.16)';
+  g.lineWidth=2;
+  g.strokeRect(4,4,376,120);
+
   g.fillStyle=fg;
   g.font='600 42px Inter, sans-serif';
   g.textAlign='center';
   g.textBaseline='middle';
   g.fillText(label,192,64);
+
   const texture=new THREE.CanvasTexture(c);
   texture.colorSpace=THREE.SRGBColorSpace;
   texture.anisotropy=4;
   const plaque=new THREE.Mesh(
     new THREE.PlaneGeometry(2.15,.54),
-    new THREE.MeshBasicMaterial({map:texture,toneMapped:false})
+    new THREE.MeshStandardMaterial({
+      map:texture,
+      roughness:.66,
+      metalness:.02,
+      toneMapped:false
+    })
   );
   plaque.position.set(7.68,2.55,z);
   plaque.rotation.y=-Math.PI/2;
@@ -1818,6 +1916,18 @@ signCanvas.height=128;
 const signCtx=signCanvas.getContext('2d');
 signCtx.fillStyle='#f3eee5';
 signCtx.fillRect(0,0,512,128);
+const cafeSignRnd=makeSeededRandom(0x3417b6cd);
+for(let i=0;i<520;i++){
+  const dark=cafeSignRnd()>.62;
+  signCtx.fillStyle=dark
+    ? 'rgba(76,70,63,'+(.006+cafeSignRnd()*.014).toFixed(3)+')'
+    : 'rgba(255,255,252,'+(.006+cafeSignRnd()*.012).toFixed(3)+')';
+  const r=.3+cafeSignRnd()*.85;
+  signCtx.fillRect(cafeSignRnd()*512,cafeSignRnd()*128,r,r);
+}
+signCtx.strokeStyle='rgba(73,68,62,.13)';
+signCtx.lineWidth=2;
+signCtx.strokeRect(5,5,502,118);
 signCtx.fillStyle='#514b43';
 signCtx.font='600 44px Inter, sans-serif';
 signCtx.textAlign='center';
@@ -1827,7 +1937,12 @@ const signTexture=new THREE.CanvasTexture(signCanvas);
 signTexture.colorSpace=THREE.SRGBColorSpace;
 const cafeSign=new THREE.Mesh(
   new THREE.PlaneGeometry(2.42,.54),
-  new THREE.MeshBasicMaterial({map:signTexture,toneMapped:false})
+  new THREE.MeshStandardMaterial({
+    map:signTexture,
+    roughness:.64,
+    metalness:.015,
+    toneMapped:false
+  })
 );
 cafeSign.position.set(7.77,3.38,4.8);
 cafeSign.rotation.y=-Math.PI/2;
