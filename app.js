@@ -658,6 +658,39 @@ function makeMaterialTexture(kind,seed){
       }
     }
 
+    if(isStone){
+      const mineralCount=isSandstone?260:(isLimestone?150:190);
+      for(let i=0;i<mineralCount;i++){
+        const x=rnd()*size;
+        const y=rnd()*size;
+        const rr=.25+rnd()*(isSandstone?.90:.72);
+        const family=Math.floor(rnd()*4);
+        const mineral=isSandstone
+          ? [
+              [126,95,67],
+              [180,145,105],
+              [99,103,96],
+              [217,198,168]
+            ][family]
+          : [
+              [151,143,129],
+              [191,183,165],
+              [113,118,111],
+              [226,220,204]
+            ][family];
+        g.fillStyle='rgba('+mineral[0]+','+mineral[1]+','+mineral[2]+','+(.025+rnd()*.055).toFixed(3)+')';
+        g.beginPath();
+        g.arc(x,y,rr,0,Math.PI*2);
+        g.fill();
+
+        const rv=158+Math.floor(rnd()*58);
+        r.fillStyle='rgba('+rv+','+rv+','+rv+','+(.08+rnd()*.14).toFixed(3)+')';
+        r.beginPath();
+        r.arc(x,y,rr*1.25,0,Math.PI*2);
+        r.fill();
+      }
+    }
+
     const veins=isStone?(isSandstone?18:(isLimestone?22:34)):14;
     for(let i=0;i<veins;i++){
       const y=rnd()*size;
@@ -1187,6 +1220,16 @@ function makeRubberAgingMaps(seed){
   r.fillStyle='#f0f0f0';
   r.fillRect(0,0,size,size);
 
+  const contactBand=r.createLinearGradient(0,0,size,0);
+  contactBand.addColorStop(0,'rgba(235,235,235,0)');
+  contactBand.addColorStop(.25,'rgba(214,214,214,.10)');
+  contactBand.addColorStop(.43,'rgba(148,148,148,.42)');
+  contactBand.addColorStop(.57,'rgba(148,148,148,.42)');
+  contactBand.addColorStop(.75,'rgba(214,214,214,.10)');
+  contactBand.addColorStop(1,'rgba(235,235,235,0)');
+  r.fillStyle=contactBand;
+  r.fillRect(0,0,size,size);
+
   // Slight sidewall bloom and tiny ozone cracks.
   for(let i=0;i<115;i++){
     const x=rnd()*size;
@@ -1484,6 +1527,24 @@ glassReflectionCtx.fillStyle='rgba(255,247,230,.035)';
 glassReflectionCtx.fillRect(0,174,128,26);
 glassReflectionCtx.fillStyle='rgba(91,111,107,.040)';
 glassReflectionCtx.fillRect(0,205,128,51);
+
+const glassTintRnd=makeSeededRandom(0x184bd7a1);
+for(let i=0;i<11;i++){
+  const x=glassTintRnd()*128;
+  const y=glassTintRnd()*256;
+  const radius=18+glassTintRnd()*54;
+  const cool=glassTintRnd()>.46;
+  const grad=glassReflectionCtx.createRadialGradient(x,y,0,x,y,radius);
+  grad.addColorStop(
+    0,
+    cool
+      ? 'rgba(128,177,184,'+(.012+glassTintRnd()*.022).toFixed(3)+')'
+      : 'rgba(187,169,143,'+(.010+glassTintRnd()*.020).toFixed(3)+')'
+  );
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  glassReflectionCtx.fillStyle=grad;
+  glassReflectionCtx.fillRect(x-radius,y-radius,radius*2,radius*2);
+}
 
 const glassReflectionTexture=new THREE.CanvasTexture(glassReflectionCanvas);
 glassReflectionTexture.colorSpace=THREE.SRGBColorSpace;
