@@ -10,18 +10,18 @@ renderer.toneMappingExposure = 1.12;
 renderer.physicallyCorrectLights = true;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xc9e2ef);
-scene.fog = new THREE.Fog(0xdde9e8, 30, 90);
+scene.background = new THREE.Color(0xd4e7ef);
+scene.fog = new THREE.Fog(0xe2e9e4, 27, 80);
 
 const skyCanvas=document.createElement('canvas');
 skyCanvas.width=32;
 skyCanvas.height=512;
 const skyCtx=skyCanvas.getContext('2d');
 const skyGradient=skyCtx.createLinearGradient(0,0,0,512);
-skyGradient.addColorStop(0,'#82bee2');
-skyGradient.addColorStop(.40,'#b0d6e9');
-skyGradient.addColorStop(.72,'#dcecef');
-skyGradient.addColorStop(1,'#f4eee1');
+skyGradient.addColorStop(0,'#98cbe5');
+skyGradient.addColorStop(.38,'#c5dfeb');
+skyGradient.addColorStop(.72,'#eef0e8');
+skyGradient.addColorStop(1,'#f6ecdc');
 skyCtx.fillStyle=skyGradient;
 skyCtx.fillRect(0,0,32,512);
 const skyTexture=new THREE.CanvasTexture(skyCanvas);
@@ -103,22 +103,22 @@ const skyClouds=[];
   skyClouds.push(cloud);
 });
 
-const camera = new THREE.PerspectiveCamera(72.5, window.innerWidth / window.innerHeight, 0.08, 120);
-camera.position.set(1.4, 1.68, 7.8);
+const camera = new THREE.PerspectiveCamera(69.5, window.innerWidth / window.innerHeight, 0.08, 120);
+camera.position.set(1.15, 1.68, 7.05);
 camera.rotation.order = 'YXZ';
 
 // A slightly wider field of view + subtle camera inertia makes the flat-screen
 // prototype feel closer to looking through a headset without requiring WebXR.
-let cameraFovTarget = 72.5;
+let cameraFovTarget = 69.5;
 
 // ---------- daylight ----------
 renderer.toneMappingExposure = 1.02;
 
-const skyLight = new THREE.HemisphereLight(0xeaf7ff, 0xb7ad94, 1.7);
+const skyLight = new THREE.HemisphereLight(0xeaf5f7, 0xb9ad98, 1.62);
 scene.add(skyLight);
 
-const sun = new THREE.DirectionalLight(0xfff0d3, 3.2);
-sun.position.set(-9, 16, 8);
+const sun = new THREE.DirectionalLight(0xfff2dc, 3.05);
+sun.position.set(-11, 15, 10);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.left = -18;
@@ -132,15 +132,15 @@ sun.shadow.normalBias = .022;
 sun.shadow.radius = 3.2;
 scene.add(sun);
 
-const daylightFill = new THREE.DirectionalLight(0xc7ddf2, .54);
+const daylightFill = new THREE.DirectionalLight(0xd4e3ed, .46);
 daylightFill.position.set(10, 8, -12);
 scene.add(daylightFill);
 
-const shopBounce = new THREE.DirectionalLight(0xffddb9, .24);
+const shopBounce = new THREE.DirectionalLight(0xffe5c9, .18);
 shopBounce.position.set(9,5,6);
 scene.add(shopBounce);
 
-const faceLight = new THREE.SpotLight(0xffe2c8, 12, 9, Math.PI * .22, .72, 1.5);
+const faceLight = new THREE.SpotLight(0xffe7d2, 7.2, 9, Math.PI * .22, .76, 1.5);
 faceLight.position.set(1.1, 3.8, 3.2);
 faceLight.target.position.set(2.0, 1.45, -1.6);
 scene.add(faceLight, faceLight.target);
@@ -153,35 +153,35 @@ function makeSurfaceTexture(kind){
   const g=c.getContext('2d');
 
   if(kind==='asphalt'){
-    g.fillStyle='#575d60';
+    g.fillStyle='#62696a';
     g.fillRect(0,0,size,size);
-    for(let i=0;i<1700;i++){
-      const v=70+Math.floor(Math.random()*55);
-      const a=.025+Math.random()*.045;
+    for(let i=0;i<760;i++){
+      const v=82+Math.floor(Math.random()*30);
+      const a=.015+Math.random()*.022;
       g.fillStyle='rgba('+v+','+v+','+v+','+a.toFixed(3)+')';
-      const r=.35+Math.random()*1.25;
+      const r=.35+Math.random()*.90;
       g.fillRect(Math.random()*size,Math.random()*size,r,r);
     }
-    for(let i=0;i<22;i++){
-      g.strokeStyle='rgba(35,40,42,'+(.025+Math.random()*.025).toFixed(3)+')';
-      g.lineWidth=.45+Math.random()*.8;
+    for(let i=0;i<10;i++){
+      g.strokeStyle='rgba(55,60,61,'+(.016+Math.random()*.012).toFixed(3)+')';
+      g.lineWidth=.40+Math.random()*.55;
       g.beginPath();
       const x=Math.random()*size;
       const y=Math.random()*size;
       g.moveTo(x,y);
-      g.lineTo(x+(Math.random()-.5)*42,y+(Math.random()-.5)*42);
+      g.lineTo(x+(Math.random()-.5)*30,y+(Math.random()-.5)*30);
       g.stroke();
     }
   }else{
-    g.fillStyle='#d6d2c7';
+    g.fillStyle='#dedbd0';
     g.fillRect(0,0,size,size);
-    for(let i=0;i<1200;i++){
-      const warm=Math.random()>.52;
-      const base=warm?188:205;
-      const a=.018+Math.random()*.030;
-      g.fillStyle='rgba('+(base+8)+','+(base+5)+','+base+','+a.toFixed(3)+')';
+    for(let i=0;i<620;i++){
+      const warm=Math.random()>.56;
+      const base=warm?205:215;
+      const a=.010+Math.random()*.016;
+      g.fillStyle='rgba('+(base+5)+','+(base+3)+','+base+','+a.toFixed(3)+')';
       g.beginPath();
-      g.arc(Math.random()*size,Math.random()*size,.35+Math.random()*1.15,0,Math.PI*2);
+      g.arc(Math.random()*size,Math.random()*size,.30+Math.random()*.78,0,Math.PI*2);
       g.fill();
     }
   }
@@ -204,11 +204,11 @@ glassReflectionCanvas.width=128;
 glassReflectionCanvas.height=256;
 const glassReflectionCtx=glassReflectionCanvas.getContext('2d');
 const glassReflectionGradient=glassReflectionCtx.createLinearGradient(0,0,0,256);
-glassReflectionGradient.addColorStop(0,'rgba(225,244,255,.66)');
-glassReflectionGradient.addColorStop(.24,'rgba(181,219,236,.30)');
-glassReflectionGradient.addColorStop(.48,'rgba(126,176,198,.14)');
-glassReflectionGradient.addColorStop(.67,'rgba(226,237,231,.24)');
-glassReflectionGradient.addColorStop(1,'rgba(94,135,152,.18)');
+glassReflectionGradient.addColorStop(0,'rgba(236,248,252,.64)');
+glassReflectionGradient.addColorStop(.24,'rgba(199,225,235,.28)');
+glassReflectionGradient.addColorStop(.48,'rgba(177,209,207,.15)');
+glassReflectionGradient.addColorStop(.70,'rgba(229,235,221,.22)');
+glassReflectionGradient.addColorStop(1,'rgba(154,182,180,.16)');
 glassReflectionCtx.fillStyle=glassReflectionGradient;
 glassReflectionCtx.fillRect(0,0,128,256);
 for(let i=0;i<7;i++){
@@ -285,12 +285,12 @@ function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x9fc7d6){
     new THREE.MeshPhysicalMaterial({
       color:tint,
       map:glassReflectionTexture,
-      roughness:.22,
-      metalness:.06,
+      roughness:.29,
+      metalness:.03,
       transparent:true,
-      opacity:.50,
-      transmission:.08,
-      clearcoat:.24,
+      opacity:.47,
+      transmission:.06,
+      clearcoat:.18,
       clearcoatRoughness:.34,
       side:THREE.DoubleSide
     })
@@ -349,7 +349,7 @@ function createDapplePatch(x,z,w,d,rotation=0,opacity=.72){
 // player immediately reads this as a real street rather than a generic floor.
 const cityGround=plane(52,92,0xc7c4b9,0,-.045,-4);
 cityGround.material.map=pavementTexture;
-cityGround.material.color.set(0xbebbb1);
+cityGround.material.color.set(0xc9c6bb);
 cityGround.material.needsUpdate=true;
 
 const road=plane(15,92,0xffffff,-6.7,.004,-4);
@@ -359,14 +359,14 @@ road.material.needsUpdate=true;
 
 const sidewalk=plane(10.8,92,0xffffff,4.2,.014,-4);
 sidewalk.material.map=pavementTexture;
-sidewalk.material.roughness=.93;
+sidewalk.material.roughness=.95;
 sidewalk.material.needsUpdate=true;
 
-const curb=box(.30,.18,92,0xb8b4a8,.05,.08,-4,.92);
-const curbCap=box(.09,.035,92,0xe7e2d6,.18,.185,-4,.86);
+const curb=box(.30,.18,92,0xc4beb2,.05,.08,-4,.92);
+const curbCap=box(.09,.035,92,0xe9e3d7,.18,.185,-4,.86);
 
 // Fine sidewalk seams add scale without relying on image textures.
-const seamMat=new THREE.MeshBasicMaterial({color:0xb7b4aa,transparent:true,opacity:.34,depthWrite:false});
+const seamMat=new THREE.MeshBasicMaterial({color:0xbab6ad,transparent:true,opacity:.23,depthWrite:false});
 for(let z=-44;z<=40;z+=2.35){
   const seam=new THREE.Mesh(new THREE.PlaneGeometry(9.9,.018),seamMat);
   seam.rotation.x=-Math.PI/2;
@@ -382,7 +382,7 @@ for(let x=.8;x<=8.6;x+=1.95){
 
 // Tactile strip and quiet pavement variation make the foreground read much
 // closer to a real pedestrian street without introducing external textures.
-const tactileMat=new THREE.MeshStandardMaterial({color:0xd4bd72,roughness:.90});
+const tactileMat=new THREE.MeshStandardMaterial({color:0xcebd7b,roughness:.92});
 const tactile=new THREE.Mesh(new THREE.PlaneGeometry(.34,82),tactileMat);
 tactile.rotation.x=-Math.PI/2;
 tactile.position.set(.78,.038,-4);
@@ -392,7 +392,7 @@ scene.add(tactile);
 const patchMat=new THREE.MeshBasicMaterial({
   color:0xffffff,
   transparent:true,
-  opacity:.035,
+  opacity:.018,
   depthWrite:false
 });
 [
@@ -409,25 +409,43 @@ const patchMat=new THREE.MeshBasicMaterial({
 
 // Road lane markings and a distant crossing make the street continue beyond
 // the playable slice.
-const stripeMat=new THREE.MeshBasicMaterial({color:0xe8e8dc,transparent:true,opacity:.82});
+const stripeMat=new THREE.MeshBasicMaterial({color:0xe8e6dc,transparent:true,opacity:.78});
 for(let z=-40;z<40;z+=5.8){
   const stripe=new THREE.Mesh(new THREE.PlaneGeometry(.13,2.9),stripeMat);
   stripe.rotation.x=-Math.PI/2;
   stripe.position.set(-6.5,.022,z);
   scene.add(stripe);
 }
-const edgeLine=new THREE.Mesh(new THREE.PlaneGeometry(.11,86),new THREE.MeshBasicMaterial({color:0xe7d46b}));
+const edgeLine=new THREE.Mesh(new THREE.PlaneGeometry(.11,86),new THREE.MeshBasicMaterial({color:0xd8c66d}));
 edgeLine.rotation.x=-Math.PI/2;
 edgeLine.position.set(-.45,.025,-4);
 scene.add(edgeLine);
 
 const focalCurbMark=new THREE.Mesh(
   new THREE.PlaneGeometry(.13,5.4),
-  new THREE.MeshBasicMaterial({color:0xe5d179,transparent:true,opacity:.92})
+  new THREE.MeshBasicMaterial({color:0xd8c777,transparent:true,opacity:.80})
 );
 focalCurbMark.rotation.x=-Math.PI/2;
 focalCurbMark.position.set(-.28,.030,-1.55);
 scene.add(focalCurbMark);
+
+const roadSheenMat=new THREE.MeshBasicMaterial({
+  color:0xdde8eb,
+  transparent:true,
+  opacity:.035,
+  depthWrite:false,
+  blending:THREE.NormalBlending
+});
+[
+  [-8.8,-5.0,2.2,26],
+  [-4.6,8.0,1.7,22],
+  [-10.3,19.0,1.2,13]
+].forEach(([x,z,w,d])=>{
+  const sheen=new THREE.Mesh(new THREE.PlaneGeometry(w,d),roadSheenMat);
+  sheen.rotation.x=-Math.PI/2;
+  sheen.position.set(x,.026,z);
+  scene.add(sheen);
+});
 
 for(let x=-12.6;x<-1.0;x+=1.45){
   const cross=new THREE.Mesh(new THREE.PlaneGeometry(.62,3.1),stripeMat);
@@ -437,7 +455,7 @@ for(let x=-12.6;x<-1.0;x+=1.45){
 }
 
 // Street-facing buildings: warm stone + glass + shaded shopfronts.
-const rightFacade=box(3.4,7.6,66,0xd8d2c5,10.15,3.75,-5,.76);
+const rightFacade=box(3.4,7.6,66,0xddd5c7,10.15,3.75,-5,.78);
 rightFacade.castShadow=false;
 
 [1.08,3.04,5.02,6.92].forEach((y,i)=>{
@@ -458,16 +476,16 @@ for(let z=-31;z<=24;z+=7.2){
   const bay=box(.42,5.6,5.35,0xbab6ad,8.64,3.22,z,.62);
   bay.castShadow=false;
 
-  const glass=glassPanel(5.0,4.65,8.41,3.35,z,-Math.PI/2,0xaed1df);
+  const glass=glassPanel(5.0,4.65,8.41,3.35,z,-Math.PI/2,0xc2d9da);
   glass.material.opacity=.42;
 
   // Mullions prevent large glazing bays from reading as flat placeholder planes.
   [-1.62,0,1.62].forEach(offset=>{
-    const mullion=box(.045,4.62,.035,0x788589,8.35,3.35,z+offset,.42,.34);
+    const mullion=box(.045,4.62,.035,0x9aa5a3,8.35,3.35,z+offset,.42,.34);
     mullion.castShadow=false;
   });
   [2.05,3.35,4.65].forEach(y=>{
-    const mullion=box(.045,.035,4.96,0x7f8c90,8.35,y,z,.42,.34);
+    const mullion=box(.045,.035,4.96,0xa3adaa,8.35,y,z,.42,.34);
     mullion.castShadow=false;
   });
 
@@ -716,7 +734,7 @@ for(let i=0;i<18;i++){
 // "home spot" in the street composition without changing Mira herself.
 const miraPocket=new THREE.Mesh(
   new THREE.PlaneGeometry(5.35,5.15),
-  new THREE.MeshStandardMaterial({color:0xddd6c8,roughness:.95})
+  new THREE.MeshStandardMaterial({color:0xe6ddce,roughness:.96})
 );
 miraPocket.rotation.x=-Math.PI/2;
 miraPocket.position.set(3.75,.044,-1.55);
@@ -724,9 +742,9 @@ miraPocket.receiveShadow=true;
 scene.add(miraPocket);
 
 const pocketLineMat=new THREE.MeshBasicMaterial({
-  color:0xbdb4a6,
+  color:0xc7bfb3,
   transparent:true,
-  opacity:.44,
+  opacity:.24,
   depthWrite:false
 });
 for(let i=-2;i<=2;i++){
@@ -831,7 +849,7 @@ function createLampPost(x,z){
   scene.add(lamp);
 
   const banner=new THREE.Mesh(
-    new THREE.PlaneGeometry(.48,.96),
+    new THREE.PlaneGeometry(.40,.80),
     new THREE.MeshBasicMaterial({
       map:streetBannerTexture,
       transparent:true,
@@ -1082,8 +1100,8 @@ function createTrafficCar(x,z,color,speed){
   movingTraffic.push({group,speed});
 }
 
-createTrafficCar(-9.2,-28,0xd4d0c7,2.15);
-createTrafficCar(-5.9,27,0x7c929d,-1.72);
+createTrafficCar(-9.2,-28,0xd4d0c7,1.78);
+createTrafficCar(-5.9,27,0x8a9da6,-1.42);
 
 const storefrontShade=new THREE.Mesh(
   new THREE.PlaneGeometry(1.95,64),
@@ -1274,7 +1292,7 @@ function openTablet(){
   }
 
   tabletOpen=true; keys.clear(); document.exitPointerLock?.();
-  cameraFovTarget=69.5;
+  cameraFovTarget=67.5;
   document.body.classList.add('device-open');
   tabletLayer?.classList.remove('closing');
   tabletLayer?.classList.add('open');
@@ -1288,7 +1306,7 @@ function openTablet(){
 function closeTablet(){
   if(!tabletOpen) return;
 
-  tabletOpen=false; cameraFovTarget=72.5;
+  tabletOpen=false; cameraFovTarget=69.5;
   tabletLayer?.classList.add('closing');
   tabletLayer?.setAttribute('aria-hidden','true');
   window.dispatchEvent(new CustomEvent('tablet-close'));
@@ -1376,7 +1394,7 @@ function animate(){
   dappleTexture.offset.x=Math.sin(t*.075)*.003;
   dappleTexture.offset.y=Math.cos(t*.061)*.002;
   sunHaze.material.opacity=.80+Math.sin(t*.11)*.018;
-  sun.intensity=3.16+Math.sin(t*.045)*.035;
+  sun.intensity=3.03+Math.sin(t*.045)*.025;
 
   skyClouds.forEach((cloud,index)=>{
     cloud.position.x+=dt*(.055+index*.018);
