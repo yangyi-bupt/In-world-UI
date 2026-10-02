@@ -49,7 +49,7 @@ sunTexture.colorSpace=THREE.SRGBColorSpace;
 const sunHaze=new THREE.Sprite(new THREE.SpriteMaterial({
   map:sunTexture,
   transparent:true,
-  depthTest:false,
+  depthTest:true,
   depthWrite:false,
   toneMapped:false,
   opacity:.84
@@ -144,6 +144,16 @@ const faceLight = new THREE.SpotLight(0xffe7d2, 7.2, 9, Math.PI * .22, .76, 1.5)
 faceLight.position.set(1.1, 3.8, 3.2);
 faceLight.target.position.set(2.0, 1.45, -1.6);
 scene.add(faceLight, faceLight.target);
+
+const miraWarmBounce=new THREE.DirectionalLight(0xffe3c8,.16);
+miraWarmBounce.position.set(7.2,5.4,3.4);
+miraWarmBounce.target.position.set(2.0,1.15,-1.6);
+scene.add(miraWarmBounce,miraWarmBounce.target);
+
+const miraCoolRim=new THREE.DirectionalLight(0xd8edf2,.10);
+miraCoolRim.position.set(-5.0,4.0,-7.5);
+miraCoolRim.target.position.set(2.0,1.25,-1.6);
+scene.add(miraCoolRim,miraCoolRim.target);
 
 function makeSurfaceTexture(kind){
   const size=256;
@@ -546,6 +556,20 @@ const cafeGlass=glassPanel(7.75,2.55,8.05,1.62,4.8,-Math.PI/2,0xc3d8d7);
 cafeGlass.material.opacity=.48;
 cafeGlass.material.roughness=.31;
 
+const cafeInteriorGlow=new THREE.Mesh(
+  new THREE.PlaneGeometry(7.25,2.18),
+  new THREE.MeshBasicMaterial({
+    color:0xf2ddc4,
+    transparent:true,
+    opacity:.10,
+    depthWrite:false,
+    toneMapped:false
+  })
+);
+cafeInteriorGlow.position.set(8.13,1.55,4.8);
+cafeInteriorGlow.rotation.y=-Math.PI/2;
+scene.add(cafeInteriorGlow);
+
 const signCanvas=document.createElement('canvas');
 signCanvas.width=512;
 signCanvas.height=128;
@@ -870,6 +894,23 @@ pocketPlanter.position.set(6.25,.27,-2.27);
 pocketPlanter.castShadow=true;
 scene.add(pocketPlanter);
 
+const pocketBook=new THREE.Mesh(
+  new THREE.BoxGeometry(.28,.028,.20),
+  new THREE.MeshStandardMaterial({color:0xb68d79,roughness:.86})
+);
+pocketBook.position.set(5.88,.392,-1.70);
+pocketBook.rotation.y=.16;
+pocketBook.castShadow=true;
+scene.add(pocketBook);
+
+const pocketCup=new THREE.Mesh(
+  new THREE.CylinderGeometry(.052,.044,.105,12),
+  new THREE.MeshStandardMaterial({color:0xeee8df,roughness:.76})
+);
+pocketCup.position.set(6.45,.425,-1.70);
+pocketCup.castShadow=true;
+scene.add(pocketCup);
+
 const pocketGreenMats=[
   new THREE.MeshStandardMaterial({color:0x789a70,roughness:.95}),
   new THREE.MeshStandardMaterial({color:0x86a879,roughness:.94})
@@ -895,8 +936,36 @@ for(let i=0;i<7;i++){
   scene.add(slot);
 }
 
-createDapplePatch(2.15,-2.10,4.3,5.1,-.10,.82);
+createDapplePatch(2.15,-2.10,4.3,5.1,-.10,.68);
 createDapplePatch(4.75,5.15,3.8,4.4,.16,.62);
+
+const focalPlanterBase=new THREE.Mesh(
+  new THREE.BoxGeometry(1.95,.34,.58),
+  new THREE.MeshStandardMaterial({color:0xc3b6a3,roughness:.93})
+);
+focalPlanterBase.position.set(4.95,.18,-4.72);
+focalPlanterBase.castShadow=true;
+focalPlanterBase.receiveShadow=true;
+scene.add(focalPlanterBase);
+
+const focalPlantMats=[
+  new THREE.MeshStandardMaterial({color:0x7d9f72,roughness:.96}),
+  new THREE.MeshStandardMaterial({color:0x91ad7e,roughness:.95})
+];
+[
+  [-.70,.00,.92],
+  [-.42,.04,1.06],
+  [-.12,-.03,.96],
+  [.18,.04,1.10],
+  [.48,-.02,.98],
+  [.72,.03,.90]
+].forEach(([ox,oz,ss],i)=>{
+  const plant=new THREE.Mesh(new THREE.SphereGeometry(.24,12,9),focalPlantMats[i%2]);
+  plant.scale.set(1.05*ss,.72*ss,.92*ss);
+  plant.position.set(4.95+ox,.48+(i%2)*.035,-4.72+oz);
+  plant.castShadow=true;
+  scene.add(plant);
+});
 
 function createLampPost(x,z){
   const metal=new THREE.MeshStandardMaterial({color:0x3f494b,roughness:.48,metalness:.62});
@@ -966,19 +1035,19 @@ scene.add(wayfindingSign);
 const benchWood=new THREE.MeshStandardMaterial({color:0x9b795d,roughness:.82});
 const benchMetal=new THREE.MeshStandardMaterial({color:0x454d4e,roughness:.55,metalness:.45});
 const benchSeat=new THREE.Mesh(new THREE.BoxGeometry(1.75,.10,.48),benchWood);
-benchSeat.position.set(5.1,.54,1.9);benchSeat.castShadow=true;scene.add(benchSeat);
+benchSeat.position.set(6.15,.54,-5.55);benchSeat.castShadow=true;scene.add(benchSeat);
 const benchBack=new THREE.Mesh(new THREE.BoxGeometry(1.75,.48,.08),benchWood);
-benchBack.position.set(5.1,.82,2.10);benchBack.rotation.x=-.12;benchBack.castShadow=true;scene.add(benchBack);
+benchBack.position.set(6.15,.82,-5.35);benchBack.rotation.x=-.12;benchBack.castShadow=true;scene.add(benchBack);
 [-.70,.70].forEach(offset=>{
   const leg=new THREE.Mesh(new THREE.BoxGeometry(.08,.52,.08),benchMetal);
-  leg.position.set(5.1+offset,.27,1.9);leg.castShadow=true;scene.add(leg);
+  leg.position.set(6.15+offset,.27,-5.55);leg.castShadow=true;scene.add(leg);
 });
 
 for(let i=0;i<3;i++){
   const rack=new THREE.Mesh(new THREE.TorusGeometry(.27,.025,8,24,Math.PI),benchMetal);
   rack.rotation.x=Math.PI/2;
   rack.rotation.z=Math.PI/2;
-  rack.position.set(6.0+i*.55,.35,-2.6);
+  rack.position.set(5.85+i*.55,.35,-9.8);
   rack.castShadow=true;
   scene.add(rack);
 }
@@ -1066,7 +1135,7 @@ const bin=new THREE.Mesh(
   new THREE.CylinderGeometry(.20,.23,.72,14),
   new THREE.MeshStandardMaterial({color:0x4f5a58,roughness:.66,metalness:.22})
 );
-bin.position.set(6.85,.36,-.2);
+bin.position.set(6.85,.36,-7.0);
 bin.castShadow=true;
 scene.add(bin);
 
@@ -1138,10 +1207,11 @@ createParkedCar(-3.55,-8.5,0x8fa0aa);
 createContactShadow(-3.55,-8.5,2.0,3.8,.13);
 createParkedCar(-3.55,8.1,0xc7b8a6);
 createContactShadow(-3.55,8.1,2.0,3.8,.13);
-createContactShadow(5.1,1.95,2.05,.85,.085);
+createContactShadow(6.15,-5.55,2.05,.85,.085);
 createContactShadow(5.9,5.7,1.65,1.12,.075);
 createContactShadow(5.9,8.2,1.65,1.12,.075);
 createContactShadow(6.25,-1.72,2.75,1.18,.080);
+createContactShadow(2.0,-1.6,.92,.58,.105);
 
 const ambientWalkers=[];
 function createAmbientWalker(x,z,direction,color){
@@ -1168,14 +1238,14 @@ function createAmbientWalker(x,z,direction,color){
   });
 
   group.position.set(x,0,z);
-  group.scale.setScalar(.88);
+  group.scale.setScalar(.76);
   scene.add(group);
   ambientWalkers.push({group,direction,phase:Math.random()*Math.PI*2});
 }
 
-createAmbientWalker(5.05,-15.8,1,0xa98f82);
-createAmbientWalker(3.55,16.6,-1,0x718692);
-createAmbientWalker(6.25,13.5,-1,0x8d9a73);
+createAmbientWalker(-12.05,-15.8,1,0xa98f82);
+createAmbientWalker(-11.65,16.6,-1,0x718692);
+createAmbientWalker(-12.25,13.5,-1,0x8d9a73);
 
 const movingTraffic=[];
 function createTrafficCar(x,z,color,speed){
@@ -1206,7 +1276,7 @@ const storefrontShade=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     color:0x806f61,
     transparent:true,
-    opacity:.045,
+    opacity:.055,
     depthWrite:false
   })
 );
