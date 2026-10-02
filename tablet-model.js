@@ -244,14 +244,33 @@
     let pressTarget=0;
     let pressAmount=0;
     let pressVelocity=0;
+    let hapticPitch=0;
+    let hapticYaw=0;
+    let hapticRoll=0;
+    let hapticPitchVelocity=0;
+    let hapticYawVelocity=0;
+    let hapticRollVelocity=0;
     let interactionEnergy=0;
     let holdAmount=0;
     let lastRenderTime=0;
 
     function setInteractionPointer(x=0,y=0,pressed=false){
-      pointerTargetX=THREE.MathUtils.clamp(x,-1,1);
-      pointerTargetY=THREE.MathUtils.clamp(y,-1,1);
+      const nextX=THREE.MathUtils.clamp(x,-1,1);
+      const nextY=THREE.MathUtils.clamp(y,-1,1);
+      const wasPressed=pressTarget>.5;
+
+      pointerTargetX=nextX;
+      pointerTargetY=nextY;
       pressTarget=pressed?1:0;
+
+      // Releasing a press gives the chassis a tiny location-aware haptic kick.
+      // This is short and rotational, so it feels like hardware snap rather
+      // than moving the whole tablet away from the pointer.
+      if(wasPressed && !pressed){
+        hapticPitchVelocity+=.018-nextY*.030;
+        hapticYawVelocity+=nextX*.040;
+        hapticRollVelocity-=nextX*.018;
+      }
     }
 
     function clearInteractionPointer(){
@@ -296,6 +315,18 @@
       pressAmount+=pressVelocity*dt;
       pressAmount=THREE.MathUtils.clamp(pressAmount,-.10,1.08);
 
+      // A faster rotational spring turns pointer-up into a crisp mechanical
+      // release. It overshoots once, then dies out in roughly a quarter second.
+      hapticPitchVelocity+=(-hapticPitch)*360*dt;
+      hapticYawVelocity+=(-hapticYaw)*360*dt;
+      hapticRollVelocity+=(-hapticRoll)*390*dt;
+      hapticPitchVelocity*=Math.exp(-15.5*dt);
+      hapticYawVelocity*=Math.exp(-15.5*dt);
+      hapticRollVelocity*=Math.exp(-16.5*dt);
+      hapticPitch+=hapticPitchVelocity*dt;
+      hapticYaw+=hapticYawVelocity*dt;
+      hapticRoll+=hapticRollVelocity*dt;
+
       // Quiet hands never freeze completely, but active interaction should
       // stabilize the tablet. Blend a tiny multi-frequency sway in only when
       // pointer velocity and press energy are low.
@@ -328,9 +359,9 @@
       const swayX=(Math.sin(t*.43+.9)+Math.sin(t*1.07)*.28)*.0019*hold*steady;
       const swayY=(Math.sin(t*.61)+Math.sin(t*1.29+1.6)*.22)*.0027*hold*steady;
 
-      rig.rotation.x=-.032 + hidden*.075 + swayPitch - pointerY*.010*hold + inertiaY*hold + impact*(.0045+pointerY*.0035);
-      rig.rotation.y=.018 - hidden*.018 + swayYaw + pointerX*.013*hold + inertiaX*hold + impactX*.0065;
-      rig.rotation.z=hidden*.012 + swayRoll - pointerX*.0025*hold - inertiaX*.18*hold - impactX*.0028;
+      rig.rotation.x=-.032 + hidden*.075 + swayPitch - pointerY*.010*hold + inertiaY*hold + hapticPitch*hold + impact*(.0045+pointerY*.0035);
+      rig.rotation.y=.018 - hidden*.018 + swayYaw + pointerX*.013*hold + inertiaX*hold + hapticYaw*hold + impactX*.0065;
+      rig.rotation.z=hidden*.012 + swayRoll - pointerX*.0025*hold - inertiaX*.18*hold + hapticRoll*hold - impactX*.0028;
       rig.position.x=swayX + pointerX*.010*hold + inertiaX*.22*hold + impactX*.0025;
       rig.position.y=hidden*.115 + swayY - pointerY*.006*hold + inertiaY*.16*hold - impact*.0035 + impactY*.0015;
       rig.position.z=-hidden*.055-impact*.014;
@@ -360,10 +391,10 @@
 
       // Wrists counter-rotate against tablet inertia; palms and thumb roots
       // compress by different amounts so the device feels supported, not glued.
-      leftHand.userData.forearm.rotation.z=leftSide*(.75+pointerX*.010+inertiaX*.22);
-      rightHand.userData.forearm.rotation.z=rightSide*(.75+pointerX*.010+inertiaX*.22);
-      leftHand.userData.forearm.rotation.x=-.10-pointerY*.012-inertiaY*.18;
-      rightHand.userData.forearm.rotation.x=-.10-pointerY*.012-inertiaY*.18;
+      leftHand.userData.forearm.rotation.z=leftSide*(.75+pointerX*.010+inertiaX*.22+hapticYaw*.08);
+      rightHand.userData.forearm.rotation.z=rightSide*(.75+pointerX*.010+inertiaX*.22+hapticYaw*.08);
+      leftHand.userData.forearm.rotation.x=-.10-pointerY*.012-inertiaY*.18-hapticPitch*.06;
+      rightHand.userData.forearm.rotation.x=-.10-pointerY*.012-inertiaY*.18-hapticPitch*.06;
 
       leftHand.userData.palm.rotation.z=leftSide*(.09+leftSupport*.010+impact*.006);
       rightHand.userData.palm.rotation.z=rightSide*(.09+rightSupport*.010+impact*.006);
