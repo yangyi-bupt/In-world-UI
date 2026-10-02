@@ -41,10 +41,10 @@
     };
 
     const apps=[
-      {id:'messages',label:'Messages',short:'2 conversations',accent:'#7fd6ff',rgb:'127,214,255'},
-      {id:'tasks',label:'Tasks',short:'3 active items',accent:'#9effc4',rgb:'158,255,196'},
-      {id:'map',label:'Map',short:'Apartment · L01',accent:'#cdb7ff',rgb:'205,183,255'},
-      {id:'scanner',label:'Scanner',short:'Object analysis',accent:'#ffc98a',rgb:'255,201,138'}
+      {id:'messages',label:'Messages',short:'Mira · nearby',accent:'#7fd6ff',rgb:'127,214,255'},
+      {id:'tasks',label:'Tasks',short:'3 things to notice',accent:'#9effc4',rgb:'158,255,196'},
+      {id:'map',label:'Map',short:'Nova Walk · Block 01',accent:'#cdb7ff',rgb:'205,183,255'},
+      {id:'scanner',label:'Scanner',short:'Nearby world signals',accent:'#ffc98a',rgb:'255,201,138'}
     ];
 
     const appRects=[];
@@ -470,19 +470,25 @@
 
     function base(){
       ctx.clearRect(0,0,width,height);
-      ctx.fillStyle='#03060b';
+      const screenBase=ctx.createLinearGradient(0,0,0,height);
+      screenBase.addColorStop(0,'#071011');
+      screenBase.addColorStop(.48,'#05090d');
+      screenBase.addColorStop(1,'#030609');
+      ctx.fillStyle=screenBase;
       ctx.fillRect(0,0,width,height);
 
-      const ambientA=ctx.createRadialGradient(150,60,12,150,60,520);
-      ambientA.addColorStop(0,'rgba(45,106,190,.20)');
-      ambientA.addColorStop(.44,'rgba(22,57,116,.075)');
+      // Cool daylight at the top and a restrained warm street reflection at the
+      // lower edge tie the device visually to the world around it.
+      const ambientA=ctx.createRadialGradient(148,48,12,148,48,560);
+      ambientA.addColorStop(0,'rgba(104,177,190,.18)');
+      ambientA.addColorStop(.42,'rgba(50,98,111,.060)');
       ambientA.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=ambientA;
       ctx.fillRect(0,0,width,height);
 
-      const ambientB=ctx.createRadialGradient(930,630,12,930,630,470);
-      ambientB.addColorStop(0,'rgba(100,66,165,.13)');
-      ambientB.addColorStop(.55,'rgba(55,34,100,.045)');
+      const ambientB=ctx.createRadialGradient(860,720,20,860,720,520);
+      ambientB.addColorStop(0,'rgba(190,139,98,.085)');
+      ambientB.addColorStop(.55,'rgba(104,76,60,.026)');
       ambientB.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=ambientB;
       ctx.fillRect(0,0,width,height);
@@ -538,9 +544,9 @@
       ctx.fillStyle=heroGlow;
       roundedRect(53,113,918,134,31,true);
 
-      text('WORLD 01',76,144,11,'800','#7fd6ff');
-      text('NOVA PAD',76,187,37,'720','#f7f9fd');
-      text('Spatial console · all systems nominal',78,214,14,'520','#75869f');
+      text('NOVA CITY · STREET 01',76,144,11,'800','#8ad9d7');
+      text('Your world is live',76,187,37,'690','#f7f6f1');
+      text('Mira is nearby · café open · street activity normal',78,214,14,'520','#7c8e95');
 
       // Right-side world telemetry gives the home screen a distinctive
       // "device dashboard" identity without adding another fake navigation bar.
@@ -577,9 +583,9 @@
       text('01',orbitX-9,orbitY+5,13,'800','#bdeaff');
 
       const statusItems=[
-        ['MIRA','ONLINE','#7fd6ff'],
-        ['ROOM','ACTIVE','#9effc4'],
-        ['SYNC','98%','#cdb7ff']
+        ['MIRA','NEARBY','#7fd6ff'],
+        ['STREET','LIVE','#9effc4'],
+        ['PAD','READY','#cdb7ff']
       ];
       statusItems.forEach((item,i)=>{
         const sy=142+i*29;
@@ -771,7 +777,7 @@
       ctx.fillStyle=incoming;
       roundedRect(70,366,590,68,24,true);
       strokeRoundRect(70,366,590,68,24,'rgba(255,255,255,.075)',1);
-      text('Welcome back. Your world is ready.',96,407,20,'550','#eaf0f9');
+      text('I’m by the café. Come find me.',96,407,20,'550','#eaf0f9');
 
       const outgoing=ctx.createLinearGradient(364,448,954,516);
       outgoing.addColorStop(0,'rgba(89,158,255,.20)');
@@ -779,7 +785,7 @@
       ctx.fillStyle=outgoing;
       roundedRect(364,448,590,68,24,true);
       strokeRoundRect(364,448,590,68,24,'rgba(127,214,255,.17)',1);
-      text('I am checking the room now.',390,489,20,'550','#dceaff');
+      text('I can see the street from here.',390,489,20,'550','#dceaff');
 
       if(state.messageChoice===null){
         text('QUICK REPLY',72,550,12,'750','#667995');
@@ -827,9 +833,9 @@
       roundedRect(300,331,Math.max(10,620*(doneCount/3)),6,3,true);
 
       const rows=[
-        ['Explore the room','ACTIVE','#7fd6ff'],
+        ['Walk the block','ACTIVE','#7fd6ff'],
         ['Talk with Mira','NEXT','#9effc4'],
-        ['Inspect the window','OPTIONAL','#cdb7ff']
+        ['Check the café','OPTIONAL','#cdb7ff']
       ];
 
       taskRects.length=0;
@@ -871,52 +877,83 @@
         ctx.fillStyle='rgba(205,183,255,'+(state.actionPulse*.028).toFixed(3)+')';
         roundedRect(48,204,928,438,30,true);
       }
-      appHeader('Map','Apartment · Level 01','#cdb7ff','map');
+      appHeader('Map','Nova Walk · Block 01','#cdb7ff','map');
 
-      ctx.fillStyle='rgba(255,255,255,.030)';
+      ctx.fillStyle='rgba(255,255,255,.026)';
       roundedRect(70,306,884,316,28,true);
-      strokeRoundRect(70,306,884,316,28,'rgba(255,255,255,.07)',1);
+      strokeRoundRect(70,306,884,316,28,'rgba(255,255,255,.065)',1);
 
-      ctx.fillStyle='rgba(205,183,255,.035)';
-      roundedRect(94,330,512,250,24,true);
-      ctx.fillStyle='rgba(127,214,255,.030)';
-      roundedRect(622,330,306,112,22,true);
-      roundedRect(622,458,144,122,22,true);
-      roundedRect(784,458,144,122,22,true);
+      // Street-first map: road, curb, pedestrian zone and storefronts mirror
+      // the actual world rather than the old apartment floor plan.
+      const mapX=94,mapY=330,mapW=834,mapH=250;
+      ctx.fillStyle='rgba(64,73,76,.34)';
+      roundedRect(mapX,mapY,238,mapH,22,true);
 
-      ctx.strokeStyle='rgba(214,222,241,.15)';
-      ctx.lineWidth=1.4;
-      ctx.strokeRect(94,330,512,250);
-      ctx.strokeRect(622,330,306,112);
-      ctx.strokeRect(622,458,144,122);
-      ctx.strokeRect(784,458,144,122);
+      ctx.fillStyle='rgba(210,208,197,.065)';
+      roundedRect(mapX+250,mapY,584,mapH,22,true);
 
-      text('LIVING',118,357,11,'750','#62718b');
-      text('STUDY',646,357,11,'750','#62718b');
-      text('ENTRY',646,484,11,'750','#62718b');
-      text('WINDOW',808,484,11,'750','#62718b');
+      ctx.fillStyle='rgba(222,212,194,.09)';
+      roundedRect(mapX+610,mapY+18,198,214,18,true);
+
+      ctx.fillStyle='rgba(255,255,255,.10)';
+      roundedRect(mapX+232,mapY,3,mapH,1.5,true);
+      ctx.fillStyle='rgba(216,198,116,.42)';
+      roundedRect(mapX+214,mapY+10,4,mapH-20,2,true);
+
+      // Lane rhythm.
+      ctx.fillStyle='rgba(236,235,226,.24)';
+      for(let yy=mapY+18;yy<mapY+mapH-18;yy+=42){
+        roundedRect(mapX+108,yy,4,22,2,true);
+      }
+
+      // Storefront blocks.
+      [
+        [mapX+635,mapY+34,144,48,'MORI'],
+        [mapX+635,mapY+94,144,48,'NOVA CAFÉ'],
+        [mapX+635,mapY+154,144,48,'ATELIER']
+      ].forEach(([x,y,w,h,label],i)=>{
+        ctx.fillStyle=i===1?'rgba(255,201,138,.090)':'rgba(255,255,255,.035)';
+        roundedRect(x,y,w,h,14,true);
+        strokeRoundRect(x,y,w,h,14,i===1?'rgba(255,201,138,.16)':'rgba(255,255,255,.055)',1);
+        text(label,x+16,y+29,10,'760',i===1?'#d9b98e':'#71808f');
+      });
+
+      text('ROAD',112,356,10,'800','#69777c');
+      text('WALK',364,356,10,'800','#6f7c82');
+      text('STOREFRONTS',704,356,10,'800','#756f72');
+
+      // Street trees / points of interest.
+      [
+        [388,382],[388,488],[566,432],[594,530]
+      ].forEach(([x,y],i)=>{
+        ctx.fillStyle=i===2?'rgba(158,255,196,.18)':'rgba(145,177,137,.16)';
+        ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='rgba(158,255,196,.18)';
+        ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.stroke();
+      });
 
       const youPulse=5+Math.sin(state.uiTime*3.1)*2;
       ctx.strokeStyle='rgba(141,229,255,.22)';
       ctx.lineWidth=1.5;
-      ctx.beginPath();ctx.arc(342,516,18+youPulse,0,Math.PI*2);ctx.stroke();
+      ctx.beginPath();ctx.arc(430,520,18+youPulse,0,Math.PI*2);ctx.stroke();
       ctx.fillStyle='#8de5ff';
-      ctx.beginPath();ctx.arc(342,516,9,0,Math.PI*2);ctx.fill();
-      text('YOU',364,522,13,'750','#9ae9ff');
+      ctx.beginPath();ctx.arc(430,520,9,0,Math.PI*2);ctx.fill();
+      text('YOU',452,526,13,'750','#9ae9ff');
 
       const miraPulse=4+Math.sin(state.uiTime*2.6+1.2)*1.5;
       ctx.strokeStyle='rgba(255,159,175,.18)';
-      ctx.beginPath();ctx.arc(500,366,18+miraPulse,0,Math.PI*2);ctx.stroke();
+      ctx.beginPath();ctx.arc(516,366,18+miraPulse,0,Math.PI*2);ctx.stroke();
       ctx.fillStyle='#ff9faf';
-      ctx.beginPath();ctx.arc(500,366,9,0,Math.PI*2);ctx.fill();
-      text('MIRA',522,372,13,'750','#ffb5c0');
+      ctx.beginPath();ctx.arc(516,366,9,0,Math.PI*2);ctx.fill();
+      text('MIRA',538,372,13,'750','#ffb5c0');
 
+      // Existing interaction hitbox remains centered on Mira's marker.
       if(state.mapFocus==='mira'){
         ctx.fillStyle='rgba(255,159,175,.075)';
-        roundedRect(610,600,318,48,18,true);
-        strokeRoundRect(610,600,318,48,18,'rgba(255,159,175,.14)',1);
-        text('MIRA',632,630,14,'750','#ffc0ca');
-        text('3.8 m · living room',700,630,13,'550','#8f7890');
+        roundedRect(610,594,318,54,18,true);
+        strokeRoundRect(610,594,318,54,18,'rgba(255,159,175,.14)',1);
+        text('MIRA',632,627,14,'750','#ffc0ca');
+        text('3.8 m · near the café',700,627,13,'550','#8f7890');
       }else{
         pill(94,594,250,34,'TAP MIRA TO MARK','#cdb7ff',false);
       }
