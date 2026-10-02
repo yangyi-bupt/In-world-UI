@@ -255,6 +255,10 @@
           let powerSweepUntil=0;
           let screenPress=0;
           let screenPressVelocity=0;
+          let screenFlexX=0;
+          let screenFlexY=0;
+          let screenFlexVelocityX=0;
+          let screenFlexVelocityY=0;
           let refractionX=0;
           let refractionY=0;
           let metalMotion=0;
@@ -320,10 +324,26 @@
               screenPress+=screenPressVelocity*dt;
               screenPress=THREE.MathUtils.clamp(screenPress,-.08,1.06);
 
+              // Localized cover-glass flex: pressing off-center tilts the LCD
+              // layer by a fraction of a degree, then the under-damped spring
+              // lets it rebound past neutral before settling.
+              const flexAmount=Math.max(0,screenPress);
+              const flexTargetX=-glassY*flexAmount*.0028;
+              const flexTargetY=glassX*flexAmount*.0032;
+
+              screenFlexVelocityX+=(flexTargetX-screenFlexX)*260*dt;
+              screenFlexVelocityY+=(flexTargetY-screenFlexY)*260*dt;
+              screenFlexVelocityX*=Math.exp(-16.2*dt);
+              screenFlexVelocityY*=Math.exp(-16.2*dt);
+              screenFlexX+=screenFlexVelocityX*dt;
+              screenFlexY+=screenFlexVelocityY*dt;
+
               const pressScale=1-screenPress*.0042;
-              screen.position.x=refractionX;
-              screen.position.y=refractionY;
+              screen.position.x=refractionX+screenFlexY*.55;
+              screen.position.y=refractionY-screenFlexX*.42;
               screen.position.z=.102-screenPress*.0055;
+              screen.rotation.x=screenFlexX;
+              screen.rotation.y=screenFlexY;
               screen.scale.set(pressScale,pressScale,1);
 
               const now=performance.now();
@@ -415,15 +435,17 @@
               if(innerShadow){
                 const shadowBase=open?.045:.02;
                 const pressDepth=Math.max(0,screenPress)*.028;
+                const flexShadowX=Math.abs(screenFlexY)*11;
+                const flexShadowY=Math.abs(screenFlexX)*11;
 
                 innerShadow.left.material.opacity=
-                  shadowBase+Math.max(0,glassX)*.050+pressDepth;
+                  shadowBase+Math.max(0,glassX)*.050+pressDepth+Math.max(0,screenFlexY)*18+flexShadowX*.12;
                 innerShadow.right.material.opacity=
-                  shadowBase+Math.max(0,-glassX)*.050+pressDepth;
+                  shadowBase+Math.max(0,-glassX)*.050+pressDepth+Math.max(0,-screenFlexY)*18+flexShadowX*.12;
                 innerShadow.top.material.opacity=
-                  shadowBase+Math.max(0,-glassY)*.042+pressDepth*.8;
+                  shadowBase+Math.max(0,-glassY)*.042+pressDepth*.8+Math.max(0,-screenFlexX)*16+flexShadowY*.10;
                 innerShadow.bottom.material.opacity=
-                  shadowBase+Math.max(0,glassY)*.042+pressDepth*.8;
+                  shadowBase+Math.max(0,glassY)*.042+pressDepth*.8+Math.max(0,screenFlexX)*16+flexShadowY*.10;
 
                 innerShadow.left.scale.x=1+Math.max(0,glassX)*.35+pressDepth*2;
                 innerShadow.right.scale.x=1+Math.max(0,-glassX)*.35+pressDepth*2;
