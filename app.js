@@ -577,6 +577,14 @@ function makeMaterialTexture(kind,seed){
         b.beginPath();
         b.ellipse(x,y,rx*.72,ry*.72,0,0,Math.PI*2);
         b.fill();
+
+        // Exposed aggregate is slightly smoother than the cement paste around
+        // it, producing small broken highlights instead of one uniform matte.
+        const aggregateRough=162+Math.floor(rnd()*34);
+        r.fillStyle='rgba('+aggregateRough+','+aggregateRough+','+aggregateRough+','+(.28+rnd()*.24).toFixed(3)+')';
+        r.beginPath();
+        r.ellipse(x,y,rx*1.06,ry*1.06,0,0,Math.PI*2);
+        r.fill();
       }
     }
 
@@ -955,6 +963,46 @@ function makeOrangePeelNormal(seed,repeat=9){
 }
 const vehicleClearcoatNormal=makeOrangePeelNormal(0x7ea14d92,10);
 
+function makeVehicleDustRoughness(seed){
+  const size=256;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='#4c4c4c';
+  g.fillRect(0,0,size,size);
+
+  // Broad dusty films interrupt the clearcoat in a way that reads only when
+  // highlights sweep across the body.
+  for(let i=0;i<46;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const rx=8+rnd()*38;
+    const ry=8+rnd()*28;
+    const v=104+Math.floor(rnd()*64);
+    const grad=g.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+    grad.addColorStop(0,'rgba('+v+','+v+','+v+','+(.10+rnd()*.18).toFixed(3)+')');
+    grad.addColorStop(1,'rgba('+v+','+v+','+v+',0)');
+    g.fillStyle=grad;
+    g.fillRect(x-rx,y-ry,rx*2,ry*2);
+  }
+
+  for(let i=0;i<850;i++){
+    const v=78+Math.floor(rnd()*70);
+    g.fillStyle='rgba('+v+','+v+','+v+','+(.035+rnd()*.085).toFixed(3)+')';
+    const rr=.25+rnd()*.85;
+    g.fillRect(rnd()*size,rnd()*size,rr,rr);
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(3.4,3.4);
+  texture.anisotropy=8;
+  return texture;
+}
+const vehicleDustRoughness=makeVehicleDustRoughness(0x8b6e24d1);
+
 function makeSubjectRoughnessTexture(kind,seed,repeatX,repeatY){
   const size=256;
   const canvas=document.createElement('canvas');
@@ -1306,6 +1354,29 @@ function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x9fc7d6){
   panel.rotation.y=ry;
   panel.receiveShadow=true;
   scene.add(panel);
+
+  const innerPane=new THREE.Mesh(
+    new THREE.PlaneGeometry(w*.992,h*.992),
+    new THREE.MeshPhysicalMaterial({
+      color:new THREE.Color(tint).lerp(new THREE.Color(0xcbd7d5),.22),
+      roughnessMap:glassRoughnessTexture,
+      roughness:.26,
+      metalness:0,
+      transparent:true,
+      opacity:.095,
+      transmission:.045,
+      ior:1.50,
+      thickness:.006,
+      clearcoat:0,
+      envMapIntensity:.48,
+      depthWrite:false,
+      side:THREE.DoubleSide
+    })
+  );
+  innerPane.position.z=-.018;
+  innerPane.renderOrder=1;
+  panel.add(innerPane);
+
   return panel;
 }
 
@@ -6383,10 +6454,11 @@ function tuneVehicleAsset(root,bodyColor){
           material.bumpScale=.0022;
         }
         if(material.isMeshPhysicalMaterial){
-          material.clearcoat=.72;
-          material.clearcoatRoughness=.18;
+          material.clearcoat=.68;
+          material.clearcoatRoughness=.17;
+          material.clearcoatRoughnessMap=vehicleDustRoughness;
           material.clearcoatNormalMap=vehicleClearcoatNormal;
-          material.clearcoatNormalScale?.set(.045,.045);
+          material.clearcoatNormalScale?.set(.040,.040);
           if('specularIntensity' in material) material.specularIntensity=.72;
         }
       }else if(material.color){
@@ -6533,7 +6605,8 @@ function tuneMiraAsset(root){
           if(material.sheenColor && material.color){
             material.sheenColor.copy(material.color).lerp(new THREE.Color(0x8a766c),.20);
           }
-          if('anisotropy' in material) material.anisotropy=.12;
+          if('anisotropy' in material) material.anisotropy=.30;
+          if('anisotropyRotation' in material) material.anisotropyRotation=.06;
         }
       }else{
         // Treat the remaining character materials as fabric/leather rather than
