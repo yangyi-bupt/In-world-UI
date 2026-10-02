@@ -28,6 +28,96 @@
     return g;
   }
 
+  function seededRandom(seed){
+    let state=seed>>>0;
+    return ()=>{
+      state=(Math.imul(state,1664525)+1013904223)>>>0;
+      return state/4294967296;
+    };
+  }
+
+  function makeDeviceRoughnessTexture(seed,base=166,grain=24,smudges=0){
+    const size=256;
+    const canvas=document.createElement('canvas');
+    canvas.width=canvas.height=size;
+    const g=canvas.getContext('2d');
+    const rnd=seededRandom(seed);
+
+    g.fillStyle='rgb('+base+','+base+','+base+')';
+    g.fillRect(0,0,size,size);
+
+    for(let i=0;i<2800;i++){
+      const delta=(rnd()-.5)*grain;
+      const v=Math.max(0,Math.min(255,Math.round(base+delta)));
+      const a=.035+rnd()*.085;
+      const r=.25+rnd()*.85;
+      g.fillStyle='rgba('+v+','+v+','+v+','+a.toFixed(3)+')';
+      g.fillRect(rnd()*size,rnd()*size,r,r);
+    }
+
+    for(let i=0;i<smudges;i++){
+      const x=22+rnd()*(size-44);
+      const y=22+rnd()*(size-44);
+      const radius=12+rnd()*34;
+      const v=Math.max(0,Math.min(255,Math.round(base-30+rnd()*28)));
+      const gradient=g.createRadialGradient(x,y,1,x,y,radius);
+      gradient.addColorStop(0,'rgba('+v+','+v+','+v+','+(.08+rnd()*.10).toFixed(3)+')');
+      gradient.addColorStop(.55,'rgba('+v+','+v+','+v+','+(.035+rnd()*.05).toFixed(3)+')');
+      gradient.addColorStop(1,'rgba('+v+','+v+','+v+',0)');
+      g.fillStyle=gradient;
+      g.fillRect(x-radius,y-radius,radius*2,radius*2);
+    }
+
+    const texture=new THREE.CanvasTexture(canvas);
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+    texture.anisotropy=8;
+    return texture;
+  }
+
+  function makeSkinMicroTexture(seed){
+    const size=256;
+    const canvas=document.createElement('canvas');
+    canvas.width=canvas.height=size;
+    const g=canvas.getContext('2d');
+    const rnd=seededRandom(seed);
+
+    g.fillStyle='#808080';
+    g.fillRect(0,0,size,size);
+
+    // Fine pore/noise field breaks up the broad plastic highlight.
+    for(let i=0;i<4200;i++){
+      const v=112+Math.floor(rnd()*32);
+      const a=.04+rnd()*.10;
+      const r=.20+rnd()*.72;
+      g.fillStyle='rgba('+v+','+v+','+v+','+a.toFixed(3)+')';
+      g.fillRect(rnd()*size,rnd()*size,r,r);
+    }
+
+    // A few shallow crease-like strokes suggest palm/finger skin at grazing angles.
+    for(let i=0;i<26;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const length=9+rnd()*28;
+      g.strokeStyle='rgba(102,102,102,'+(.035+rnd()*.055).toFixed(3)+')';
+      g.lineWidth=.35+rnd()*.55;
+      g.beginPath();
+      g.moveTo(x,y);
+      g.quadraticCurveTo(
+        x+length*.46,
+        y+(rnd()-.5)*5,
+        x+length,
+        y+(rnd()-.5)*7
+      );
+      g.stroke();
+    }
+
+    const texture=new THREE.CanvasTexture(canvas);
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+    texture.repeat.set(2.6,2.6);
+    texture.anisotropy=8;
+    return texture;
+  }
+
   window.createTablet3DController=function(canvas){
     if(!canvas || !window.THREE) return null;
 
@@ -50,25 +140,47 @@
     const rig=new THREE.Group();
     scene.add(rig);
 
+    const chassisRoughness=makeDeviceRoughnessTexture(0x4f8cb312,168,22,3);
+    chassisRoughness.repeat.set(4.2,3.4);
+    const edgeRoughness=makeDeviceRoughnessTexture(0x86c22f41,150,16,1);
+    edgeRoughness.repeat.set(5.0,3.0);
+    const glassRoughness=makeDeviceRoughnessTexture(0x71ac4d21,30,18,22);
+    glassRoughness.repeat.set(1.0,1.0);
+    const skinMicroTexture=makeSkinMicroTexture(0x8cb14e2a);
+    const palmRoughness=makeDeviceRoughnessTexture(0x2ab7d143,177,28,8);
+    palmRoughness.repeat.set(2.8,2.8);
+    const fingerRoughness=makeDeviceRoughnessTexture(0x14d983c5,165,24,10);
+    fingerRoughness.repeat.set(3.2,3.2);
+
     const aluminum=new THREE.MeshPhysicalMaterial({
       color:0x666b70,
-      metalness:.98,
-      roughness:.22,
-      clearcoat:.34,
-      clearcoatRoughness:.18
+      metalness:.94,
+      roughness:.25,
+      roughnessMap:chassisRoughness,
+      clearcoat:.18,
+      clearcoatRoughness:.28,
+      envMapIntensity:.72
     });
     const edgeMetal=new THREE.MeshPhysicalMaterial({
       color:0x8b8f93,
-      metalness:1,
-      roughness:.16,
-      clearcoat:.28
+      metalness:.98,
+      roughness:.18,
+      roughnessMap:edgeRoughness,
+      clearcoat:.22,
+      clearcoatRoughness:.22,
+      envMapIntensity:.92
     });
     const blackGlass=new THREE.MeshPhysicalMaterial({
       color:0x030405,
-      metalness:.08,
-      roughness:.085,
+      metalness:.02,
+      roughness:.055,
+      roughnessMap:glassRoughness,
       clearcoat:1,
-      clearcoatRoughness:.045
+      clearcoatRoughness:.035,
+      transmission:.025,
+      ior:1.5,
+      thickness:.006,
+      envMapIntensity:1.02
     });
     const lensMat=new THREE.MeshPhysicalMaterial({
       color:0x06101c,
@@ -185,7 +297,37 @@
       rig.add(part);
     });
 
-    const handSkin=new THREE.MeshStandardMaterial({color:0xb9826f,roughness:.74,metalness:0});
+    const handPalmSkin=new THREE.MeshPhysicalMaterial({
+      color:0xbd8974,
+      roughness:.68,
+      roughnessMap:palmRoughness,
+      bumpMap:skinMicroTexture,
+      bumpScale:.0015,
+      metalness:0,
+      clearcoat:0,
+      specularIntensity:.42,
+      envMapIntensity:.13
+    });
+    const handFingerSkin=new THREE.MeshPhysicalMaterial({
+      color:0xbf8b76,
+      roughness:.63,
+      roughnessMap:fingerRoughness,
+      bumpMap:skinMicroTexture,
+      bumpScale:.0017,
+      metalness:0,
+      clearcoat:0,
+      specularIntensity:.48,
+      envMapIntensity:.15
+    });
+    const nailMat=new THREE.MeshPhysicalMaterial({
+      color:0xe3b9aa,
+      roughness:.31,
+      metalness:0,
+      clearcoat:.08,
+      clearcoatRoughness:.16,
+      specularIntensity:.60,
+      envMapIntensity:.24
+    });
     const sleeveMat=new THREE.MeshStandardMaterial({color:0x242a31,roughness:.9,metalness:.02});
 
     function createHoldingHand(side){
@@ -195,27 +337,36 @@
       // Keep almost the whole hand behind the tablet, but let a thin crescent
       // of palm + thumb base show beyond the side rail. This gives a readable
       // grip silhouette without ever crossing onto the display surface.
-      const palm=new THREE.Mesh(new THREE.SphereGeometry(.18,20,14),handSkin);
+      const palm=new THREE.Mesh(new THREE.SphereGeometry(.18,20,14),handPalmSkin);
       palm.scale.set(.72,.98,.50);
       palm.position.set(s*1.47,-.765,-.105);
       palm.rotation.z=s*.09;
       hand.add(palm);
 
-      const thumbRoot=new THREE.Mesh(new THREE.SphereGeometry(.075,16,12),handSkin);
+      const thumbRoot=new THREE.Mesh(new THREE.SphereGeometry(.075,16,12),handFingerSkin);
       thumbRoot.scale.set(.62,.82,.52);
       thumbRoot.position.set(s*1.455,-.755,-.07);
       thumbRoot.rotation.z=s*.18;
       hand.add(thumbRoot);
 
-      const thumb=new THREE.Mesh(new THREE.CapsuleGeometry(.031,.12,8,12),handSkin);
+      const thumb=new THREE.Mesh(new THREE.CapsuleGeometry(.031,.12,8,12),handFingerSkin);
       thumb.position.set(s*1.455,-.735,-.012);
       thumb.rotation.z=s*.84;
       thumb.rotation.x=.34;
       hand.add(thumb);
 
+      // A separate nail material gives the only exposed fingertip a keratin-like
+      // response instead of letting the whole grip share one waxy skin shader.
+      const nail=new THREE.Mesh(new THREE.SphereGeometry(.026,14,10),nailMat);
+      nail.scale.set(.72,.34,.34);
+      nail.position.set(s*1.407,-.695,.025);
+      nail.rotation.z=s*.84;
+      nail.rotation.x=.34;
+      hand.add(nail);
+
       // Front-facing finger geometry remains hidden until a skinned hand model
       // can bend around the rear shell without clipping through the screen.
-      const indexFinger=new THREE.Mesh(new THREE.CapsuleGeometry(.026,.14,8,12),handSkin);
+      const indexFinger=new THREE.Mesh(new THREE.CapsuleGeometry(.026,.14,8,12),handFingerSkin);
       indexFinger.position.set(s*1.43,-.92,-.11);
       indexFinger.rotation.z=s*.12;
       indexFinger.rotation.x=.46;
@@ -228,7 +379,7 @@
       forearm.rotation.x=-.10;
       hand.add(forearm);
 
-      hand.userData={side:s,palm,thumbRoot,thumb,indexFinger,forearm,baseY:hand.position.y};
+      hand.userData={side:s,palm,thumbRoot,thumb,nail,indexFinger,forearm,baseY:hand.position.y};
       rig.add(hand);
       return hand;
     }
@@ -466,8 +617,10 @@
 
       // Material response: the metal gets slightly sharper at steeper pointer
       // angles, while the camera lens catches a moving pin-prick reflection.
-      aluminum.roughness=.22-Math.min(.025,Math.abs(pointerX)*.016+Math.abs(pointerY)*.009);
-      edgeMetal.roughness=.16-Math.min(.022,Math.abs(pointerX)*.014+Math.abs(pointerY)*.008);
+      aluminum.roughness=.25-Math.min(.022,Math.abs(pointerX)*.014+Math.abs(pointerY)*.008);
+      edgeMetal.roughness=.18-Math.min(.018,Math.abs(pointerX)*.012+Math.abs(pointerY)*.007);
+      handPalmSkin.roughness=.68-Math.min(.025,Math.abs(pointerX)*.010+Math.max(0,pressAmount)*.018);
+      handFingerSkin.roughness=.63-Math.min(.032,Math.abs(pointerY)*.012+Math.max(0,pressAmount)*.022);
       lensGlint.position.x=-.006+pointerX*.010;
       lensGlint.position.y=.900+pointerY*.006;
       lensGlintMat.opacity=(.22+.34*hold)*(1-Math.min(.45,Math.abs(pointerX)*.15))+Math.max(0,pressAmount)*.08;
