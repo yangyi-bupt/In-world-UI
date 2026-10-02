@@ -24,6 +24,8 @@
   --screen-parallax-y:0px;
   --glass-shift-x:0px;
   --glass-shift-y:0px;
+  --glass-counter-x:0px;
+  --glass-counter-y:0px;
   --glass-angle:118deg;
 }
 .tablet .screen{
@@ -47,6 +49,6 @@
   transition:transform .07s linear;
 }
 .tablet .screen:before{
-  transform:translate3d(calc(var(--glass-shift-x) * -.35),calc(var(--glass-shift-y) * -.35),0);
+  transform:translate3d(var(--glass-counter-x),var(--glass-counter-y),0);
   transition:transform .09s linear;
 }
