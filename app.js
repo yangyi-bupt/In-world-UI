@@ -694,6 +694,127 @@ function createDapplePatch(x,z,w,d,rotation=0,opacity=.72){
   return patch;
 }
 
+function makeWeatheringTexture(kind,seed){
+  const size=512;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+  g.clearRect(0,0,size,size);
+
+  if(kind==='facade'){
+    // Larger low-contrast blooms create believable tonal history before any
+    // small marks are added. This is intentionally subtle at normal distance.
+    for(let i=0;i<46;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const rx=18+rnd()*72;
+      const ry=24+rnd()*110;
+      const grad=g.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+      const warm=rnd()>.56;
+      grad.addColorStop(
+        0,
+        warm
+          ? 'rgba(122,102,82,'+(.012+rnd()*.025).toFixed(3)+')'
+          : 'rgba(78,88,84,'+(.010+rnd()*.022).toFixed(3)+')'
+      );
+      grad.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=grad;
+      g.save();
+      g.translate(x,y);
+      g.scale(rx/Math.max(rx,ry),ry/Math.max(rx,ry));
+      g.beginPath();
+      g.arc(0,0,Math.max(rx,ry),0,Math.PI*2);
+      g.fill();
+      g.restore();
+    }
+
+    // Rain streaks gather below projections and window lines.
+    for(let i=0;i<70;i++){
+      const x=rnd()*size;
+      const y=rnd()*size*.78;
+      const len=10+rnd()*74;
+      const alpha=.007+rnd()*.018;
+      const grad=g.createLinearGradient(x,y,x,y+len);
+      grad.addColorStop(0,'rgba(67,72,68,'+alpha.toFixed(3)+')');
+      grad.addColorStop(1,'rgba(67,72,68,0)');
+      g.strokeStyle=grad;
+      g.lineWidth=.45+rnd()*1.2;
+      g.beginPath();
+      g.moveTo(x,y);
+      g.lineTo(x+(rnd()-.5)*2.6,y+len);
+      g.stroke();
+    }
+
+    // Ground-level urban dust is stronger near the base, but remains faint.
+    const base=g.createLinearGradient(0,size*.70,0,size);
+    base.addColorStop(0,'rgba(82,75,66,0)');
+    base.addColorStop(1,'rgba(82,75,66,.055)');
+    g.fillStyle=base;
+    g.fillRect(0,size*.70,size,size*.30);
+  }else if(kind==='road'){
+    for(let i=0;i<84;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const rx=10+rnd()*48;
+      const ry=18+rnd()*78;
+      const grad=g.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+      grad.addColorStop(0,'rgba(25,30,31,'+(.012+rnd()*.030).toFixed(3)+')');
+      grad.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=grad;
+      g.save();
+      g.translate(x,y);
+      g.scale(rx/Math.max(rx,ry),ry/Math.max(rx,ry));
+      g.beginPath();
+      g.arc(0,0,Math.max(rx,ry),0,Math.PI*2);
+      g.fill();
+      g.restore();
+    }
+
+    for(let i=0;i<26;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      g.strokeStyle='rgba(28,33,34,'+(.018+rnd()*.028).toFixed(3)+')';
+      g.lineWidth=.4+rnd()*.8;
+      g.beginPath();
+      g.moveTo(x,y);
+      g.bezierCurveTo(
+        x+(rnd()-.5)*28,y+12+rnd()*18,
+        x+(rnd()-.5)*38,y+26+rnd()*28,
+        x+(rnd()-.5)*46,y+42+rnd()*34
+      );
+      g.stroke();
+    }
+  }else{
+    for(let i=0;i<180;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const len=2+rnd()*16;
+      g.strokeStyle=rnd()>.82
+        ? 'rgba(119,77,46,'+(.012+rnd()*.026).toFixed(3)+')'
+        : 'rgba(240,243,237,'+(.010+rnd()*.022).toFixed(3)+')';
+      g.lineWidth=.35+rnd()*.60;
+      g.beginPath();
+      g.moveTo(x,y);
+      g.lineTo(x+len,y+(rnd()-.5)*2);
+      g.stroke();
+    }
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.anisotropy=8;
+  return texture;
+}
+
+const facadeWeatherTexture=makeWeatheringTexture('facade',0x82d4a931);
+facadeWeatherTexture.repeat.set(1,1.8);
+const roadWearTexture=makeWeatheringTexture('road',0x5ca91d73);
+roadWearTexture.repeat.set(1.2,4.8);
+const metalWearTexture=makeWeatheringTexture('metal',0x31d7be42);
+metalWearTexture.repeat.set(2.5,5.0);
+
 // ---------- daytime city block ----------
 // Ground is deliberately split into road, curb and pedestrian zones so the
 // player immediately reads this as a real street rather than a generic floor.
@@ -786,7 +907,14 @@ for(let z=-43;z<=39;z+=3.25){
   scene.add(joint);
 }
 
-const curbDrainMat=new THREE.MeshStandardMaterial({color:0x59605e,roughness:.68,metalness:.35});
+const curbDrainMat=new THREE.MeshStandardMaterial({
+  color:0x59605e,
+  roughness:.64,
+  metalness:.38,
+  map:metalWearTexture,
+  bumpMap:metalSurface.bump,
+  bumpScale:.004
+});
 [-24,-8,8,24].forEach(z=>{
   const grate=new THREE.Mesh(new THREE.BoxGeometry(.24,.018,.58),curbDrainMat);
   grate.position.set(-.18,.034,z);
@@ -880,6 +1008,44 @@ const roadSheenMat=new THREE.MeshBasicMaterial({
   sheen.rotation.x=-Math.PI/2;
   sheen.position.set(x,.026,z);
   scene.add(sheen);
+});
+
+// Tire lanes and irregular resurfacing gently break the repeated asphalt map.
+// Their opacity is low enough to read as accumulated use, not painted graphics.
+const roadWearMat=new THREE.MeshBasicMaterial({
+  map:roadWearTexture,
+  transparent:true,
+  opacity:.52,
+  depthWrite:false,
+  toneMapped:false
+});
+[
+  [-9.25,-4,1.55,82,.00],
+  [-5.65,-4,1.42,82,.18]
+].forEach(([x,z,w,d,rot])=>{
+  const wear=new THREE.Mesh(new THREE.PlaneGeometry(w,d),roadWearMat);
+  wear.rotation.x=-Math.PI/2;
+  wear.rotation.z=rot;
+  wear.position.set(x,.028,z);
+  scene.add(wear);
+});
+
+const roadRepairMat=new THREE.MeshBasicMaterial({
+  color:0x4d5555,
+  transparent:true,
+  opacity:.085,
+  depthWrite:false
+});
+[
+  [-8.9,-12.3,2.25,4.7,-.035],
+  [-5.65,11.8,1.75,3.2,.025],
+  [-8.10,24.5,1.45,2.7,-.02]
+].forEach(([x,z,w,d,rot])=>{
+  const patch=new THREE.Mesh(new THREE.PlaneGeometry(w,d),roadRepairMat);
+  patch.rotation.x=-Math.PI/2;
+  patch.rotation.z=rot;
+  patch.position.set(x,.029,z);
+  scene.add(patch);
 });
 
 for(let x=-12.6;x<-1.0;x+=1.45){
@@ -993,6 +1159,25 @@ const facadeSoftShade=new THREE.Mesh(
 facadeSoftShade.rotation.x=-Math.PI/2;
 facadeSoftShade.position.set(6.95,.056,-5);
 scene.add(facadeSoftShade);
+
+// The street facade gets a very low-opacity weather layer: rain traces, dust at
+// pedestrian height and broad tonal drift. It keeps the warm stone clean but
+// stops sixty metres of wall from reading as a freshly rendered solid color.
+const facadeWeatherMat=new THREE.MeshBasicMaterial({
+  map:facadeWeatherTexture,
+  transparent:true,
+  opacity:.58,
+  depthWrite:false,
+  toneMapped:false,
+  side:THREE.DoubleSide
+});
+const facadeWeather=new THREE.Mesh(
+  new THREE.PlaneGeometry(63.6,6.75),
+  facadeWeatherMat
+);
+facadeWeather.position.set(8.392,3.47,-5);
+facadeWeather.rotation.y=-Math.PI/2;
+scene.add(facadeWeather);
 
 // Three shallow backing planes give the long frontage three distinct identities:
 // muted grey-green shops, a cream stone home block around Mira, and the warm cafe.
@@ -2135,7 +2320,14 @@ const focalBloomMats=[
 });
 
 function createLampPost(x,z,withBanner=true){
-  const metal=new THREE.MeshStandardMaterial({color:0x687170,roughness:.56,metalness:.38});
+  const metal=new THREE.MeshStandardMaterial({
+    color:0x687170,
+    roughness:.54,
+    metalness:.40,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.004
+  });
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,3.2,10),metal);
   pole.position.set(x,1.6,z);
   pole.castShadow=true;
@@ -2173,7 +2365,14 @@ createLampPost(.45,15,true);
 
 const wayfindingPole=new THREE.Mesh(
   new THREE.CylinderGeometry(.045,.055,2.25,10),
-  new THREE.MeshStandardMaterial({color:0x66716e,roughness:.58,metalness:.30})
+  new THREE.MeshStandardMaterial({
+    color:0x66716e,
+    roughness:.56,
+    metalness:.32,
+    map:metalWearTexture,
+    bumpMap:metalSurface.bump,
+    bumpScale:.004
+  })
 );
 wayfindingPole.position.set(.48,1.13,-16.1);
 wayfindingPole.castShadow=true;
