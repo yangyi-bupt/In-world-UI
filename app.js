@@ -3113,7 +3113,7 @@ function animate(){
     miraBaseYaw+.22
   );
   const replyAttention=Math.max(0,Math.min(1,(miraReplyMotionUntil-performance.now())/850));
-  const distanceAttention=THREE.MathUtils.smoothstep(11.5,3.2,miraDistance);
+  const distanceAttention=1-THREE.MathUtils.smoothstep(miraDistance,3.2,11.5);
   const attentionDrift=.90+Math.sin(t*.23+1.4)*.07;
   const miraAttention=THREE.MathUtils.clamp(
     distanceAttention*attentionDrift+replyAttention*.28,
@@ -3128,7 +3128,7 @@ function animate(){
 
   // Focal lighting is distance-aware: enough facial separation up close, but
   // almost indistinguishable from ordinary daylight from across the block.
-  const presence=THREE.MathUtils.smoothstep(10.5,2.4,miraDistance);
+  const presence=1-THREE.MathUtils.smoothstep(miraDistance,2.4,10.5);
   faceLight.intensity=5.25+presence*.95;
   miraPresenceLight.intensity=.22+presence*.24;
   miraWarmBounce.intensity=.13+presence*.055;
