@@ -1468,6 +1468,39 @@ topCornice.position.set(8.25,7.42,-5);
 topCornice.castShadow=true;
 scene.add(topCornice);
 
+// Layered shadow lines make the roof edge read as built masonry rather than a
+// single extruded box. The additions stay shallow so the facade silhouette is
+// refined without becoming ornate.
+const corniceUnder=new THREE.Mesh(
+  new THREE.BoxGeometry(.38,.09,64.86),
+  new THREE.MeshStandardMaterial({
+    color:0xcac1b5,
+    roughness:.90,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.008,
+    envMapIntensity:.055
+  })
+);
+corniceUnder.position.set(8.40,7.31,-5);
+corniceUnder.castShadow=true;
+scene.add(corniceUnder);
+
+const corniceLip=new THREE.Mesh(
+  new THREE.BoxGeometry(.68,.055,65.08),
+  new THREE.MeshStandardMaterial({
+    color:0xeee6da,
+    roughness:.86,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.006,
+    envMapIntensity:.055
+  })
+);
+corniceLip.position.set(8.16,7.51,-5);
+corniceLip.castShadow=true;
+scene.add(corniceLip);
+
 const facadeBaseBand=new THREE.Mesh(
   new THREE.BoxGeometry(.36,.20,64.8),
   new THREE.MeshStandardMaterial({
@@ -1829,6 +1862,35 @@ const portalStoneMat=new THREE.MeshStandardMaterial({
   head.position.set(7.98,3.00,z);
   head.castShadow=true;
   scene.add(head);
+
+  // Inner reveal and a projecting head cap add depth to the portal without
+  // requiring boolean geometry.
+  const innerMat=new THREE.MeshStandardMaterial({
+    color:portalIndex===0?0xbab1a5:0xb5bbb3,
+    roughness:.92,
+    map:concreteSurface.map,
+    bumpMap:concreteSurface.bump,
+    bumpScale:.009,
+    envMapIntensity:.055
+  });
+  [-width*.5+.20,width*.5-.20].forEach(oz=>{
+    const reveal=new THREE.Mesh(new THREE.BoxGeometry(.18,2.70,.13),innerMat);
+    reveal.position.set(7.74,1.48,z+oz);
+    reveal.castShadow=true;
+    scene.add(reveal);
+  });
+  const innerHead=new THREE.Mesh(new THREE.BoxGeometry(.18,.16,width-.18),innerMat);
+  innerHead.position.set(7.74,2.86,z);
+  innerHead.castShadow=true;
+  scene.add(innerHead);
+
+  const headCap=new THREE.Mesh(
+    new THREE.BoxGeometry(.48,.085,width+.40),
+    portalStoneMat
+  );
+  headCap.position.set(7.91,3.16,z);
+  headCap.castShadow=true;
+  scene.add(headCap);
 });
 
 // A few recessed ground-floor entries keep the frontage from feeling like one
@@ -3137,13 +3199,39 @@ const benchMetal=new THREE.MeshStandardMaterial({
   bumpScale:.005,
   envMapIntensity:.92
 });
-const benchSeat=new THREE.Mesh(new THREE.BoxGeometry(1.75,.10,.48),benchWood);
-benchSeat.position.set(6.15,.54,-5.55);benchSeat.castShadow=true;scene.add(benchSeat);
-const benchBack=new THREE.Mesh(new THREE.BoxGeometry(1.75,.48,.08),benchWood);
-benchBack.position.set(6.15,.82,-5.35);benchBack.rotation.x=-.12;benchBack.castShadow=true;scene.add(benchBack);
+// Separate timber slats produce real gaps and edge highlights instead of one
+// monolithic wooden box.
+[-.16,0,.16].forEach((zOffset,index)=>{
+  const slat=new THREE.Mesh(new THREE.BoxGeometry(1.75,.085,.13),benchWood);
+  slat.position.set(6.15,.54,-5.55+zOffset);
+  slat.rotation.x=(index-1)*.010;
+  slat.castShadow=true;
+  scene.add(slat);
+});
+[-.15,0,.15].forEach((yOffset,index)=>{
+  const backSlat=new THREE.Mesh(new THREE.BoxGeometry(1.75,.12,.065),benchWood);
+  backSlat.position.set(6.15,.82+yOffset,-5.35-yOffset*.12);
+  backSlat.rotation.x=-.12;
+  backSlat.castShadow=true;
+  scene.add(backSlat);
+});
+
 [-.70,.70].forEach(offset=>{
-  const leg=new THREE.Mesh(new THREE.BoxGeometry(.08,.52,.08),benchMetal);
-  leg.position.set(6.15+offset,.27,-5.55);leg.castShadow=true;scene.add(leg);
+  const leg=new THREE.Mesh(new THREE.BoxGeometry(.07,.50,.07),benchMetal);
+  leg.position.set(6.15+offset,.27,-5.55);
+  leg.castShadow=true;
+  scene.add(leg);
+
+  const support=new THREE.Mesh(new THREE.BoxGeometry(.07,.06,.52),benchMetal);
+  support.position.set(6.15+offset,.49,-5.54);
+  support.castShadow=true;
+  scene.add(support);
+
+  const backPost=new THREE.Mesh(new THREE.BoxGeometry(.06,.53,.06),benchMetal);
+  backPost.position.set(6.15+offset,.71,-5.38);
+  backPost.rotation.x=-.12;
+  backPost.castShadow=true;
+  scene.add(backPost);
 });
 
 for(let i=0;i<3;i++){
