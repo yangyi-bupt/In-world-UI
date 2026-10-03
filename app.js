@@ -11186,6 +11186,8 @@ const miraBones={
   hips:null,
   leftUpperLeg:null,
   rightUpperLeg:null,
+  leftArm:null,
+  leftForeArm:null,
   rightArm:null,
   rightForeArm:null
 };
@@ -12131,6 +12133,21 @@ function captureMiraBones(root){
     }
 
     if(
+      !miraBones.leftForeArm &&
+      /leftforearm|leftlowerarm|forearm_l|lowerarm_l|l_forearm/.test(key)
+    ){
+      miraBones.leftForeArm=object;
+    }
+
+    if(
+      !miraBones.leftArm &&
+      /leftarm|leftupperarm|upperarm_l|arm_l|l_upperarm/.test(key) &&
+      !/forearm|lowerarm/.test(key)
+    ){
+      miraBones.leftArm=object;
+    }
+
+    if(
       !miraBones.rightForeArm &&
       /rightforearm|rightlowerarm|forearm_r|lowerarm_r|r_forearm/.test(key)
     ){
@@ -12263,6 +12280,20 @@ function addVehicleStreetDetails(entry,root,targetLength,index=0){
   cabinShade.position.set(0,height*.60,-targetLength*.035);
   entry.group.add(cabinShade);
 
+  // Low underbody volume blocks daylight from leaking through the chassis and
+  // makes the wheel/road gap read like a real car rather than a hollow shell.
+  const underbody=new THREE.Mesh(
+    new THREE.BoxGeometry(width*.72,.11,targetLength*.66),
+    new THREE.MeshStandardMaterial({
+      color:0x202424,
+      roughness:.98,
+      metalness:.015,
+      envMapIntensity:.012
+    })
+  );
+  underbody.position.set(0,.18,-.015);
+  entry.group.add(underbody);
+
   if(!entry.userGroundShadow){
     entry.userGroundShadow=createAttachedContactShadow(
       entry.group,
@@ -12377,6 +12408,28 @@ function attachMiraAsset(source,animations){
   captureMiraBones(root);
   if(!mira.userData.glbContactShadow){
     mira.userData.glbContactShadow=createAttachedContactShadow(mira,.62,.46,.072);
+  }
+
+  if(!mira.userData.footContactShadows){
+    const footShadowMat=new THREE.MeshBasicMaterial({
+      color:0x1f2423,
+      transparent:true,
+      opacity:.105,
+      depthWrite:false,
+      toneMapped:true
+    });
+    mira.userData.footContactShadows=[-.095,.095].map((x,index)=>{
+      const shadow=new THREE.Mesh(
+        new THREE.CircleGeometry(.102,18),
+        footShadowMat.clone()
+      );
+      shadow.scale.set(.94,1.48,1);
+      shadow.rotation.x=-Math.PI/2;
+      shadow.rotation.z=index?-.08:.08;
+      shadow.position.set(x,.006,.016+(index?.010:-.006));
+      mira.add(shadow);
+      return shadow;
+    });
   }
 
   // Only play an explicitly named idle animation. Keep it slower than the
@@ -13002,6 +13055,22 @@ function animate(){
     applyMiraBoneOffset(miraBones.neck,headPitch*.24,neckYaw,0);
     applyMiraBoneOffset(miraBones.head,headPitch,headYaw,Math.sin(t*.21)*.003);
 
+    // The non-greeting arm participates in the stance. A small opposing motion
+    // keeps both shoulders alive without turning the idle into an animation loop.
+    const leftArmBreath=Math.sin(t*.43+2.1)*.010;
+    applyMiraBoneOffset(
+      miraBones.leftArm,
+      -.010+leftArmBreath,
+      .006-weightShift*.004,
+      .020+weightShift*.008
+    );
+    applyMiraBoneOffset(
+      miraBones.leftForeArm,
+      -.018+slowBreath*.006,
+      0,
+      -.008
+    );
+
     // The greeting reads as a small shoulder/forearm acknowledgement rather
     // than a full waving animation.
     applyMiraBoneOffset(
@@ -13023,6 +13092,14 @@ function animate(){
       shadow.scale.set(settle,settle,1);
       shadow.material.opacity=.92+Math.sin(t*.37+.6)*.025;
     }
+
+    mira.userData.footContactShadows?.forEach((footShadow,index)=>{
+      const footWeight=index===0
+        ? .104+weightShift*.020
+        : .104-weightShift*.020;
+      footShadow.material.opacity=THREE.MathUtils.clamp(footWeight,.078,.132);
+      footShadow.scale.x=.94+(index===0?weightShift:-weightShift)*.034;
+    });
   }
   const idleBreath=Math.sin(t*1.55);
   if(!miraGLBRoot){
