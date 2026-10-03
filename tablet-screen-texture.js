@@ -580,7 +580,7 @@
       ctx.beginPath();
       ctx.arc(orbitX,orbitY,20,0,Math.PI*2);
       ctx.stroke();
-      text('01',orbitX-9,orbitY+5,13,'800','#bdeaff');
+      text('01',orbitX-9,orbitY+5,13,'800','#2f7598');
 
       const statusItems=[
         ['MIRA','NEARBY','#2f87b5'],
@@ -767,7 +767,7 @@
       ctx.fillStyle='rgba(127,214,255,.09)';
       roundedRect(70,306,44,44,22,true);
       strokeRoundRect(70,306,44,44,22,'rgba(127,214,255,.22)',1);
-      text('M',84,335,18,'750','#aee8ff');
+      text('M',84,335,18,'750','#2f7598');
       text('Mira',128,323,14,'700','#25303a');
       text('just now',128,344,12,'500','#65758f');
 
@@ -800,7 +800,7 @@
         ctx.fillStyle='rgba(89,158,255,.16)';
         roundedRect(410,548,544,54,19,true);
         strokeRoundRect(410,548,544,54,19,'rgba(127,214,255,.14)',1);
-        text(selected.label,436,581,17,'550','#e2ecff');
+        text(selected.label,436,581,17,'550','#2f4f65');
 
         if(state.messageReplyPending){
           ctx.fillStyle='rgba(255,255,255,.88)';
@@ -825,7 +825,7 @@
       ctx.fillStyle='rgba(158,255,196,.055)';
       roundedRect(70,304,884,64,22,true);
       strokeRoundRect(70,304,884,64,22,'rgba(158,255,196,.11)',1);
-      text(doneCount+' / 3',94,337,24,'720','#dcffe9');
+      text(doneCount+' / 3',94,337,24,'720','#2f6849');
       text('completed',160,337,13,'650','#708a7b');
       ctx.fillStyle='rgba(38,47,56,.10)';
       roundedRect(300,331,620,6,3,true);
@@ -915,7 +915,7 @@
         ctx.fillStyle=i===1?'rgba(183,119,47,.10)':'rgba(255,255,255,.76)';
         roundedRect(x,y,w,h,14,true);
         strokeRoundRect(x,y,w,h,14,i===1?'rgba(183,119,47,.18)':'rgba(38,47,56,.09)',1);
-        text(label,x+16,y+29,10,'760',i===1?'#d9b98e':'#71808f');
+        text(label,x+16,y+29,10,'760',i===1?'#8b6034':'#71808f');
       });
 
       text('ROAD',112,356,10,'800','#69777c');
@@ -938,21 +938,21 @@
       ctx.beginPath();ctx.arc(430,520,18+youPulse,0,Math.PI*2);ctx.stroke();
       ctx.fillStyle='#8de5ff';
       ctx.beginPath();ctx.arc(430,520,9,0,Math.PI*2);ctx.fill();
-      text('YOU',452,526,13,'750','#9ae9ff');
+      text('YOU',452,526,13,'750','#2f7d9d');
 
       const miraPulse=4+Math.sin(state.uiTime*2.6+1.2)*1.5;
       ctx.strokeStyle='rgba(255,159,175,.18)';
       ctx.beginPath();ctx.arc(516,366,18+miraPulse,0,Math.PI*2);ctx.stroke();
       ctx.fillStyle='#ff9faf';
       ctx.beginPath();ctx.arc(516,366,9,0,Math.PI*2);ctx.fill();
-      text('MIRA',538,372,13,'750','#ffb5c0');
+      text('MIRA',538,372,13,'750','#a95362');
 
       // Existing interaction hitbox remains centered on Mira's marker.
       if(state.mapFocus==='mira'){
         ctx.fillStyle='rgba(255,159,175,.075)';
         roundedRect(610,594,318,54,18,true);
         strokeRoundRect(610,594,318,54,18,'rgba(255,159,175,.14)',1);
-        text('MIRA',632,627,14,'750','#ffc0ca');
+        text('MIRA',632,627,14,'750','#a95362');
         text('3.8 m · near the café',700,627,13,'550','#8f7890');
       }else{
         pill(94,594,250,34,'TAP MIRA TO MARK','#7561b2',false);
