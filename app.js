@@ -11057,8 +11057,9 @@ function createTrafficCar(x,z,color,speed,assetVariant='primary'){
   });
 }
 
-createTrafficCar(-9.2,-28,0xd4d0c7,1.64,'primary');
-createTrafficCar(-5.9,27,0x8a9da6,-1.30,'secondary');
+// Low-speed urban traffic still needs to move decisively faster than a person.
+createTrafficCar(-9.2,-28,0xd4d0c7,3.35,'primary');
+createTrafficCar(-5.9,27,0x8a9da6,-2.85,'secondary');
 
 const storefrontReveal=new THREE.Mesh(
   new THREE.PlaneGeometry(.86,61.5),
@@ -12622,9 +12623,11 @@ function setPlaceholderVisibility(entries,visible){
 
 function carTargetLength(entry){
   const parked=entry.baseSpeed===undefined;
+  // Real compact/sedan dimensions make the curb and storefront scale read
+  // correctly next to a 1.7m person. Previous lengths were slightly toy-like.
   return entry.assetVariant==='secondary'
-    ? (parked?3.92:3.82)
-    : (parked?4.20:4.10);
+    ? (parked?4.08:4.00)
+    : (parked?4.38:4.30);
 }
 
 function scheduleWorldStream(task,delay=0){
