@@ -10867,6 +10867,7 @@ if(startBtn){
   startBtn.addEventListener('click',()=>{
     if(!worldCoreAssetsReady) return;
     started=true;
+    document.body.classList.add('world-entered');
     startOverlay?.classList.add('hidden');
     setTimeout(()=>canvas.requestPointerLock?.(),250);
   });
