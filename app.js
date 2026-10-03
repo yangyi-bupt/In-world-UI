@@ -2322,7 +2322,7 @@ function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x929e9e){
       ior:1.50,
       thickness:.006,
       clearcoat:0,
-      envMapIntensity:.32,
+      envMapIntensity:.48,
       depthWrite:false,
       side:THREE.DoubleSide
     })
@@ -3802,7 +3802,7 @@ const roadDustLayer=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     map:roadDustTexture,
     transparent:true,
-    opacity:.46,
+    opacity:.62,
     depthWrite:false,
     toneMapped:false
   })
@@ -4011,10 +4011,10 @@ const corniceUnder=new THREE.Mesh(
     map:concreteSurface.map,
     roughnessMap:concreteSurface.roughness,
     normalMap:concreteSurface.normal,
-    normalScale:new THREE.Vector2(.12,.12),
+    normalScale:new THREE.Vector2(.22,.22),
     bumpMap:concreteSurface.bump,
-    bumpScale:.0040,
-    envMapIntensity:.0455
+    bumpScale:.008,
+    envMapIntensity:.055
   })
 );
 corniceUnder.position.set(8.40,7.31,-5);
@@ -5449,10 +5449,10 @@ const cafeInteriorFloor=new THREE.Mesh(
     map:concreteSurface.map,
     roughnessMap:concreteSurface.roughness,
     normalMap:concreteSurface.normal,
-    normalScale:new THREE.Vector2(.22,.22),
+    normalScale:new THREE.Vector2(.12,.12),
     bumpMap:concreteSurface.bump,
-    bumpScale:.008,
-    envMapIntensity:.05
+    bumpScale:.0040,
+    envMapIntensity:.045
   })
 );
 cafeInteriorFloor.rotation.x=-Math.PI/2;
@@ -6437,7 +6437,7 @@ function createDistantTrafficCue(x,z,direction,color){
   const lightMat=new THREE.MeshBasicMaterial({
     color:direction>0?0xe8e0c9:0x9b5a54,
     transparent:true,
-    opacity:.38,
+    opacity:.52,
     toneMapped:false
   });
   [-.32,.32].forEach(side=>{
@@ -7147,7 +7147,7 @@ for(let bay=0;bay<15;bay++){
 const refInteriorShadeMat=new THREE.MeshBasicMaterial({
   color:0x3d4848,
   transparent:true,
-  opacity:.11,
+  opacity:.16,
   depthWrite:false,
   toneMapped:true,
   side:THREE.DoubleSide
@@ -8877,8 +8877,8 @@ const refUtilityCoverMat=new THREE.MeshStandardMaterial({
   map:metalSurface.map,
   roughnessMap:metalSurface.roughness,
   normalMap:metalSurface.normal,
-  normalScale:new THREE.Vector2(.05,.05),
-  envMapIntensity:.48
+  normalScale:new THREE.Vector2(.042,.042),
+  envMapIntensity:.32
 });
 [
   {z:-1.05,w:.48,d:.66,r:.04},
@@ -9008,11 +9008,11 @@ refContactTexture.wrapT=THREE.RepeatWrapping;
 refContactTexture.repeat.set(1,12);
 
 const refBuildingContact=new THREE.Mesh(
-  new THREE.PlaneGeometry(1.72,73.0),
+  new THREE.PlaneGeometry(1.48,73.0),
   new THREE.MeshBasicMaterial({
     map:refContactTexture,
     transparent:true,
-    opacity:.62,
+    opacity:.46,
     depthWrite:false,
     toneMapped:true
   })
@@ -9046,18 +9046,18 @@ refCurbContactCanvas.height=16;
 const refCurbCtx=refCurbContactCanvas.getContext('2d');
 const refCurbGrad=refCurbCtx.createLinearGradient(0,0,128,0);
 refCurbGrad.addColorStop(0,'rgba(40,43,42,0)');
-refCurbGrad.addColorStop(.55,'rgba(36,39,39,.055)');
-refCurbGrad.addColorStop(1,'rgba(28,31,31,.14)');
+refCurbGrad.addColorStop(.55,'rgba(36,39,39,.038)');
+refCurbGrad.addColorStop(1,'rgba(28,31,31,.095)');
 refCurbCtx.fillStyle=refCurbGrad;
 refCurbCtx.fillRect(0,0,128,16);
 const refCurbTexture=new THREE.CanvasTexture(refCurbContactCanvas);
 refCurbTexture.colorSpace=THREE.SRGBColorSpace;
 const refCurbContact=new THREE.Mesh(
-  new THREE.PlaneGeometry(1.1,73),
+  new THREE.PlaneGeometry(.86,73),
   new THREE.MeshBasicMaterial({
     map:refCurbTexture,
     transparent:true,
-    opacity:.52,
+    opacity:.38,
     depthWrite:false,
     toneMapped:true
   })
@@ -9073,7 +9073,7 @@ refStreet.add(refCurbContact);
 const refJointMat=new THREE.MeshBasicMaterial({
   color:0x91938f,
   transparent:true,
-  opacity:.16,
+  opacity:.11,
   depthWrite:false,
   toneMapped:true
 });
