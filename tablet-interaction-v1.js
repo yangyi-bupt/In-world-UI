@@ -24,27 +24,17 @@
 
       @keyframes tabletRaiseHeld {
         0% {
-          transform:translate(-50%,38%) rotateX(25deg) rotateY(-2.4deg) rotateZ(-1.8deg) scale(.90);
-          opacity:.08;
-          filter:blur(2px);
-        }
-        38% {
-          transform:translate(-50%,-35%) rotateX(8deg) rotateY(-1.2deg) rotateZ(-.8deg) scale(.972);
-          opacity:.84;
-          filter:blur(.45px);
-        }
-        66% {
-          transform:translate(-50%,-52.2%) rotateX(-2.8deg) rotateY(.7deg) rotateZ(.25deg) scale(1.008);
-          opacity:1;
+          transform:translate(-50%,30%) rotateX(17deg) rotateY(-1.2deg) rotateZ(-.7deg) scale(.958);
+          opacity:.18;
           filter:none;
         }
-        82% {
-          transform:translate(-50%,-49.35%) rotateX(-.7deg) rotateY(.25deg) rotateZ(-.08deg) scale(.9975);
-          opacity:1;
+        42% {
+          transform:translate(-50%,-29%) rotateX(4.6deg) rotateY(-.55deg) rotateZ(-.30deg) scale(.990);
+          opacity:.93;
           filter:none;
         }
-        93% {
-          transform:translate(-50%,-50.25%) rotateX(-1.55deg) rotateY(.44deg) rotateZ(.035deg) scale(1.001);
+        76% {
+          transform:translate(-50%,-50.7%) rotateX(-1.7deg) rotateY(.28deg) rotateZ(.06deg) scale(1.001);
           opacity:1;
           filter:none;
         }
@@ -61,30 +51,31 @@
           opacity:1;
           filter:none;
         }
-        28% {
-          transform:translate(-50%,-47.5%) rotateX(1.5deg) rotateY(-.25deg) rotateZ(-.16deg) scale(.994);
-          opacity:.98;
+        32% {
+          transform:translate(-50%,-45%) rotateX(1.2deg) rotateY(-.12deg) rotateZ(-.08deg) scale(.996);
+          opacity:1;
+          filter:none;
         }
-        62% {
-          transform:translate(-50%,-21%) rotateX(14deg) rotateY(-1.15deg) rotateZ(-.75deg) scale(.952);
-          opacity:.72;
-          filter:blur(.45px);
+        68% {
+          transform:translate(-50%,-14%) rotateX(9.5deg) rotateY(-.65deg) rotateZ(-.34deg) scale(.978);
+          opacity:.86;
+          filter:none;
         }
         100% {
-          transform:translate(-50%,42%) rotateX(28deg) rotateY(-2deg) rotateZ(-1.5deg) scale(.90);
-          opacity:.05;
-          filter:blur(2px);
+          transform:translate(-50%,34%) rotateX(18deg) rotateY(-1.15deg) rotateZ(-.7deg) scale(.955);
+          opacity:.12;
+          filter:none;
         }
       }
 
       @keyframes tabletHeldBreath {
         0%,100% { margin-top:0; }
-        50% { margin-top:-2px; }
+        50% { margin-top:-.7px; }
       }
 
       .app.active {
-        transform:translateY(-4px) scale(1.04);
-        filter:brightness(1.25);
+        transform:translateY(-2px) scale(1.015);
+        filter:brightness(1.06);
       }
 
       @media (prefers-reduced-motion:reduce) {
