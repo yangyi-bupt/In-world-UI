@@ -142,6 +142,37 @@
 
     const tabletDom=canvas.closest?.('.tablet')||null;
 
+    // Real scanned surface maps replace the old all-procedural micro-noise.
+    // Poly Haven assets are CC0; only normal/roughness are used so the device
+    // keeps its authored color while gaining real-world surface statistics.
+    const textureLoader=new THREE.TextureLoader();
+    textureLoader.setCrossOrigin('anonymous');
+    const loadPbrTexture=(url,{srgb=false,repeatX=1,repeatY=1}={})=>{
+      const texture=textureLoader.load(url);
+      texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+      texture.repeat.set(repeatX,repeatY);
+      texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy?.()||1,8);
+      if(srgb) texture.colorSpace=THREE.SRGBColorSpace;
+      return texture;
+    };
+
+    const scannedMetalNormal=loadPbrTexture(
+      'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/blue_metal_plate/blue_metal_plate_nor_gl_1k.jpg',
+      {repeatX:7.5,repeatY:5.4}
+    );
+    const scannedMetalRough=loadPbrTexture(
+      'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/blue_metal_plate/blue_metal_plate_rough_1k.jpg',
+      {repeatX:7.5,repeatY:5.4}
+    );
+    const scannedSkinNormal=loadPbrTexture(
+      'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leather_white/leather_white_nor_gl_1k.jpg',
+      {repeatX:11.0,repeatY:11.0}
+    );
+    const scannedSkinRough=loadPbrTexture(
+      'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leather_white/leather_white_rough_1k.jpg',
+      {repeatX:11.0,repeatY:11.0}
+    );
+
     const chassisRoughness=makeDeviceRoughnessTexture(0x4f8cb312,168,22,3);
     chassisRoughness.repeat.set(4.2,3.4);
     const edgeRoughness=makeDeviceRoughnessTexture(0x86c22f41,150,16,1);
@@ -155,22 +186,26 @@
     fingerRoughness.repeat.set(3.2,3.2);
 
     const aluminum=new THREE.MeshPhysicalMaterial({
-      color:0x666b70,
-      metalness:.94,
-      roughness:.25,
-      roughnessMap:chassisRoughness,
-      clearcoat:.18,
-      clearcoatRoughness:.28,
-      envMapIntensity:.72
+      color:0x6f7478,
+      metalness:.88,
+      roughness:.31,
+      roughnessMap:scannedMetalRough,
+      normalMap:scannedMetalNormal,
+      normalScale:new THREE.Vector2(.055,.055),
+      clearcoat:.055,
+      clearcoatRoughness:.48,
+      envMapIntensity:.82
     });
     const edgeMetal=new THREE.MeshPhysicalMaterial({
-      color:0x8b8f93,
-      metalness:.98,
-      roughness:.18,
-      roughnessMap:edgeRoughness,
-      clearcoat:.22,
-      clearcoatRoughness:.22,
-      envMapIntensity:.92
+      color:0x858a8e,
+      metalness:.92,
+      roughness:.24,
+      roughnessMap:scannedMetalRough,
+      normalMap:scannedMetalNormal,
+      normalScale:new THREE.Vector2(.040,.040),
+      clearcoat:.08,
+      clearcoatRoughness:.34,
+      envMapIntensity:.96
     });
     const blackGlass=new THREE.MeshPhysicalMaterial({
       color:0x030405,
@@ -204,13 +239,15 @@
     const rearShell=new THREE.Mesh(
       extrudedRounded(2.77,1.95,.042,.162,.010),
       new THREE.MeshPhysicalMaterial({
-        color:0x565b60,
-        metalness:.90,
-        roughness:.31,
-        roughnessMap:chassisRoughness,
-        clearcoat:.08,
-        clearcoatRoughness:.38,
-        envMapIntensity:.56
+        color:0x5f6468,
+        metalness:.86,
+        roughness:.36,
+        roughnessMap:scannedMetalRough,
+        normalMap:scannedMetalNormal,
+        normalScale:new THREE.Vector2(.050,.050),
+        clearcoat:.035,
+        clearcoatRoughness:.54,
+        envMapIntensity:.68
       })
     );
     rearShell.position.z=-.088;
@@ -361,35 +398,42 @@
     });
 
     const handPalmSkin=new THREE.MeshPhysicalMaterial({
-      color:0xbd8974,
-      roughness:.68,
-      roughnessMap:palmRoughness,
+      color:0xc9967f,
+      roughness:.56,
+      roughnessMap:scannedSkinRough,
+      normalMap:scannedSkinNormal,
+      normalScale:new THREE.Vector2(.090,.090),
       bumpMap:skinMicroTexture,
-      bumpScale:.0015,
+      bumpScale:.00045,
       metalness:0,
       clearcoat:0,
-      specularIntensity:.42,
-      envMapIntensity:.13
+      specularIntensity:.34,
+      specularColor:new THREE.Color(0xffd6c9),
+      envMapIntensity:.20
     });
     const handFingerSkin=new THREE.MeshPhysicalMaterial({
-      color:0xbf8b76,
-      roughness:.63,
-      roughnessMap:fingerRoughness,
+      color:0xcc9982,
+      roughness:.52,
+      roughnessMap:scannedSkinRough,
+      normalMap:scannedSkinNormal,
+      normalScale:new THREE.Vector2(.105,.105),
       bumpMap:skinMicroTexture,
-      bumpScale:.0017,
+      bumpScale:.00050,
       metalness:0,
       clearcoat:0,
-      specularIntensity:.48,
-      envMapIntensity:.15
+      specularIntensity:.38,
+      specularColor:new THREE.Color(0xffd5c6),
+      envMapIntensity:.22
     });
     const nailMat=new THREE.MeshPhysicalMaterial({
-      color:0xe3b9aa,
-      roughness:.31,
+      color:0xe7bbae,
+      roughness:.26,
       metalness:0,
-      clearcoat:.08,
-      clearcoatRoughness:.16,
-      specularIntensity:.60,
-      envMapIntensity:.24
+      clearcoat:.12,
+      clearcoatRoughness:.22,
+      specularIntensity:.46,
+      specularColor:new THREE.Color(0xffeee8),
+      envMapIntensity:.30
     });
     const sleeveMat=new THREE.MeshStandardMaterial({color:0x242a31,roughness:.9,metalness:.02});
 
@@ -503,15 +547,16 @@
     const leftHand=createHoldingHand('left');
     const rightHand=createHoldingHand('right');
 
-    const hemi=new THREE.HemisphereLight(0xeaf3ff,0x17130f,1.7);
+    // Match the outdoor world instead of lighting the hands like a product studio.
+    const hemi=new THREE.HemisphereLight(0xe8f0f2,0x5d554d,1.12);
     scene.add(hemi);
-    const key=new THREE.DirectionalLight(0xffe3cf,4.4);
+    const key=new THREE.DirectionalLight(0xffedd7,2.35);
     key.position.set(-2.6,3.2,4.2);
     scene.add(key);
-    const rim=new THREE.DirectionalLight(0x8fc5ff,3.1);
+    const rim=new THREE.DirectionalLight(0xb8d6de,.58);
     rim.position.set(3.6,-1.2,2.0);
     scene.add(rim);
-    const soft=new THREE.PointLight(0xffffff,2.3,8);
+    const soft=new THREE.PointLight(0xfff5e9,.48,8);
     soft.position.set(0,0,3.2);
     scene.add(soft);
 
@@ -771,10 +816,10 @@
 
       // Material response: the metal gets slightly sharper at steeper pointer
       // angles, while the camera lens catches a moving pin-prick reflection.
-      aluminum.roughness=.25-Math.min(.022,Math.abs(pointerX)*.014+Math.abs(pointerY)*.008);
-      edgeMetal.roughness=.18-Math.min(.018,Math.abs(pointerX)*.012+Math.abs(pointerY)*.007);
-      handPalmSkin.roughness=.68-Math.min(.025,Math.abs(pointerX)*.010+Math.max(0,pressAmount)*.018);
-      handFingerSkin.roughness=.63-Math.min(.032,Math.abs(pointerY)*.012+Math.max(0,pressAmount)*.022);
+      aluminum.roughness=.31-Math.min(.018,Math.abs(pointerX)*.010+Math.abs(pointerY)*.006);
+      edgeMetal.roughness=.24-Math.min(.015,Math.abs(pointerX)*.009+Math.abs(pointerY)*.005);
+      handPalmSkin.roughness=.56-Math.min(.020,Math.abs(pointerX)*.008+Math.max(0,pressAmount)*.014);
+      handFingerSkin.roughness=.52-Math.min(.024,Math.abs(pointerY)*.010+Math.max(0,pressAmount)*.017);
       lensGlint.position.x=-.006+pointerX*.010;
       lensGlint.position.y=.900+pointerY*.006;
       lensGlintMat.opacity=(.22+.34*hold)*(1-Math.min(.45,Math.abs(pointerX)*.15))+Math.max(0,pressAmount)*.08;
