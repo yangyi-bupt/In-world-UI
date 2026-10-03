@@ -859,19 +859,218 @@ function makeGroundRoughnessTexture(kind,seed){
   return texture;
 }
 
-const asphaltTexture=makeSurfaceTexture('asphalt');
-asphaltTexture.repeat.set(2.1,8.5);
-const pavementTexture=makeSurfaceTexture('pavement');
-pavementTexture.repeat.set(2.6,10.5);
+function makeGroundTexturePack(kind,seed){
+  const size=1024;
+  const colorCanvas=document.createElement('canvas');
+  const heightCanvas=document.createElement('canvas');
+  const roughCanvas=document.createElement('canvas');
+  colorCanvas.width=colorCanvas.height=size;
+  heightCanvas.width=heightCanvas.height=size;
+  roughCanvas.width=roughCanvas.height=size;
 
-const asphaltRoughness=makeGroundRoughnessTexture('asphalt',0x8a31d64f);
-asphaltRoughness.repeat.set(2.1,8.5);
-const pavementRoughness=makeGroundRoughnessTexture('pavement',0x63b192e7);
-pavementRoughness.repeat.set(2.6,10.5);
+  const g=colorCanvas.getContext('2d');
+  const h=heightCanvas.getContext('2d');
+  const r=roughCanvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+  const asphalt=kind==='asphalt';
 
-const facadeSurface=configureTexturePair(makeMaterialTexture('stone',0x51a72d31),1.8,15);
-const limestoneSurface=configureTexturePair(makeMaterialTexture('limestone',0x2cb85419),1.35,11.5);
-const sandstoneSurface=configureTexturePair(makeMaterialTexture('sandstone',0x9a7345c2),2.15,8.4);
+  g.fillStyle=asphalt?'#555a58':'#d2d0c8';
+  g.fillRect(0,0,size,size);
+  h.fillStyle='#808080';
+  h.fillRect(0,0,size,size);
+  r.fillStyle=asphalt?'#e8e8e8':'#dedede';
+  r.fillRect(0,0,size,size);
+
+  // Macro variation is shared by albedo and roughness. Real surfaces do not
+  // have unrelated "color noise" and "roughness noise" pasted on top of each
+  // other; the same wear, moisture and aggregate affects both.
+  for(let i=0;i<(asphalt?92:74);i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const rx=36+rnd()*(asphalt?150:180);
+    const ry=28+rnd()*(asphalt?125:155);
+    const dark=rnd()>.53;
+
+    const cg=g.createRadialGradient(x,y,2,x,y,Math.max(rx,ry));
+    if(asphalt){
+      cg.addColorStop(0,dark
+        ? 'rgba(24,29,29,'+(.026+rnd()*.055).toFixed(3)+')'
+        : 'rgba(171,166,151,'+(.018+rnd()*.038).toFixed(3)+')');
+    }else{
+      cg.addColorStop(0,dark
+        ? 'rgba(102,99,91,'+(.020+rnd()*.046).toFixed(3)+')'
+        : 'rgba(248,239,221,'+(.020+rnd()*.044).toFixed(3)+')');
+    }
+    cg.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=cg;
+    g.save();
+    g.translate(x,y);
+    g.scale(1,ry/rx);
+    g.beginPath();
+    g.arc(0,0,rx,0,Math.PI*2);
+    g.fill();
+    g.restore();
+
+    const rv=asphalt
+      ? (dark?192+Math.floor(rnd()*34):216+Math.floor(rnd()*30))
+      : (dark?188+Math.floor(rnd()*36):218+Math.floor(rnd()*26));
+    const rg=r.createRadialGradient(x,y,2,x,y,Math.max(rx,ry));
+    rg.addColorStop(0,'rgba('+rv+','+rv+','+rv+','+(.13+rnd()*.23).toFixed(3)+')');
+    rg.addColorStop(1,'rgba('+rv+','+rv+','+rv+',0)');
+    r.fillStyle=rg;
+    r.save();
+    r.translate(x,y);
+    r.scale(1,ry/rx);
+    r.beginPath();
+    r.arc(0,0,rx,0,Math.PI*2);
+    r.fill();
+    r.restore();
+  }
+
+  if(asphalt){
+    // Mixed mineral aggregate with physically matching height + roughness.
+    for(let i=0;i<10800;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const rr=.32+rnd()*1.75;
+      const family=Math.floor(rnd()*5);
+      const tones=[
+        [106,111,108],
+        [79,86,87],
+        [129,118,101],
+        [151,146,131],
+        [91,92,85]
+      ][family];
+      const light=rnd()>.54;
+      g.fillStyle='rgba('+tones[0]+','+tones[1]+','+tones[2]+','+(.050+rnd()*.110).toFixed(3)+')';
+      g.beginPath();
+      g.ellipse(x,y,rr,rr*(.58+rnd()*.62),rnd()*Math.PI,0,Math.PI*2);
+      g.fill();
+
+      const hv=light?136+Math.floor(rnd()*22):111+Math.floor(rnd()*18);
+      h.fillStyle='rgba('+hv+','+hv+','+hv+','+(.30+rnd()*.48).toFixed(3)+')';
+      h.beginPath();
+      h.arc(x,y,Math.max(.30,rr*.72),0,Math.PI*2);
+      h.fill();
+
+      const roughV=light?176+Math.floor(rnd()*40):220+Math.floor(rnd()*28);
+      r.fillStyle='rgba('+roughV+','+roughV+','+roughV+','+(.15+rnd()*.30).toFixed(3)+')';
+      r.beginPath();
+      r.arc(x,y,rr*1.05,0,Math.PI*2);
+      r.fill();
+    }
+
+    // Hairline fatigue cracks are rare and imperfect, never a repeating web.
+    for(let i=0;i<34;i++){
+      let x=rnd()*size;
+      let y=rnd()*size;
+      const alpha=.055+rnd()*.070;
+      g.strokeStyle='rgba(20,24,24,'+alpha.toFixed(3)+')';
+      h.strokeStyle='rgba(78,78,78,'+(.34+rnd()*.32).toFixed(3)+')';
+      r.strokeStyle='rgba(247,247,247,'+(.18+rnd()*.20).toFixed(3)+')';
+      const lw=.38+rnd()*.95;
+      g.lineWidth=lw;
+      h.lineWidth=lw*.82;
+      r.lineWidth=lw*1.45;
+      g.beginPath(); h.beginPath(); r.beginPath();
+      g.moveTo(x,y); h.moveTo(x,y); r.moveTo(x,y);
+      const segments=3+Math.floor(rnd()*6);
+      for(let s=0;s<segments;s++){
+        x+=(rnd()-.5)*46;
+        y+=10+rnd()*54;
+        g.lineTo(x,y); h.lineTo(x,y); r.lineTo(x,y);
+      }
+      g.stroke(); h.stroke(); r.stroke();
+    }
+  }else{
+    // Concrete fines, exposed sand and tiny pores. The height/roughness response
+    // follows the visible specks instead of using unrelated procedural noise.
+    for(let i=0;i<7200;i++){
+      const x=rnd()*size;
+      const y=rnd()*size;
+      const rr=.28+rnd()*1.45;
+      const dark=rnd()>.58;
+      const warm=rnd()>.62;
+      g.fillStyle=dark
+        ? 'rgba(103,101,94,'+(.020+rnd()*.050).toFixed(3)+')'
+        : (warm
+          ? 'rgba(225,211,187,'+(.018+rnd()*.042).toFixed(3)+')'
+          : 'rgba(249,246,235,'+(.016+rnd()*.036).toFixed(3)+')');
+      g.beginPath();
+      g.arc(x,y,rr,0,Math.PI*2);
+      g.fill();
+
+      const hv=dark?105+Math.floor(rnd()*18):137+Math.floor(rnd()*18);
+      h.fillStyle='rgba('+hv+','+hv+','+hv+','+(.22+rnd()*.40).toFixed(3)+')';
+      h.beginPath();
+      h.arc(x,y,Math.max(.24,rr*.68),0,Math.PI*2);
+      h.fill();
+
+      const rv=dark?234+Math.floor(rnd()*18):193+Math.floor(rnd()*35);
+      r.fillStyle='rgba('+rv+','+rv+','+rv+','+(.12+rnd()*.26).toFixed(3)+')';
+      r.beginPath();
+      r.arc(x,y,rr*1.15,0,Math.PI*2);
+      r.fill();
+    }
+
+    // Faint finishing/trowel direction visible only at grazing angles.
+    for(let i=0;i<180;i++){
+      const y=rnd()*size;
+      const x=rnd()*size;
+      const len=18+rnd()*95;
+      const bend=(rnd()-.5)*5;
+      g.strokeStyle='rgba(113,108,97,'+(.008+rnd()*.016).toFixed(3)+')';
+      h.strokeStyle='rgba(116,116,116,'+(.08+rnd()*.10).toFixed(3)+')';
+      r.strokeStyle='rgba(186,186,186,'+(.035+rnd()*.060).toFixed(3)+')';
+      g.lineWidth=.35+rnd()*.75;
+      h.lineWidth=.4+rnd()*.8;
+      r.lineWidth=.7+rnd()*1.2;
+      g.beginPath(); h.beginPath(); r.beginPath();
+      g.moveTo(x,y); h.moveTo(x,y); r.moveTo(x,y);
+      g.quadraticCurveTo(x+len*.52,y+bend,x+len,y+(rnd()-.5)*4);
+      h.quadraticCurveTo(x+len*.52,y+bend,x+len,y+(rnd()-.5)*4);
+      r.quadraticCurveTo(x+len*.52,y+bend,x+len,y+(rnd()-.5)*4);
+      g.stroke(); h.stroke(); r.stroke();
+    }
+  }
+
+  const map=new THREE.CanvasTexture(colorCanvas);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.wrapS=map.wrapT=THREE.RepeatWrapping;
+  map.anisotropy=8;
+
+  const bump=new THREE.CanvasTexture(heightCanvas);
+  bump.wrapS=bump.wrapT=THREE.RepeatWrapping;
+  bump.anisotropy=8;
+
+  const roughness=new THREE.CanvasTexture(roughCanvas);
+  roughness.wrapS=roughness.wrapT=THREE.RepeatWrapping;
+  roughness.anisotropy=8;
+
+  const normal=makeNormalTextureFromHeight(heightCanvas,asphalt?2.55:1.72);
+  const ao=makeAOTextureFromHeight(heightCanvas,asphalt?.60:.48);
+  return {map,bump,roughness,normal,ao};
+}
+
+const asphaltGround=configureTexturePair(
+  makeGroundTexturePack('asphalt',0x8a31d64f),
+  1.18,
+  4.55
+);
+const pavementGround=configureTexturePair(
+  makeGroundTexturePack('pavement',0x63b192e7),
+  1.55,
+  6.40
+);
+
+const asphaltTexture=asphaltGround.map;
+const pavementTexture=pavementGround.map;
+const asphaltRoughness=asphaltGround.roughness;
+const pavementRoughness=pavementGround.roughness;
+
+const facadeSurface=configureTexturePair(makeMaterialTexture('stone',0x51a72d31),.72,5.4);
+const limestoneSurface=configureTexturePair(makeMaterialTexture('limestone',0x2cb85419),.70,4.8);
+const sandstoneSurface=configureTexturePair(makeMaterialTexture('sandstone',0x9a7345c2),1.05,4.2);
 const concreteSurface=configureTexturePair(makeMaterialTexture('concrete',0x327c619b),2.2,5.6);
 const fineConcreteSurface=configureTexturePair(makeMaterialTexture('fineConcrete',0x4ac9d176),3.6,8.2);
 const coarseConcreteSurface=configureTexturePair(makeMaterialTexture('coarseConcrete',0x8d31a5f0),1.45,3.8);
@@ -2667,12 +2866,12 @@ function addGlassEdgeDirt(w,h,x,y,z,ry=-Math.PI/2,opacity=.42){
 const cityGround=plane(52,92,0xc7c4b9,0,-.045,-4);
 cityGround.material.map=pavementTexture;
 cityGround.material.roughnessMap=pavementRoughness;
-cityGround.material.normalMap=pavementDetailSurface.normal;
-cityGround.material.normalScale.set(.11,.11);
-cityGround.material.aoMap=pavementDetailSurface.ao;
-cityGround.material.aoMapIntensity=.16;
-cityGround.material.bumpMap=pavementMicroBump;
-cityGround.material.bumpScale=.010;
+cityGround.material.normalMap=pavementGround.normal;
+cityGround.material.normalScale.set(.22,.22);
+cityGround.material.aoMap=pavementGround.ao;
+cityGround.material.aoMapIntensity=.22;
+cityGround.material.bumpMap=pavementGround.bump;
+cityGround.material.bumpScale=.018;
 cityGround.material.roughness=.98;
 cityGround.material.envMapIntensity=.035;
 cityGround.material.color.set(0xd1d1cc);
@@ -2681,13 +2880,13 @@ cityGround.material.needsUpdate=true;
 const road=plane(15,92,0xffffff,-6.7,.004,-4);
 road.material.map=asphaltTexture;
 road.material.roughnessMap=asphaltRoughness;
-road.material.normalMap=roadDetailSurface.normal;
-road.material.normalScale.set(.085,.085);
-road.material.aoMap=roadDetailSurface.ao;
-road.material.aoMapIntensity=.10;
-road.material.bumpMap=roadMicroBump;
-road.material.bumpScale=.014;
-road.material.roughness=1.0;
+road.material.normalMap=asphaltGround.normal;
+road.material.normalScale.set(.26,.26);
+road.material.aoMap=asphaltGround.ao;
+road.material.aoMapIntensity=.18;
+road.material.bumpMap=asphaltGround.bump;
+road.material.bumpScale=.022;
+road.material.roughness=.96;
 road.material.envMapIntensity=.018;
 road.material.needsUpdate=true;
 
@@ -2851,13 +3050,13 @@ scene.add(visualCurbExtension);
 const sidewalk=plane(10.8,92,0xffffff,4.2,.014,-4);
 sidewalk.material.map=pavementTexture;
 sidewalk.material.roughnessMap=pavementRoughness;
-sidewalk.material.normalMap=pavementDetailSurface.normal;
-sidewalk.material.normalScale.set(.13,.13);
-sidewalk.material.aoMap=pavementDetailSurface.ao;
-sidewalk.material.aoMapIntensity=.18;
-sidewalk.material.bumpMap=pavementMicroBump;
-sidewalk.material.bumpScale=.011;
-sidewalk.material.roughness=.99;
+sidewalk.material.normalMap=pavementGround.normal;
+sidewalk.material.normalScale.set(.23,.23);
+sidewalk.material.aoMap=pavementGround.ao;
+sidewalk.material.aoMapIntensity=.24;
+sidewalk.material.bumpMap=pavementGround.bump;
+sidewalk.material.bumpScale=.018;
+sidewalk.material.roughness=.96;
 sidewalk.material.envMapIntensity=.030;
 sidewalk.material.needsUpdate=true;
 
