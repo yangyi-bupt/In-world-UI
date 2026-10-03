@@ -7077,7 +7077,7 @@ refStreet.add(refGlassWall);
 // Replace the single synchronized curtain-wall read with individually varied
 // glass cells. The original wall remains as a subtle backing/reflection layer,
 // while each cell gets its own sample window, tint and micro-roughness.
-refGlassWall.material.opacity=.22;
+refGlassWall.material.opacity=.08;
 refGlassWall.material.envMapIntensity=.70;
 
 const refPaneRnd=makeSeededRandom(0x2d7f91c3);
@@ -7130,7 +7130,7 @@ for(let bay=0;bay<15;bay++){
       new THREE.PlaneGeometry(4.18,floor.h-.14),
       material
     );
-    pane.position.set(7.765,floor.y,z);
+    pane.position.set((z>=-9.2 && z<=14.7)?7.94:7.765,floor.y,z);
     pane.rotation.y=-Math.PI/2;
     pane.renderOrder=1;
     pane.userData.baseMapOffset=map.offset.clone();
@@ -7267,7 +7267,7 @@ const refFacadeRecessMat=new THREE.MeshBasicMaterial({
   opacity:.20,
   depthWrite:false
 });
-for(let z=-40;z<=27;z+=4.75){
+for(let z=-37.6;z<=28.9;z+=4.75){
   const recess=new THREE.Mesh(new THREE.PlaneGeometry(.16,13.65),refFacadeRecessMat);
   recess.position.set(7.785,8.02,z+.18);
   recess.rotation.y=-Math.PI/2;
@@ -7291,7 +7291,7 @@ refStreet.add(refLobbyBand);
 
 // Pale vertical piers create the strong architectural cadence visible in the
 // reference without turning the elevation into a grid of tiny meshes.
-for(let z=-40;z<=27;z+=4.75){
+for(let z=-37.6;z<=28.9;z+=4.75){
   const pier=new THREE.Mesh(
     new THREE.BoxGeometry(.32,15.2,.34),
     refStone
@@ -7487,9 +7487,6 @@ const refHeroUpperFloors=[
 
 // Thicker stone piers give the close facade a believable wall section instead
 // of paper-thin bars laid over glass.
-refHeroBayCenters.slice(0,1).concat(refHeroBayCenters.map(z=>z+2.375)).forEach((z,index)=>{
-  if(index>0 && index<refHeroBayCenters.length && Math.abs(z-refHeroBayCenters[index-1]-2.375)<.01) return;
-});
 [-9.105,-4.355,.395,5.145,9.895,14.645].forEach(z=>{
   const pier=new THREE.Mesh(
     new THREE.BoxGeometry(.58,15.18,.38),
@@ -7626,7 +7623,7 @@ function addHeroStorefront(z,width,doorOffset,variant=0){
     new THREE.PlaneGeometry(width-.26,2.58),
     refHeroShopGlass
   );
-  recess.position.set(7.70,1.63,z);
+  recess.position.set(7.91,1.63,z);
   recess.rotation.y=-Math.PI/2;
   refHeroFacade.add(recess);
 
@@ -7708,6 +7705,25 @@ refHeroBase.position.set(7.52,.25,2.75);
 refHeroBase.castShadow=true;
 refHeroFacade.add(refHeroBase);
 
+// The upper edge needs mass too; without a parapet/coping the building reads as
+// a cut cardboard box against the sky.
+const refHeroParapet=new THREE.Mesh(
+  new THREE.BoxGeometry(.92,.34,24.1),
+  refHeroStone
+);
+refHeroParapet.position.set(7.68,15.70,2.75);
+refHeroParapet.castShadow=true;
+refHeroParapet.receiveShadow=true;
+refHeroFacade.add(refHeroParapet);
+
+const refHeroCoping=new THREE.Mesh(
+  new THREE.BoxGeometry(1.05,.075,24.24),
+  refHeroMetal
+);
+refHeroCoping.position.set(7.62,15.90,2.75);
+refHeroCoping.castShadow=true;
+refHeroFacade.add(refHeroCoping);
+
 const refHeroJointMat=new THREE.MeshBasicMaterial({
   color:0x777a76,
   transparent:true,
@@ -7731,11 +7747,13 @@ const refHeroJointMat=new THREE.MeshBasicMaterial({
 // Upper glass bays get only sparse mullions; big panes make the building read
 // much more like a photographed commercial facade.
 for(let z=-37.6;z<=24.6;z+=4.75){
+  const mullionZ=z+2.37;
+  if(mullionZ>=-9.2 && mullionZ<=14.7) continue;
   const mullion=new THREE.Mesh(
     new THREE.BoxGeometry(.09,9.15,.07),
     refMetal
   );
-  mullion.position.set(7.72,9.55,z+2.37);
+  mullion.position.set(7.72,9.55,mullionZ);
   refStreet.add(mullion);
 }
 
