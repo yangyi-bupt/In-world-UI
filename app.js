@@ -1,6 +1,6 @@
 const canvas = document.querySelector('#game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
@@ -3320,6 +3320,22 @@ const curbsideEdgeMat=new THREE.MeshBasicMaterial({
 });
 
 const curb=box(.30,.18,92,0xc4beb2,.05,.08,-4,.94);
+
+// Reference boulevard cue: a restrained warm edge line separates asphalt from
+// the pedestrian zone and makes the road geometry read instantly in sunlight.
+const boulevardEdgeLine=new THREE.Mesh(
+  new THREE.PlaneGeometry(.085,88),
+  new THREE.MeshStandardMaterial({
+    color:0xd6b54b,
+    roughness:.90,
+    metalness:0,
+    envMapIntensity:.025
+  })
+);
+boulevardEdgeLine.rotation.x=-Math.PI/2;
+boulevardEdgeLine.position.set(-.08,.032,-4);
+boulevardEdgeLine.receiveShadow=true;
+scene.add(boulevardEdgeLine);
 curb.material.map=concreteSurface.map;
 curb.material.roughnessMap=concreteSurface.roughness;
 curb.material.normalMap=concreteSurface.normal;
@@ -7498,7 +7514,8 @@ const refLeafCardMaterials=[
     color:0x8d9b82,
     map:refLeafClusterTexture,
     transparent:true,
-    alphaTest:.16,
+    alphaTest:.10,
+    alphaToCoverage:true,
     roughness:.96,
     metalness:0,
     envMapIntensity:.015,
@@ -7509,7 +7526,8 @@ const refLeafCardMaterials=[
     color:0x788b73,
     map:refLeafClusterTexture,
     transparent:true,
-    alphaTest:.18,
+    alphaTest:.11,
+    alphaToCoverage:true,
     roughness:.97,
     metalness:0,
     envMapIntensity:.012,
@@ -7520,7 +7538,8 @@ const refLeafCardMaterials=[
     color:0x9ba18a,
     map:refLeafClusterTexture,
     transparent:true,
-    alphaTest:.17,
+    alphaTest:.10,
+    alphaToCoverage:true,
     roughness:.97,
     metalness:0,
     envMapIntensity:.012,
@@ -7874,7 +7893,7 @@ miraPocket.receiveShadow=true;
 scene.add(miraPocket);
 miraPocket.visible=false;
 
-const miraAmbientPool=createSunPool(3.18,-1.62,3.5,3.9,.10);
+const miraAmbientPool=createSunPool(3.18,1.95,3.9,4.4,.16);
 miraAmbientPool.position.y=.056;
 
 
@@ -8058,9 +8077,9 @@ for(let i=0;i<7;i++){
   scene.add(slot);
 }
 
-createDapplePatch(2.15,-2.10,4.3,5.1,-.10,.68);
+createDapplePatch(2.15,1.75,4.9,5.7,-.10,.76);
 createDapplePatch(4.75,5.15,3.8,4.4,.16,.62);
-createSunPool(2.85,-1.72,4.8,4.5,.18);
+createSunPool(2.85,1.90,5.2,4.9,.22);
 createSunPool(5.85,6.40,3.6,5.8,.14);
 
 const focalPlanterBase=new THREE.Mesh(
