@@ -5760,63 +5760,394 @@ for(let i=0;i<9;i++){
 
 
 /* ---------- reference street architecture reset ----------
-   The previous passes accumulated many small facade features. This layer resets
-   the dominant silhouette to a clean, contemporary office boulevard: tall
-   continuous street wall, large glass bays, pale stone piers and a recessed
-   lobby. It deliberately uses fewer, larger shapes so the first read is
-   architectural rather than game-prop driven. */
+   Dedicated PBR-style procedural maps are used here instead of stretching the
+   older generic materials across the dominant facade. The goal is photographic
+   scale: low-frequency stone variation, readable glass reflections and large
+   concrete paving rather than visible noise/repetition. */
 const refStreet=new THREE.Group();
 refStreet.name='reference-street-reset';
 scene.add(refStreet);
 
+function makeReferenceStoneMaps(seed){
+  const size=512;
+  const color=document.createElement('canvas');
+  const height=document.createElement('canvas');
+  const rough=document.createElement('canvas');
+  color.width=color.height=height.width=height.height=rough.width=rough.height=size;
+  const g=color.getContext('2d');
+  const h=height.getContext('2d');
+  const r=rough.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='#d6d6d1';
+  g.fillRect(0,0,size,size);
+  h.fillStyle='#808080';
+  h.fillRect(0,0,size,size);
+  r.fillStyle='#c9c9c9';
+  r.fillRect(0,0,size,size);
+
+  // Large, extremely subtle tonal clouds are more believable on commercial
+  // facade stone than high-frequency procedural speckle.
+  for(let i=0;i<32;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const radius=42+rnd()*120;
+    const warm=rnd()>.52;
+    const grad=g.createRadialGradient(x,y,0,x,y,radius);
+    grad.addColorStop(
+      0,
+      warm
+        ? 'rgba(196,190,179,'+(.025+rnd()*.040).toFixed(3)+')'
+        : 'rgba(171,181,181,'+(.020+rnd()*.034).toFixed(3)+')'
+    );
+    grad.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=grad;
+    g.fillRect(x-radius,y-radius,radius*2,radius*2);
+
+    const rv=184+Math.floor(rnd()*45);
+    const rg=r.createRadialGradient(x,y,0,x,y,radius);
+    rg.addColorStop(0,'rgba('+rv+','+rv+','+rv+','+(.05+rnd()*.10).toFixed(3)+')');
+    rg.addColorStop(1,'rgba('+rv+','+rv+','+rv+',0)');
+    r.fillStyle=rg;
+    r.fillRect(x-radius,y-radius,radius*2,radius*2);
+  }
+
+  // Fine pores stay nearly invisible until the camera gets close.
+  for(let i=0;i<1700;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const rr=.22+rnd()*.72;
+    const dark=rnd()>.58;
+    g.fillStyle=dark
+      ? 'rgba(103,105,101,'+(.010+rnd()*.022).toFixed(3)+')'
+      : 'rgba(250,247,237,'+(.008+rnd()*.020).toFixed(3)+')';
+    g.beginPath();
+    g.arc(x,y,rr,0,Math.PI*2);
+    g.fill();
+
+    const hv=dark?114+Math.floor(rnd()*10):139+Math.floor(rnd()*10);
+    h.fillStyle='rgba('+hv+','+hv+','+hv+','+(.20+rnd()*.30).toFixed(3)+')';
+    h.beginPath();
+    h.arc(x,y,Math.max(.22,rr*.65),0,Math.PI*2);
+    h.fill();
+  }
+
+  // A handful of very faint mineral streaks break the computer-generated
+  // uniformity without making the facade look like marble.
+  for(let i=0;i<13;i++){
+    const y=rnd()*size;
+    const x=-40+rnd()*220;
+    const len=260+rnd()*360;
+    g.strokeStyle='rgba(112,108,99,'+(.010+rnd()*.014).toFixed(3)+')';
+    g.lineWidth=.35+rnd()*.55;
+    g.beginPath();
+    g.moveTo(x,y);
+    g.bezierCurveTo(
+      x+len*.30,y+(rnd()-.5)*18,
+      x+len*.68,y+(rnd()-.5)*23,
+      x+len,y+(rnd()-.5)*14
+    );
+    g.stroke();
+  }
+
+  // Slight vertical weathering near panel bottoms.
+  for(let i=0;i<12;i++){
+    const x=rnd()*size;
+    const y=310+rnd()*185;
+    const len=25+rnd()*95;
+    const grad=g.createLinearGradient(x,y,x,y+len);
+    grad.addColorStop(0,'rgba(112,120,116,'+(.010+rnd()*.018).toFixed(3)+')');
+    grad.addColorStop(1,'rgba(112,120,116,0)');
+    g.strokeStyle=grad;
+    g.lineWidth=.5+rnd()*1.15;
+    g.beginPath();
+    g.moveTo(x,y);
+    g.lineTo(x+(rnd()-.5)*2,y+len);
+    g.stroke();
+  }
+
+  const map=new THREE.CanvasTexture(color);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.wrapS=map.wrapT=THREE.RepeatWrapping;
+  map.repeat.set(1.25,3.0);
+  map.anisotropy=8;
+
+  const bump=new THREE.CanvasTexture(height);
+  bump.wrapS=bump.wrapT=THREE.RepeatWrapping;
+  bump.repeat.copy(map.repeat);
+  bump.anisotropy=8;
+
+  const roughness=new THREE.CanvasTexture(rough);
+  roughness.wrapS=roughness.wrapT=THREE.RepeatWrapping;
+  roughness.repeat.copy(map.repeat);
+  roughness.anisotropy=8;
+
+  const normal=makeNormalTextureFromHeight(height,1.35);
+  normal.repeat.copy(map.repeat);
+  return {map,bump,roughness,normal};
+}
+
+function makeReferenceGlassMaps(seed){
+  const w=1024;
+  const h=384;
+  const color=document.createElement('canvas');
+  const rough=document.createElement('canvas');
+  color.width=rough.width=w;
+  color.height=rough.height=h;
+  const g=color.getContext('2d');
+  const r=rough.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  // Real city glass reads mostly from what it reflects: pale sky above, darker
+  // opposite buildings/trees below, plus imperfect pane-to-pane variation.
+  const sky=g.createLinearGradient(0,0,0,h);
+  sky.addColorStop(0,'#aec8d0');
+  sky.addColorStop(.27,'#9eb8bf');
+  sky.addColorStop(.52,'#879fa5');
+  sky.addColorStop(.70,'#74888a');
+  sky.addColorStop(1,'#596a68');
+  g.fillStyle=sky;
+  g.fillRect(0,0,w,h);
+
+  // Soft opposing-building bands.
+  for(let i=0;i<15;i++){
+    const x=i*(w/15)-20+rnd()*24;
+    const bw=38+rnd()*58;
+    const top=80+rnd()*90;
+    const shade=80+Math.floor(rnd()*35);
+    g.fillStyle='rgba('+shade+','+(shade+7)+','+(shade+7)+','+(.035+rnd()*.055).toFixed(3)+')';
+    g.fillRect(x,top,bw,h-top);
+    if(rnd()>.55){
+      g.fillStyle='rgba(225,233,229,'+(.022+rnd()*.032).toFixed(3)+')';
+      g.fillRect(x+bw*.18,top+18,bw*.12,h-top-34);
+    }
+  }
+
+  // Broad tree canopies reflected in the lower half. They are deliberately
+  // blurred-looking silhouettes, not literal foliage geometry.
+  for(let i=0;i<18;i++){
+    const x=rnd()*w;
+    const y=230+rnd()*95;
+    const rx=30+rnd()*80;
+    const ry=16+rnd()*42;
+    const grad=g.createRadialGradient(x,y,4,x,y,rx);
+    grad.addColorStop(0,'rgba(60,81,66,'+(.06+rnd()*.08).toFixed(3)+')');
+    grad.addColorStop(.55,'rgba(63,84,70,'+(.035+rnd()*.055).toFixed(3)+')');
+    grad.addColorStop(1,'rgba(63,84,70,0)');
+    g.fillStyle=grad;
+    g.save();
+    g.translate(x,y);
+    g.scale(1,ry/rx);
+    g.beginPath();
+    g.arc(0,0,rx,0,Math.PI*2);
+    g.fill();
+    g.restore();
+  }
+
+  // Horizontal horizon bounce and warm street reflection.
+  const horizon=g.createLinearGradient(0,235,0,350);
+  horizon.addColorStop(0,'rgba(224,231,225,.035)');
+  horizon.addColorStop(.45,'rgba(195,189,168,.070)');
+  horizon.addColorStop(1,'rgba(130,128,115,.025)');
+  g.fillStyle=horizon;
+  g.fillRect(0,225,w,135);
+
+  // Slight pane-to-pane exposure differences stop the curtain wall from
+  // reading as one giant tinted sheet.
+  const paneW=w/15;
+  for(let i=0;i<15;i++){
+    g.fillStyle=i%3===0
+      ? 'rgba(255,255,255,.018)'
+      : (i%3===1?'rgba(29,45,48,.018)':'rgba(190,213,216,.012)');
+    g.fillRect(i*paneW,0,paneW,h);
+  }
+
+  // Roughness is low but non-uniform: cleaned wipe zones, mineral haze and a
+  // few vertical rain traces.
+  r.fillStyle='#3c3c3c';
+  r.fillRect(0,0,w,h);
+  for(let i=0;i<90;i++){
+    const x=rnd()*w;
+    const y=rnd()*h;
+    const radius=12+rnd()*55;
+    const v=54+Math.floor(rnd()*66);
+    const rg=r.createRadialGradient(x,y,0,x,y,radius);
+    rg.addColorStop(0,'rgba('+v+','+v+','+v+','+(.03+rnd()*.08).toFixed(3)+')');
+    rg.addColorStop(1,'rgba('+v+','+v+','+v+',0)');
+    r.fillStyle=rg;
+    r.fillRect(x-radius,y-radius,radius*2,radius*2);
+  }
+  for(let i=0;i<40;i++){
+    const x=rnd()*w;
+    const y=20+rnd()*285;
+    const len=24+rnd()*100;
+    const grad=r.createLinearGradient(x,y,x,y+len);
+    grad.addColorStop(0,'rgba(150,150,150,'+(.018+rnd()*.035).toFixed(3)+')');
+    grad.addColorStop(1,'rgba(150,150,150,0)');
+    r.strokeStyle=grad;
+    r.lineWidth=.4+rnd()*.8;
+    r.beginPath();
+    r.moveTo(x,y);
+    r.lineTo(x+(rnd()-.5)*2,y+len);
+    r.stroke();
+  }
+
+  const map=new THREE.CanvasTexture(color);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.wrapS=map.wrapT=THREE.ClampToEdgeWrapping;
+  map.anisotropy=8;
+
+  const roughness=new THREE.CanvasTexture(rough);
+  roughness.wrapS=roughness.wrapT=THREE.ClampToEdgeWrapping;
+  roughness.anisotropy=8;
+  return {map,roughness};
+}
+
+function makeReferencePavingMaps(seed){
+  const size=512;
+  const color=document.createElement('canvas');
+  const height=document.createElement('canvas');
+  const rough=document.createElement('canvas');
+  color.width=color.height=height.width=height.height=rough.width=rough.height=size;
+  const g=color.getContext('2d');
+  const h=height.getContext('2d');
+  const r=rough.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.fillStyle='#d1d1cc';
+  g.fillRect(0,0,size,size);
+  h.fillStyle='#808080';
+  h.fillRect(0,0,size,size);
+  r.fillStyle='#eeeeee';
+  r.fillRect(0,0,size,size);
+
+  for(let i=0;i<26;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const radius=28+rnd()*95;
+    const grad=g.createRadialGradient(x,y,0,x,y,radius);
+    grad.addColorStop(
+      0,
+      rnd()>.5
+        ? 'rgba(178,178,170,'+(.025+rnd()*.038).toFixed(3)+')'
+        : 'rgba(241,237,225,'+(.022+rnd()*.035).toFixed(3)+')'
+    );
+    grad.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=grad;
+    g.fillRect(x-radius,y-radius,radius*2,radius*2);
+  }
+
+  for(let i=0;i<2800;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const rr=.20+rnd()*.95;
+    const warm=rnd()>.64;
+    const v=warm?174+Math.floor(rnd()*38):188+Math.floor(rnd()*48);
+    g.fillStyle='rgba('+(v+4)+','+(v+2)+','+v+','+(.012+rnd()*.030).toFixed(3)+')';
+    g.fillRect(x,y,rr,rr);
+    const hv=118+Math.floor(rnd()*25);
+    h.fillStyle='rgba('+hv+','+hv+','+hv+','+(.08+rnd()*.18).toFixed(3)+')';
+    h.fillRect(x,y,Math.max(.3,rr*.65),Math.max(.3,rr*.65));
+  }
+
+  // Rare darker use/water marks around the pedestrian path.
+  for(let i=0;i<16;i++){
+    const x=rnd()*size;
+    const y=rnd()*size;
+    const rx=8+rnd()*38;
+    const ry=4+rnd()*18;
+    const grad=g.createRadialGradient(x,y,1,x,y,Math.max(rx,ry));
+    grad.addColorStop(0,'rgba(109,112,107,'+(.018+rnd()*.035).toFixed(3)+')');
+    grad.addColorStop(1,'rgba(109,112,107,0)');
+    g.fillStyle=grad;
+    g.fillRect(x-rx,y-ry,rx*2,ry*2);
+  }
+
+  const map=new THREE.CanvasTexture(color);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.wrapS=map.wrapT=THREE.RepeatWrapping;
+  map.repeat.set(2.15,14.5);
+  map.anisotropy=8;
+
+  const bump=new THREE.CanvasTexture(height);
+  bump.wrapS=bump.wrapT=THREE.RepeatWrapping;
+  bump.repeat.copy(map.repeat);
+  bump.anisotropy=8;
+
+  const roughness=new THREE.CanvasTexture(rough);
+  roughness.wrapS=roughness.wrapT=THREE.RepeatWrapping;
+  roughness.repeat.copy(map.repeat);
+  roughness.anisotropy=8;
+
+  const normal=makeNormalTextureFromHeight(height,1.05);
+  normal.repeat.copy(map.repeat);
+  return {map,bump,roughness,normal};
+}
+
+const refStoneMaps=makeReferenceStoneMaps(0x2f61bc83);
+const refGlassMaps=makeReferenceGlassMaps(0x93a7c151);
+const refPavingMaps=makeReferencePavingMaps(0x74b82d1e);
+
 const refStone=new THREE.MeshStandardMaterial({
-  color:0xd8d9d5,
-  roughness:.74,
-  metalness:.01,
-  map:facadeSurface.map,
-  roughnessMap:facadeSurface.roughness,
-  normalMap:facadeSurface.normal,
-  normalScale:new THREE.Vector2(.10,.10),
-  envMapIntensity:.12
+  color:0xf0f0eb,
+  roughness:.72,
+  metalness:.005,
+  map:refStoneMaps.map,
+  roughnessMap:refStoneMaps.roughness,
+  normalMap:refStoneMaps.normal,
+  normalScale:new THREE.Vector2(.085,.085),
+  bumpMap:refStoneMaps.bump,
+  bumpScale:.008,
+  envMapIntensity:.10
 });
 const refStoneDark=new THREE.MeshStandardMaterial({
-  color:0xb8b9b5,
+  color:0xc7c9c5,
   roughness:.78,
-  metalness:.015,
-  map:concreteSurface.map,
-  roughnessMap:concreteSurface.roughness,
-  normalMap:concreteSurface.normal,
-  normalScale:new THREE.Vector2(.09,.09),
+  metalness:.012,
+  map:refStoneMaps.map,
+  roughnessMap:refStoneMaps.roughness,
+  normalMap:refStoneMaps.normal,
+  normalScale:new THREE.Vector2(.065,.065),
+  bumpMap:refStoneMaps.bump,
+  bumpScale:.006,
   envMapIntensity:.08
 });
 const refMetal=new THREE.MeshStandardMaterial({
-  color:0x767d7d,
-  roughness:.36,
-  metalness:.42,
-  envMapIntensity:.72
+  color:0x737b7b,
+  roughness:.34,
+  metalness:.48,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
+  normalMap:metalSurface.normal,
+  normalScale:new THREE.Vector2(.035,.035),
+  envMapIntensity:.78
 });
 const refGlass=new THREE.MeshPhysicalMaterial({
-  color:0x9fb6bd,
-  roughness:.17,
-  metalness:.02,
+  color:0xdce8e9,
+  map:refGlassMaps.map,
+  roughnessMap:refGlassMaps.roughness,
+  roughness:.12,
+  metalness:.015,
   transparent:true,
-  opacity:.60,
-  transmission:.05,
-  clearcoat:.34,
-  clearcoatRoughness:.16,
-  envMapIntensity:.92,
+  opacity:.72,
+  transmission:.025,
+  clearcoat:.42,
+  clearcoatRoughness:.12,
+  envMapIntensity:1.10,
   depthWrite:true
 });
 const refLobbyGlass=new THREE.MeshPhysicalMaterial({
-  color:0x53666b,
-  roughness:.18,
-  metalness:.04,
+  color:0xb7c7c7,
+  map:refGlassMaps.map,
+  roughnessMap:refGlassMaps.roughness,
+  roughness:.15,
+  metalness:.025,
   transparent:true,
-  opacity:.82,
-  transmission:.02,
-  clearcoat:.28,
-  clearcoatRoughness:.18,
-  envMapIntensity:1.0
+  opacity:.87,
+  transmission:.012,
+  clearcoat:.38,
+  clearcoatRoughness:.13,
+  envMapIntensity:1.08
 });
 
 // Large backing mass hides the former low-rise silhouette and gives the street
@@ -5830,8 +6161,8 @@ refOfficeMass.castShadow=false;
 refOfficeMass.receiveShadow=true;
 refStreet.add(refOfficeMass);
 
-// Continuous glazed face. The glass is intentionally broad; rhythm comes from
-// structural piers instead of dozens of tiny storefront pieces.
+// Continuous glazed face. Reflection texture is authored across the entire
+// elevation, avoiding the flat transparent-plastic look from the previous pass.
 const refGlassWall=new THREE.Mesh(
   new THREE.PlaneGeometry(72,13.9),
   refGlass
@@ -5879,10 +6210,12 @@ for(let z=-40;z<=27;z+=4.75){
 const refLobbyPortal=new THREE.Mesh(
   new THREE.BoxGeometry(.52,3.35,6.2),
   new THREE.MeshStandardMaterial({
-    color:0x3f4749,
-    roughness:.32,
-    metalness:.22,
-    envMapIntensity:.65
+    color:0x3b4345,
+    roughness:.30,
+    metalness:.28,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
+    envMapIntensity:.74
   })
 );
 refLobbyPortal.position.set(7.34,1.76,-2.0);
@@ -5892,15 +6225,17 @@ refStreet.add(refLobbyPortal);
 const refLobbyInset=new THREE.Mesh(
   new THREE.PlaneGeometry(5.58,2.88),
   new THREE.MeshPhysicalMaterial({
-    color:0x40585f,
-    roughness:.16,
-    metalness:.03,
+    color:0xaec1c2,
+    map:refGlassMaps.map,
+    roughnessMap:refGlassMaps.roughness,
+    roughness:.13,
+    metalness:.02,
     transparent:true,
-    opacity:.88,
-    transmission:.035,
-    clearcoat:.30,
-    clearcoatRoughness:.16,
-    envMapIntensity:1.05
+    opacity:.90,
+    transmission:.018,
+    clearcoat:.40,
+    clearcoatRoughness:.12,
+    envMapIntensity:1.12
   })
 );
 refLobbyInset.position.set(7.04,1.77,-2.0);
@@ -5911,9 +6246,11 @@ const refCanopy=new THREE.Mesh(
   new THREE.BoxGeometry(1.55,.15,6.7),
   new THREE.MeshStandardMaterial({
     color:0xcfd1cd,
-    roughness:.48,
-    metalness:.12,
-    envMapIntensity:.28
+    roughness:.43,
+    metalness:.16,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
+    envMapIntensity:.42
   })
 );
 refCanopy.position.set(6.86,3.25,-2.0);
@@ -5931,18 +6268,20 @@ for(let z=-37.6;z<=24.6;z+=4.75){
   refStreet.add(mullion);
 }
 
-// Clean the foreground sidewalk visually. This broad slab suppresses the old
-// patchwork of small paving accents while retaining curb, trees and characters.
+// Clean the foreground sidewalk visually with a dedicated architectural paving
+// map rather than reusing the noisier legacy sidewalk texture.
 const refWalk=new THREE.Mesh(
   new THREE.PlaneGeometry(7.35,78),
   new THREE.MeshStandardMaterial({
-    color:0xd4d4cf,
-    roughness:.97,
-    map:pavementTexture,
-    roughnessMap:pavementRoughness,
-    bumpMap:pavementMicroBump,
-    bumpScale:.005,
-    envMapIntensity:.025
+    color:0xf1f0ea,
+    roughness:.96,
+    map:refPavingMaps.map,
+    roughnessMap:refPavingMaps.roughness,
+    normalMap:refPavingMaps.normal,
+    normalScale:new THREE.Vector2(.050,.050),
+    bumpMap:refPavingMaps.bump,
+    bumpScale:.004,
+    envMapIntensity:.020
   })
 );
 refWalk.rotation.x=-Math.PI/2;
@@ -5952,9 +6291,9 @@ refStreet.add(refWalk);
 
 // Restrained expansion joints restore scale after the clean-up slab.
 const refJointMat=new THREE.MeshBasicMaterial({
-  color:0xaeb0ac,
+  color:0x9fa19d,
   transparent:true,
-  opacity:.22,
+  opacity:.18,
   depthWrite:false
 });
 for(let z=-42;z<31;z+=4.1){
@@ -5968,7 +6307,13 @@ for(let z=-42;z<31;z+=4.1){
 // rhythm while leaving the facade visible between trunks.
 function createReferenceTree(x,z,scale=1){
   const tree=new THREE.Group();
-  const trunkMat=new THREE.MeshStandardMaterial({color:0x756454,roughness:.94});
+  const trunkMat=new THREE.MeshStandardMaterial({
+    color:0x7a6858,
+    roughness:.94,
+    map:barkSurface.map,
+    bumpMap:barkSurface.bump,
+    bumpScale:.020
+  });
   const trunk=new THREE.Mesh(
     new THREE.CylinderGeometry(.10*scale,.15*scale,3.7*scale,10),
     trunkMat
@@ -5977,14 +6322,32 @@ function createReferenceTree(x,z,scale=1){
   trunk.castShadow=true;
   tree.add(trunk);
 
+  // Leaf clusters use more restrained albedo variation; strong saturated green
+  // was another source of the stylised / asset-pack look.
   const leafMats=[
-    new THREE.MeshStandardMaterial({color:0x6f8d62,roughness:.92}),
-    new THREE.MeshStandardMaterial({color:0x7f9c70,roughness:.93})
+    new THREE.MeshStandardMaterial({
+      color:0x758970,
+      roughness:.96,
+      metalness:0,
+      envMapIntensity:.025
+    }),
+    new THREE.MeshStandardMaterial({
+      color:0x87977b,
+      roughness:.95,
+      metalness:0,
+      envMapIntensity:.025
+    }),
+    new THREE.MeshStandardMaterial({
+      color:0x687d65,
+      roughness:.97,
+      metalness:0,
+      envMapIntensity:.020
+    })
   ];
   [[0,0,0,.98],[.38,.08,-.05,.66],[-.38,.05,.03,.70],[.05,.54,0,.72]].forEach((v,i)=>{
     const crown=new THREE.Mesh(
       new THREE.IcosahedronGeometry(v[3]*scale,2),
-      leafMats[i%2]
+      leafMats[i%leafMats.length]
     );
     crown.position.set(v[0]*scale,(3.65+v[1])*scale,v[2]*scale);
     crown.scale.set(.92,1.18,.90);
@@ -5996,7 +6359,6 @@ function createReferenceTree(x,z,scale=1){
 }
 createReferenceTree(.92,-4.9,.95);
 createReferenceTree(.92,7.8,1.02);
-
 
 // Trees, planters and street furniture make this feel like somewhere Mira
 // actually spends time instead of a sterile tech showcase.
