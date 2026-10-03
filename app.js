@@ -14,16 +14,36 @@ scene.background = new THREE.Color(0xd4e7ef);
 scene.fog = new THREE.Fog(0xe8edef, 52, 142);
 
 const skyCanvas=document.createElement('canvas');
-skyCanvas.width=32;
-skyCanvas.height=512;
+skyCanvas.width=256;
+skyCanvas.height=1024;
 const skyCtx=skyCanvas.getContext('2d');
-const skyGradient=skyCtx.createLinearGradient(0,0,0,512);
-skyGradient.addColorStop(0,'#8fc7e4');
-skyGradient.addColorStop(.38,'#c5dfea');
-skyGradient.addColorStop(.72,'#edf1ef');
-skyGradient.addColorStop(1,'#f3f1e9');
+const skyGradient=skyCtx.createLinearGradient(0,0,0,1024);
+skyGradient.addColorStop(0,'#78b5d4');
+skyGradient.addColorStop(.22,'#9cc9dd');
+skyGradient.addColorStop(.48,'#c7dfe7');
+skyGradient.addColorStop(.70,'#e7ece9');
+skyGradient.addColorStop(.86,'#efe8dc');
+skyGradient.addColorStop(1,'#d7d8d1');
 skyCtx.fillStyle=skyGradient;
-skyCtx.fillRect(0,0,32,512);
+skyCtx.fillRect(0,0,256,1024);
+
+const visibleSkyRnd=makeSeededRandom(0x51d7a2c3);
+for(let i=0;i<22;i++){
+  const x=visibleSkyRnd()*256;
+  const y=100+visibleSkyRnd()*650;
+  const radius=18+visibleSkyRnd()*65;
+  const grad=skyCtx.createRadialGradient(x,y,0,x,y,radius);
+  const warm=visibleSkyRnd()>.76;
+  grad.addColorStop(
+    0,
+    warm
+      ? 'rgba(246,229,206,'+(.010+visibleSkyRnd()*.020).toFixed(3)+')'
+      : 'rgba(242,249,250,'+(.010+visibleSkyRnd()*.020).toFixed(3)+')'
+  );
+  grad.addColorStop(1,'rgba(255,255,255,0)');
+  skyCtx.fillStyle=grad;
+  skyCtx.fillRect(x-radius,y-radius,radius*2,radius*2);
+}
 const skyTexture=new THREE.CanvasTexture(skyCanvas);
 skyTexture.colorSpace=THREE.SRGBColorSpace;
 const skyDome=new THREE.Mesh(
@@ -140,7 +160,7 @@ const shopBounce = new THREE.DirectionalLight(0xffe5c9, .18);
 shopBounce.position.set(9,5,6);
 scene.add(shopBounce);
 
-const faceLight = new THREE.SpotLight(0xffeadb, 3.5, 8.5, Math.PI * .24, .84, 1.6);
+const faceLight = new THREE.SpotLight(0xffeadb, .42, 8.5, Math.PI * .28, .92, 1.7);
 faceLight.position.set(1.1, 3.8, 3.2);
 faceLight.target.position.set(2.0, 1.45, -1.6);
 scene.add(faceLight, faceLight.target);
@@ -148,16 +168,16 @@ scene.add(faceLight, faceLight.target);
 // A broad, very soft bounce near Mira separates her from the storefront
 // without reading like a game spotlight. Its strength is modulated by player
 // distance later so she remains integrated with the street at long range.
-const miraPresenceLight=new THREE.PointLight(0xffeadb,.18,4.8,2.1);
+const miraPresenceLight=new THREE.PointLight(0xffeadb,.045,4.8,2.1);
 miraPresenceLight.position.set(2.75,2.05,-.85);
 scene.add(miraPresenceLight);
 
-const miraWarmBounce=new THREE.DirectionalLight(0xffead8,.09);
+const miraWarmBounce=new THREE.DirectionalLight(0xffead8,.035);
 miraWarmBounce.position.set(7.2,5.4,3.4);
 miraWarmBounce.target.position.set(2.0,1.15,-1.6);
 scene.add(miraWarmBounce,miraWarmBounce.target);
 
-const miraCoolRim=new THREE.DirectionalLight(0xd9edf2,.065);
+const miraCoolRim=new THREE.DirectionalLight(0xd9edf2,.028);
 miraCoolRim.position.set(-5.0,4.0,-7.5);
 miraCoolRim.target.position.set(2.0,1.25,-1.6);
 scene.add(miraCoolRim,miraCoolRim.target);
@@ -8741,16 +8761,99 @@ const miraBoneOffsetEuler=new THREE.Euler(0,0,0,'YXZ');
 let worldEnvironmentTexture=null;
 
 function ensureWorldAssetEnvironment(){
-  if(worldEnvironmentTexture || !window.RoomEnvironment) return;
-  const pmrem=new THREE.PMREMGenerator(renderer);
-  const envScene=new window.RoomEnvironment();
-  const target=pmrem.fromScene(envScene,.035);
-  worldEnvironmentTexture=target.texture;
+  if(worldEnvironmentTexture) return;
 
-  // Keep the visible sky dome, but let every PBR material sample the same soft
-  // daylight reflection field as imported assets.
+  const width=1024;
+  const height=512;
+  const envCanvas=document.createElement('canvas');
+  envCanvas.width=width;
+  envCanvas.height=height;
+  const g=envCanvas.getContext('2d');
+
+  // Outdoor equirectangular environment: cool zenith, pale horizon, warm ground.
+  const vertical=g.createLinearGradient(0,0,0,height);
+  vertical.addColorStop(0,'#7fb8d2');
+  vertical.addColorStop(.23,'#9fc9d9');
+  vertical.addColorStop(.46,'#d6e4e6');
+  vertical.addColorStop(.56,'#ece9df');
+  vertical.addColorStop(.72,'#b9b8ae');
+  vertical.addColorStop(1,'#6f746e');
+  g.fillStyle=vertical;
+  g.fillRect(0,0,width,height);
+
+  const rnd=makeSeededRandom(0x7351ace9);
+
+  // Broad city masses below the horizon generate believable low-frequency
+  // reflections in glass, cars and skin without reading like an indoor studio.
+  for(let i=0;i<18;i++){
+    const x=i*(width/18)-20+rnd()*36;
+    const w=32+rnd()*88;
+    const top=275+rnd()*64;
+    const shade=84+Math.floor(rnd()*45);
+    g.fillStyle='rgba('+shade+','+(shade+7)+','+(shade+5)+','+(.055+rnd()*.085).toFixed(3)+')';
+    g.fillRect(x,top,w,height-top);
+  }
+
+  // Tree masses near the horizon add natural green reflection breakup.
+  for(let i=0;i<20;i++){
+    const x=rnd()*width;
+    const y=300+rnd()*42;
+    const rx=24+rnd()*70;
+    const ry=10+rnd()*28;
+    const grad=g.createRadialGradient(x,y,2,x,y,rx);
+    grad.addColorStop(0,'rgba(67,88,68,'+(.055+rnd()*.075).toFixed(3)+')');
+    grad.addColorStop(1,'rgba(67,88,68,0)');
+    g.fillStyle=grad;
+    g.save();
+    g.translate(x,y);
+    g.scale(1,ry/rx);
+    g.beginPath();
+    g.arc(0,0,rx,0,Math.PI*2);
+    g.fill();
+    g.restore();
+  }
+
+  // Soft off-axis sun disc and surrounding warm sky.
+  const sunX=width*.30;
+  const sunY=height*.23;
+  const sunGlow=g.createRadialGradient(sunX,sunY,2,sunX,sunY,76);
+  sunGlow.addColorStop(0,'rgba(255,246,216,.96)');
+  sunGlow.addColorStop(.08,'rgba(255,239,200,.62)');
+  sunGlow.addColorStop(.32,'rgba(255,226,184,.16)');
+  sunGlow.addColorStop(1,'rgba(255,226,184,0)');
+  g.fillStyle=sunGlow;
+  g.fillRect(sunX-80,sunY-80,160,160);
+
+  // Soft clouds affect specular highlights without producing graphic shapes.
+  for(let i=0;i<28;i++){
+    const x=rnd()*width;
+    const y=60+rnd()*190;
+    const rx=22+rnd()*80;
+    const ry=8+rnd()*24;
+    const grad=g.createRadialGradient(x,y,3,x,y,rx);
+    grad.addColorStop(0,'rgba(255,255,255,'+(.035+rnd()*.070).toFixed(3)+')');
+    grad.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=grad;
+    g.save();
+    g.translate(x,y);
+    g.scale(1,ry/rx);
+    g.beginPath();
+    g.arc(0,0,rx,0,Math.PI*2);
+    g.fill();
+    g.restore();
+  }
+
+  const envTexture=new THREE.CanvasTexture(envCanvas);
+  envTexture.colorSpace=THREE.SRGBColorSpace;
+  envTexture.mapping=THREE.EquirectangularReflectionMapping;
+
+  const pmrem=new THREE.PMREMGenerator(renderer);
+  pmrem.compileEquirectangularShader();
+  const target=pmrem.fromEquirectangular(envTexture);
+  worldEnvironmentTexture=target.texture;
   scene.environment=worldEnvironmentTexture;
 
+  envTexture.dispose();
   pmrem.dispose();
 }
 
@@ -9045,12 +9148,12 @@ function tuneMiraAsset(root){
         }
       }else if(/skin|face|head|body/.test(key)){
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .70,.66,.76);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .74,.72,.82);
         }
         if(material.color){
           material.color.lerp(new THREE.Color(0xd6a18c),.040);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.16;
+        if('envMapIntensity' in material) material.envMapIntensity=.10;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=skinOilRoughness;
         }
@@ -9060,7 +9163,7 @@ function tuneMiraAsset(root){
         }
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=0;
-          if('specularIntensity' in material) material.specularIntensity=.50;
+          if('specularIntensity' in material) material.specularIntensity=.36;
           if(hasUv && 'specularIntensityMap' in material){
             material.specularIntensityMap=skinSpecularTexture;
           }
@@ -9069,7 +9172,7 @@ function tuneMiraAsset(root){
         if('roughness' in material){
           material.roughness=THREE.MathUtils.clamp(material.roughness ?? .74,.68,.80);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.22;
+        if('envMapIntensity' in material) material.envMapIntensity=.095;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=hairRoughnessTexture;
         }
@@ -9825,10 +9928,10 @@ function animate(){
   // Focal lighting is distance-aware: enough facial separation up close, but
   // almost indistinguishable from ordinary daylight from across the block.
   const presence=1-THREE.MathUtils.smoothstep(miraDistance,2.4,10.5);
-  faceLight.intensity=5.25+presence*.95;
-  miraPresenceLight.intensity=.22+presence*.24;
-  miraWarmBounce.intensity=.13+presence*.055;
-  miraCoolRim.intensity=.075+presence*.040;
+  faceLight.intensity=.36+presence*.18;
+  miraPresenceLight.intensity=.038+presence*.035;
+  miraWarmBounce.intensity=.030+presence*.015;
+  miraCoolRim.intensity=.022+presence*.010;
 
   if(miraGLBRoot && miraGLBBasePosition){
     const weightShift=Math.sin(t*.37+.6);
