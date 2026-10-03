@@ -2521,6 +2521,159 @@ function makeWeatheringTexture(kind,seed){
 
 const facadeWeatherTexture=makeWeatheringTexture('facade',0x82d4a931);
 facadeWeatherTexture.repeat.set(1,1.8);
+
+function makeFacadeExposureSurface(seed){
+  const w=1024;
+  const h=256;
+  const colorCanvas=document.createElement('canvas');
+  const roughCanvas=document.createElement('canvas');
+  colorCanvas.width=roughCanvas.width=w;
+  colorCanvas.height=roughCanvas.height=h;
+  const g=colorCanvas.getContext('2d');
+  const r=roughCanvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+
+  g.clearRect(0,0,w,h);
+  r.fillStyle='#eeeeee';
+  r.fillRect(0,0,w,h);
+
+  // Broad exposure zones: pollution and moisture history vary across tens of
+  // metres, not as evenly distributed procedural speckles.
+  for(let i=0;i<36;i++){
+    const x=rnd()*w;
+    const y=20+rnd()*(h-35);
+    const rx=28+rnd()*125;
+    const ry=12+rnd()*58;
+    const family=Math.floor(rnd()*3);
+    const tone=[
+      [88,82,73],
+      [83,94,88],
+      [154,135,112]
+    ][family];
+    const alpha=.012+rnd()*.030;
+    const cg=g.createRadialGradient(x,y,2,x,y,Math.max(rx,ry));
+    cg.addColorStop(0,'rgba('+tone[0]+','+tone[1]+','+tone[2]+','+alpha.toFixed(3)+')');
+    cg.addColorStop(1,'rgba('+tone[0]+','+tone[1]+','+tone[2]+',0)');
+    g.fillStyle=cg;
+    g.save();
+    g.translate(x,y);
+    g.scale(1,ry/rx);
+    g.beginPath();
+    g.arc(0,0,rx,0,Math.PI*2);
+    g.fill();
+    g.restore();
+
+    const rv=176+Math.floor(rnd()*58);
+    const rg=r.createRadialGradient(x,y,2,x,y,Math.max(rx,ry));
+    rg.addColorStop(0,'rgba('+rv+','+rv+','+rv+','+(.08+rnd()*.16).toFixed(3)+')');
+    rg.addColorStop(1,'rgba('+rv+','+rv+','+rv+',0)');
+    r.fillStyle=rg;
+    r.save();
+    r.translate(x,y);
+    r.scale(1,ry/rx);
+    r.beginPath();
+    r.arc(0,0,rx,0,Math.PI*2);
+    r.fill();
+    r.restore();
+  }
+
+  // Water begins below believable horizontal projections/window lines. Each
+  // streak changes both albedo and roughness, so it reacts at grazing angles.
+  const dripRows=[32,78,126,174];
+  dripRows.forEach((row,rowIndex)=>{
+    for(let i=0;i<18;i++){
+      const x=(i+.18+rnd()*.66)*(w/18);
+      const y=row+rnd()*8;
+      const len=15+rnd()*(32+rowIndex*8);
+      const drift=(rnd()-.5)*5;
+      const dark=rnd()>.22;
+      const alpha=.018+rnd()*.034;
+      const cg=g.createLinearGradient(x,y,x+drift,y+len);
+      cg.addColorStop(
+        0,
+        dark
+          ? 'rgba(67,73,68,'+alpha.toFixed(3)+')'
+          : 'rgba(211,202,184,'+(alpha*.72).toFixed(3)+')'
+      );
+      cg.addColorStop(.68,dark
+        ? 'rgba(67,73,68,'+(alpha*.36).toFixed(3)+')'
+        : 'rgba(211,202,184,'+(alpha*.20).toFixed(3)+')');
+      cg.addColorStop(1,'rgba(0,0,0,0)');
+      g.strokeStyle=cg;
+      g.lineWidth=.55+rnd()*1.30;
+      g.beginPath();
+      g.moveTo(x,y);
+      g.bezierCurveTo(
+        x+(rnd()-.5)*2,y+len*.28,
+        x+drift*.75,y+len*.70,
+        x+drift,y+len
+      );
+      g.stroke();
+
+      const roughV=dark
+        ? 150+Math.floor(rnd()*42)
+        : 214+Math.floor(rnd()*28);
+      const rg=r.createLinearGradient(x,y,x+drift,y+len);
+      rg.addColorStop(0,'rgba('+roughV+','+roughV+','+roughV+','+(.12+rnd()*.18).toFixed(3)+')');
+      rg.addColorStop(1,'rgba('+roughV+','+roughV+','+roughV+',0)');
+      r.strokeStyle=rg;
+      r.lineWidth=1.2+rnd()*2.2;
+      r.beginPath();
+      r.moveTo(x,y);
+      r.bezierCurveTo(
+        x+(rnd()-.5)*2,y+len*.28,
+        x+drift*.75,y+len*.70,
+        x+drift,y+len
+      );
+      r.stroke();
+    }
+  });
+
+  // Lower 1-1.5m: splashback, road dust and repeated cleaning create a much
+  // richer roughness transition than a simple dark gradient.
+  const base=g.createLinearGradient(0,h*.66,0,h);
+  base.addColorStop(0,'rgba(85,79,70,0)');
+  base.addColorStop(.56,'rgba(85,79,70,.018)');
+  base.addColorStop(1,'rgba(69,66,59,.072)');
+  g.fillStyle=base;
+  g.fillRect(0,h*.64,w,h*.36);
+
+  const baseRough=r.createLinearGradient(0,h*.64,0,h);
+  baseRough.addColorStop(0,'rgba(238,238,238,0)');
+  baseRough.addColorStop(.58,'rgba(202,202,202,.10)');
+  baseRough.addColorStop(1,'rgba(174,174,174,.30)');
+  r.fillStyle=baseRough;
+  r.fillRect(0,h*.64,w,h*.36);
+
+  for(let i=0;i<130;i++){
+    const x=rnd()*w;
+    const y=h*.72+rnd()*h*.26;
+    const rr=.6+rnd()*3.4;
+    g.fillStyle='rgba(74,72,65,'+(.010+rnd()*.030).toFixed(3)+')';
+    g.beginPath();
+    g.arc(x,y,rr,0,Math.PI*2);
+    g.fill();
+
+    const rv=155+Math.floor(rnd()*62);
+    r.fillStyle='rgba('+rv+','+rv+','+rv+','+(.06+rnd()*.15).toFixed(3)+')';
+    r.beginPath();
+    r.arc(x,y,rr*1.4,0,Math.PI*2);
+    r.fill();
+  }
+
+  const map=new THREE.CanvasTexture(colorCanvas);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.wrapS=map.wrapT=THREE.ClampToEdgeWrapping;
+  map.anisotropy=8;
+
+  const roughness=new THREE.CanvasTexture(roughCanvas);
+  roughness.wrapS=roughness.wrapT=THREE.ClampToEdgeWrapping;
+  roughness.anisotropy=8;
+
+  return {map,roughness};
+}
+
+const facadeExposureSurface=makeFacadeExposureSurface(0x92ec41b7);
 const roadWearTexture=makeWeatheringTexture('road',0x5ca91d73);
 roadWearTexture.repeat.set(1.2,4.8);
 const metalWearTexture=makeWeatheringTexture('metal',0x31d7be42);
@@ -3938,12 +4091,16 @@ scene.add(facadeSoftShade);
 // The street facade gets a very low-opacity weather layer: rain traces, dust at
 // pedestrian height and broad tonal drift. It keeps the warm stone clean but
 // stops sixty metres of wall from reading as a freshly rendered solid color.
-const facadeWeatherMat=new THREE.MeshBasicMaterial({
-  map:facadeWeatherTexture,
+const facadeWeatherMat=new THREE.MeshStandardMaterial({
+  color:0xffffff,
+  map:facadeExposureSurface.map,
+  roughnessMap:facadeExposureSurface.roughness,
+  roughness:.92,
+  metalness:0,
   transparent:true,
-  opacity:.44,
+  opacity:.58,
   depthWrite:false,
-  toneMapped:false,
+  envMapIntensity:.025,
   side:THREE.DoubleSide
 });
 const facadeWeather=new THREE.Mesh(
@@ -3952,6 +4109,7 @@ const facadeWeather=new THREE.Mesh(
 );
 facadeWeather.position.set(8.392,3.47,-5);
 facadeWeather.rotation.y=-Math.PI/2;
+facadeWeather.renderOrder=2;
 scene.add(facadeWeather);
 
 const facadeBasePatinaMat=new THREE.MeshStandardMaterial({
