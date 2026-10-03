@@ -188,36 +188,36 @@
     const aluminum=new THREE.MeshPhysicalMaterial({
       color:0x343638,
       metalness:.74,
-      roughness:.39,
+      roughness:.48,
       roughnessMap:scannedMetalRough,
       normalMap:scannedMetalNormal,
       normalScale:new THREE.Vector2(.055,.055),
-      clearcoat:.025,
-      clearcoatRoughness:.62,
-      envMapIntensity:.58
+      clearcoat:.010,
+      clearcoatRoughness:.74,
+      envMapIntensity:.40
     });
     const edgeMetal=new THREE.MeshPhysicalMaterial({
       color:0x4a4c4d,
       metalness:.78,
-      roughness:.34,
+      roughness:.42,
       roughnessMap:scannedMetalRough,
       normalMap:scannedMetalNormal,
       normalScale:new THREE.Vector2(.040,.040),
-      clearcoat:.04,
-      clearcoatRoughness:.52,
-      envMapIntensity:.68
+      clearcoat:.015,
+      clearcoatRoughness:.66,
+      envMapIntensity:.48
     });
     const blackGlass=new THREE.MeshPhysicalMaterial({
       color:0x080808,
       metalness:.02,
-      roughness:.085,
+      roughness:.12,
       roughnessMap:glassRoughness,
-      clearcoat:.72,
-      clearcoatRoughness:.08,
+      clearcoat:.48,
+      clearcoatRoughness:.14,
       transmission:.025,
       ior:1.5,
       thickness:.006,
-      envMapIntensity:.78
+      envMapIntensity:.62
     });
     const lensMat=new THREE.MeshPhysicalMaterial({
       color:0x06101c,
@@ -399,41 +399,41 @@
 
     const handPalmSkin=new THREE.MeshPhysicalMaterial({
       color:0xc9967f,
-      roughness:.56,
+      roughness:.72,
       roughnessMap:scannedSkinRough,
       normalMap:scannedSkinNormal,
-      normalScale:new THREE.Vector2(.090,.090),
+      normalScale:new THREE.Vector2(.065,.065),
       bumpMap:skinMicroTexture,
       bumpScale:.00045,
       metalness:0,
       clearcoat:0,
-      specularIntensity:.34,
+      specularIntensity:.22,
       specularColor:new THREE.Color(0xffd6c9),
-      envMapIntensity:.20
+      envMapIntensity:.085
     });
     const handFingerSkin=new THREE.MeshPhysicalMaterial({
       color:0xcc9982,
-      roughness:.52,
+      roughness:.68,
       roughnessMap:scannedSkinRough,
       normalMap:scannedSkinNormal,
-      normalScale:new THREE.Vector2(.105,.105),
+      normalScale:new THREE.Vector2(.072,.072),
       bumpMap:skinMicroTexture,
       bumpScale:.00050,
       metalness:0,
       clearcoat:0,
-      specularIntensity:.38,
+      specularIntensity:.24,
       specularColor:new THREE.Color(0xffd5c6),
-      envMapIntensity:.22
+      envMapIntensity:.095
     });
     const nailMat=new THREE.MeshPhysicalMaterial({
       color:0xe7bbae,
-      roughness:.26,
+      roughness:.42,
       metalness:0,
-      clearcoat:.12,
-      clearcoatRoughness:.22,
-      specularIntensity:.46,
+      clearcoat:.045,
+      clearcoatRoughness:.38,
+      specularIntensity:.28,
       specularColor:new THREE.Color(0xffeee8),
-      envMapIntensity:.30
+      envMapIntensity:.12
     });
     const sleeveMat=new THREE.MeshStandardMaterial({color:0x1f2021,roughness:.94,metalness:.01});
 
@@ -816,20 +816,20 @@
 
       // Material response: the metal gets slightly sharper at steeper pointer
       // angles, while the camera lens catches a moving pin-prick reflection.
-      aluminum.roughness=.31-Math.min(.018,Math.abs(pointerX)*.010+Math.abs(pointerY)*.006);
-      edgeMetal.roughness=.24-Math.min(.015,Math.abs(pointerX)*.009+Math.abs(pointerY)*.005);
-      handPalmSkin.roughness=.56-Math.min(.020,Math.abs(pointerX)*.008+Math.max(0,pressAmount)*.014);
-      handFingerSkin.roughness=.52-Math.min(.024,Math.abs(pointerY)*.010+Math.max(0,pressAmount)*.017);
+      aluminum.roughness=.48-Math.min(.012,Math.abs(pointerX)*.006+Math.abs(pointerY)*.004);
+      edgeMetal.roughness=.42-Math.min(.010,Math.abs(pointerX)*.005+Math.abs(pointerY)*.004);
+      handPalmSkin.roughness=.72-Math.min(.012,Math.abs(pointerX)*.004+Math.max(0,pressAmount)*.008);
+      handFingerSkin.roughness=.68-Math.min(.014,Math.abs(pointerY)*.005+Math.max(0,pressAmount)*.009);
       lensGlint.position.x=-.006+pointerX*.010;
       lensGlint.position.y=.900+pointerY*.006;
-      lensGlintMat.opacity=(.22+.34*hold)*(1-Math.min(.45,Math.abs(pointerX)*.15))+Math.max(0,pressAmount)*.08;
+      lensGlintMat.opacity=(.08+.12*hold)*(1-Math.min(.45,Math.abs(pointerX)*.15))+Math.max(0,pressAmount)*.025;
 
       const opticalX=THREE.MathUtils.clamp(pointerX+inertiaX*18+hapticYaw*6,-1,1);
       const opticalY=THREE.MathUtils.clamp(pointerY+inertiaY*18+hapticPitch*6,-1,1);
       glassSheen.position.x=-.56+opticalX*.32;
       glassSheen.position.y=.08+opticalY*.16;
       glassSheen.rotation.z=-.39+opticalX*.055;
-      glassSheenMat.opacity=(.012+.030*hold)*(1-Math.min(.62,Math.abs(opticalX)*.28+Math.abs(opticalY)*.20));
+      glassSheenMat.opacity=(.006+.012*hold)*(1-Math.min(.62,Math.abs(opticalX)*.28+Math.abs(opticalY)*.20));
 
       // Keep the live screen optically separate from the 3D shell. The movement
       // is deliberately sub-pixel-to-few-pixel scale so UI targeting remains stable.
@@ -848,15 +848,15 @@
       // almost disappears. Inertia and haptic release add a brief metal flash.
       const railMotion=Math.min(.08,Math.hypot(inertiaX,inertiaY)*2.7);
       const railHaptic=Math.min(.055,Math.abs(hapticPitch)*2.1+Math.abs(hapticYaw)*1.8+catchAmount*.038);
-      const railBase=.008*hold;
+      const railBase=.003*hold;
       railSheen.left.material.opacity=
-        railBase+Math.max(0,pointerX)*.060+Math.max(0,inertiaX)*1.8+railMotion+railHaptic;
+        railBase+Math.max(0,pointerX)*.022+Math.max(0,inertiaX)*.72+railMotion*.35+railHaptic*.32;
       railSheen.right.material.opacity=
-        railBase+Math.max(0,-pointerX)*.060+Math.max(0,-inertiaX)*1.8+railMotion+railHaptic;
+        railBase+Math.max(0,-pointerX)*.022+Math.max(0,-inertiaX)*.72+railMotion*.35+railHaptic*.32;
       railSheen.top.material.opacity=
-        railBase+Math.max(0,-pointerY)*.045+Math.max(0,-inertiaY)*1.6+railMotion*.75+railHaptic*.8;
+        railBase+Math.max(0,-pointerY)*.018+Math.max(0,-inertiaY)*.62+railMotion*.28+railHaptic*.25;
       railSheen.bottom.material.opacity=
-        railBase+Math.max(0,pointerY)*.045+Math.max(0,inertiaY)*1.6+railMotion*.75+railHaptic*.8;
+        railBase+Math.max(0,pointerY)*.018+Math.max(0,inertiaY)*.62+railMotion*.28+railHaptic*.25;
 
       railSheen.left.scale.z=1+Math.max(0,pointerX)*.20;
       railSheen.right.scale.z=1+Math.max(0,-pointerX)*.20;
