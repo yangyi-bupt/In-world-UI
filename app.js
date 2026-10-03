@@ -9504,6 +9504,44 @@ mira.scale.setScalar(1.02);
 miraRig.visible=false;
 scene.add(mira);
 
+function trimStaticShadowBudget(){
+  scene.updateMatrixWorld(true);
+  const boxSize=new THREE.Vector3();
+  const worldScale=new THREE.Vector3();
+  const worldPos=new THREE.Vector3();
+
+  scene.traverse(object=>{
+    if(!object.isMesh || !object.castShadow || object.isSkinnedMesh) return;
+    if(object.userData?.keepShadow) return;
+
+    const geometry=object.geometry;
+    if(!geometry) return;
+    if(!geometry.boundingBox) geometry.computeBoundingBox();
+    if(!geometry.boundingBox) return;
+
+    geometry.boundingBox.getSize(boxSize);
+    object.getWorldScale(worldScale);
+    object.getWorldPosition(worldPos);
+
+    const sx=Math.abs(boxSize.x*worldScale.x);
+    const sy=Math.abs(boxSize.y*worldScale.y);
+    const sz=Math.abs(boxSize.z*worldScale.z);
+    const largest=Math.max(sx,sy,sz);
+    const distanceXZ=Math.hypot(
+      worldPos.x-camera.position.x,
+      worldPos.z-camera.position.z
+    );
+
+    // Tiny props contribute almost nothing to a sun shadow at eye level, while
+    // every one still costs draw work in the shadow pass. Far static geometry
+    // is already represented by contact shading / photographic set extension.
+    if(largest<.65 || distanceXZ>34){
+      object.castShadow=false;
+    }
+  });
+}
+trimStaticShadowBudget();
+
 const WORLD_GLB_ASSETS={
   // Pinned assets keep the prototype deterministic while still replacing the
   // primitive placeholders with real authored meshes and skeletal animation.
