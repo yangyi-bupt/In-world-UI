@@ -9549,16 +9549,55 @@ function loadRuntimeSkin(url,{srgb=false,repeatX=1,repeatY=1}={}){
 }
 
 const realStuccoColor=loadRuntimeSkin(
-  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_stucco/white_stucco_diff_1k.jpg',
-  {srgb:true,repeatX:1.15,repeatY:2.35}
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_wall_009/concrete_wall_009_diff_1k.jpg',
+  {srgb:true,repeatX:1.55,repeatY:3.10}
 );
 const realStuccoNormal=loadRuntimeSkin(
-  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_stucco/white_stucco_nor_gl_1k.jpg',
-  {repeatX:1.15,repeatY:2.35}
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_wall_009/concrete_wall_009_nor_gl_1k.jpg',
+  {repeatX:1.55,repeatY:3.10}
 );
 const realStuccoRough=loadRuntimeSkin(
-  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_stucco/white_stucco_rough_1k.jpg',
-  {repeatX:1.15,repeatY:2.35}
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_wall_009/concrete_wall_009_rough_1k.jpg',
+  {repeatX:1.55,repeatY:3.10}
+);
+
+const realAsphaltColor=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_01/asphalt_01_diff_1k.jpg',
+  {srgb:true,repeatX:5.2,repeatY:31}
+);
+const realAsphaltNormal=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_01/asphalt_01_nor_gl_1k.jpg',
+  {repeatX:5.2,repeatY:31}
+);
+const realAsphaltRough=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_01/asphalt_01_rough_1k.jpg',
+  {repeatX:5.2,repeatY:31}
+);
+
+const realPavingColor=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement_02/concrete_pavement_02_diff_1k.jpg',
+  {srgb:true,repeatX:4.6,repeatY:33}
+);
+const realPavingNormal=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement_02/concrete_pavement_02_nor_gl_1k.jpg',
+  {repeatX:4.6,repeatY:33}
+);
+const realPavingRough=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement_02/concrete_pavement_02_rough_1k.jpg',
+  {repeatX:4.6,repeatY:33}
+);
+
+const realBarkColor=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/tree_bark_03/tree_bark_03_diff_1k.jpg',
+  {srgb:true,repeatX:1.0,repeatY:3.7}
+);
+const realBarkNormal=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/tree_bark_03/tree_bark_03_nor_gl_1k.jpg',
+  {repeatX:1.0,repeatY:3.7}
+);
+const realBarkRough=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/tree_bark_03/tree_bark_03_rough_1k.jpg',
+  {repeatX:1.0,repeatY:3.7}
 );
 
 const realVehicleNormal=loadRuntimeSkin(
@@ -9584,15 +9623,15 @@ function installScannedBuildingSkins(){
   ].filter(Boolean);
 
   const skinPalette=[
-    0xb8ad9f,
-    0xa69c90,
-    0xd1c4b4,
-    0xb2a798,
-    0xddd0bf,
-    0xa99d8e,
-    0xb7aa98,
-    0xa79b8d,
-    0xb6a793
+    0xd4d3ce,
+    0xc9cbc7,
+    0xe0ddd5,
+    0xc4c5c1,
+    0xe7e2d8,
+    0xc7c4bd,
+    0xd9d3c8,
+    0xc2c4c0,
+    0xd0cbc2
   ];
 
   materials.forEach((material,index)=>{
@@ -9630,6 +9669,102 @@ function installScannedBuildingSkins(){
   });
 }
 installScannedBuildingSkins();
+
+function copyRuntimeSkinSet(material,color,normal,roughness,{
+  normalScale=.16,
+  roughnessValue=.92,
+  envIntensity=.025,
+  colorTint=null
+}={}){
+  if(!material) return;
+  material.map=color;
+  material.normalMap=normal;
+  material.roughnessMap=roughness;
+  material.bumpMap=null;
+  material.roughness=roughnessValue;
+  material.metalness=0;
+  material.envMapIntensity=envIntensity;
+  if(material.normalScale?.set) material.normalScale.set(normalScale,normalScale);
+  if(colorTint && material.color?.setHex) material.color.setHex(colorTint);
+  material.needsUpdate=true;
+}
+
+function installScannedStreetSkins(){
+  // The boulevard now uses actual photographed/scanned surfaces instead of
+  // procedural grain. The big planes get texture scale close to real metres,
+  // while small curb pieces keep their existing construction detail.
+  copyRuntimeSkinSet(road?.material,realAsphaltColor,realAsphaltNormal,realAsphaltRough,{
+    normalScale:.34,roughnessValue:.93,envIntensity:.012,colorTint:0xffffff
+  });
+  copyRuntimeSkinSet(distantRoad?.material,
+    cloneTextureVariant(realAsphaltColor,.17,.08,1,1),
+    cloneTextureVariant(realAsphaltNormal,.17,.08,1,1),
+    cloneTextureVariant(realAsphaltRough,.17,.08,1,1),{
+      normalScale:.30,roughnessValue:.94,envIntensity:.012,colorTint:0xffffff
+    }
+  );
+
+  [
+    cityGround?.material,
+    sidewalk?.material,
+    refWalk?.material,
+    distantSidewalk?.material,
+    storefrontPavingBand?.material,
+    cafeTerrace?.material
+  ].filter(Boolean).forEach((material,index)=>{
+    const ox=(index*.173)%1;
+    const oy=(index*.119)%1;
+    copyRuntimeSkinSet(
+      material,
+      cloneTextureVariant(realPavingColor,ox,oy,1,1),
+      cloneTextureVariant(realPavingNormal,ox,oy,1,1),
+      cloneTextureVariant(realPavingRough,ox,oy,1,1),{
+        normalScale:index===2?.11:.16,
+        roughnessValue:.95,
+        envIntensity:.018,
+        colorTint:index===2?0xf2f0e9:0xe4e2dc
+      }
+    );
+  });
+
+  // The dominant office stone also gets a photographed cast-concrete response.
+  [refStone,refStoneDark].forEach((material,index)=>{
+    copyRuntimeSkinSet(
+      material,
+      cloneTextureVariant(realStuccoColor,index*.27,index*.13,1,1),
+      cloneTextureVariant(realStuccoNormal,index*.27,index*.13,1,1),
+      cloneTextureVariant(realStuccoRough,index*.27,index*.13,1,1),{
+        normalScale:index?.11:.13,
+        roughnessValue:index?.89:.87,
+        envIntensity:.030,
+        colorTint:index?0xc5c5c0:0xe0ded7
+      }
+    );
+  });
+
+  // All procedural bark users share the same source texture object, making them
+  // easy to replace without rebuilding the tree geometry.
+  scene.traverse(object=>{
+    if(!object.isMesh) return;
+    const materials=Array.isArray(object.material)?object.material:[object.material];
+    materials.forEach(material=>{
+      if(!material) return;
+      if(material.map===barkSurface.map || material.bumpMap===barkSurface.bump){
+        material.map=realBarkColor;
+        material.normalMap=realBarkNormal;
+        material.roughnessMap=realBarkRough;
+        material.bumpMap=null;
+        material.roughness=.94;
+        material.metalness=0;
+        material.envMapIntensity=.012;
+        material.normalScale?.set(.22,.22);
+        if(material.color?.setHex) material.color.setHex(0xb6a995);
+        material.needsUpdate=true;
+      }
+    });
+  });
+}
+installScannedStreetSkins();
 
 function tuneVehicleAsset(root,bodyColor){
   const bodyTint=new THREE.Color(bodyColor);
