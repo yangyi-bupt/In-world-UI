@@ -8854,11 +8854,11 @@ const refGutterMat=new THREE.MeshStandardMaterial({
   color:0x4f5553,
   roughness:.94,
   metalness:0,
-  map:asphaltSurface.map,
-  roughnessMap:asphaltSurface.roughness,
-  normalMap:asphaltSurface.normal,
+  map:asphaltGround.map,
+  roughnessMap:asphaltGround.roughness,
+  normalMap:asphaltGround.normal,
   normalScale:new THREE.Vector2(.075,.075),
-  bumpMap:asphaltSurface.bump,
+  bumpMap:asphaltGround.bump,
   bumpScale:.006,
   envMapIntensity:.025
 });
