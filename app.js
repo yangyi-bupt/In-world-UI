@@ -4069,9 +4069,9 @@ const storefrontPavingBand=new THREE.Mesh(
     map:storefrontPavingMap,
     roughnessMap:storefrontPavingRough,
     normalMap:storefrontPavingNormal,
-    normalScale:new THREE.Vector2(.085,.085),
+    normalScale:new THREE.Vector2(.050,.050),
     bumpMap:storefrontPavingBump,
-    bumpScale:.0055,
+    bumpScale:.0030,
     aoMap:storefrontPavingAO,
     aoMapIntensity:.12,
     roughness:.90,
@@ -8745,10 +8745,10 @@ const refWalk=new THREE.Mesh(
     map:refPavingMaps.map,
     roughnessMap:refPavingMaps.roughness,
     normalMap:refPavingMaps.normal,
-    normalScale:new THREE.Vector2(.028,.028),
+    normalScale:new THREE.Vector2(.018,.018),
     bumpMap:refPavingMaps.bump,
-    bumpScale:.0022,
-    envMapIntensity:.042
+    bumpScale:.0012,
+    envMapIntensity:.050
   })
 );
 refWalk.rotation.x=-Math.PI/2;
@@ -8767,10 +8767,10 @@ const refFrontagePavingMat=new THREE.MeshStandardMaterial({
   map:refPavingMaps.map,
   roughnessMap:refPavingMaps.roughness,
   normalMap:refPavingMaps.normal,
-  normalScale:new THREE.Vector2(.026,.026),
+  normalScale:new THREE.Vector2(.018,.018),
   bumpMap:refPavingMaps.bump,
-  bumpScale:.0020,
-  envMapIntensity:.040
+  bumpScale:.0012,
+  envMapIntensity:.046
 });
 const refFurnishingPavingMat=new THREE.MeshStandardMaterial({
   color:0xd7d4cc,
@@ -8778,10 +8778,10 @@ const refFurnishingPavingMat=new THREE.MeshStandardMaterial({
   map:refPavingMaps.map,
   roughnessMap:refPavingMaps.roughness,
   normalMap:refPavingMaps.normal,
-  normalScale:new THREE.Vector2(.030,.030),
+  normalScale:new THREE.Vector2(.020,.020),
   bumpMap:refPavingMaps.bump,
-  bumpScale:.0024,
-  envMapIntensity:.034
+  bumpScale:.0014,
+  envMapIntensity:.040
 });
 
 const refFrontageZone=new THREE.Mesh(
@@ -11276,6 +11276,8 @@ const miraBones={
   hips:null,
   leftUpperLeg:null,
   rightUpperLeg:null,
+  leftShoulder:null,
+  rightShoulder:null,
   leftArm:null,
   leftForeArm:null,
   rightArm:null,
@@ -11724,9 +11726,7 @@ function installScannedStreetSkins(){
   [
     cityGround?.material,
     sidewalk?.material,
-    refWalk?.material,
     distantSidewalk?.material,
-    storefrontPavingBand?.material,
     cafeTerrace?.material
   ].filter(Boolean).forEach((material,index)=>{
     const ox=(index*.173)%1;
@@ -11736,10 +11736,10 @@ function installScannedStreetSkins(){
       cloneTextureVariant(realPavingColor,ox,oy,1,1),
       cloneTextureVariant(realPavingNormal,ox,oy,1,1),
       cloneTextureVariant(realPavingRough,ox,oy,1,1),{
-        normalScale:index===2?.11:.16,
-        roughnessValue:.95,
-        envIntensity:.018,
-        colorTint:index===2?0xf2f0e9:0xe4e2dc
+        normalScale:index>=2?.13:.15,
+        roughnessValue:.945,
+        envIntensity:.016,
+        colorTint:index>=2?0xe9e7e1:0xe4e2dc
       }
     );
   });
@@ -12220,6 +12220,20 @@ function captureMiraBones(root){
       /rightupleg|rightthigh|upleg_r|upperleg_r|thigh_r|r_thigh/.test(key)
     ){
       miraBones.rightUpperLeg=object;
+    }
+
+    if(
+      !miraBones.leftShoulder &&
+      /leftshoulder|shoulder_l|clavicle_l|l_clavicle/.test(key)
+    ){
+      miraBones.leftShoulder=object;
+    }
+
+    if(
+      !miraBones.rightShoulder &&
+      /rightshoulder|shoulder_r|clavicle_r|r_clavicle/.test(key)
+    ){
+      miraBones.rightShoulder=object;
     }
 
     if(
@@ -13245,36 +13259,38 @@ function animate(){
 
     // The non-greeting arm participates in the stance. A small opposing motion
     // keeps both shoulders alive without turning the idle into an animation loop.
-    const leftArmBreath=Math.sin(t*.43+2.1)*.0045;
-    // Keep both upper arms tucked into a relaxed standing silhouette. The
-    // authored idle clip still supplies life, while this post-mixer correction
-    // removes the conspicuous "arms held out" NPC pose.
+    const leftArmBreath=Math.sin(t*.43+2.1)*.0030;
+    // Relax clavicles first, then keep the upper arms close to the rib cage.
+    // This counters the source idle's slightly open presentation pose without
+    // freezing the hands or flattening the breathing motion.
+    applyMiraBoneOffset(miraBones.leftShoulder,.010,-.006,.030);
+    applyMiraBoneOffset(miraBones.rightShoulder,.010,.006,-.030);
     applyMiraBoneOffset(
       miraBones.leftArm,
-      -.018+leftArmBreath,
-      .002-weightShift*.002,
-      .058+weightShift*.003
+      -.022+leftArmBreath,
+      .001-weightShift*.0015,
+      .125+weightShift*.002
     );
     applyMiraBoneOffset(
       miraBones.leftForeArm,
-      -.010+slowBreath*.003,
+      -.014+slowBreath*.0025,
       0,
-      -.004
+      -.006
     );
 
-    // Greeting is now a small acknowledgement from an already relaxed arm,
-    // rather than opening the shoulder away from the body.
+    // Greeting now comes mostly from the elbow/wrist; the shoulder stays tucked
+    // so Mira never opens into a theatrical or mannequin-like silhouette.
     applyMiraBoneOffset(
       miraBones.rightArm,
-      -.012+greetingEnvelope*.020,
-      -greetingEnvelope*.008,
-      -.058-greetingEnvelope*.020
+      -.018+greetingEnvelope*.010,
+      -greetingEnvelope*.004,
+      -.125-greetingEnvelope*.010
     );
     applyMiraBoneOffset(
       miraBones.rightForeArm,
-      -.008-greetingEnvelope*.060,
+      -.014-greetingEnvelope*.085,
       0,
-      greetingEnvelope*.008
+      greetingEnvelope*.006
     );
 
     const shadow=mira.userData.glbContactShadow;
