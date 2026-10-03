@@ -7168,9 +7168,9 @@ const refInteriorShadeMat=new THREE.MeshBasicMaterial({
   );
   shade.material.opacity=spec.o;
   shade.material.color.offsetHSL(
-    index%3===0?.010:(index%3===1?-.008:0),
+    index%3===0 ? .010 : (index%3===1 ? -.008 : 0),
     -.03,
-    index%2?.018:-.012
+    index%2 ? .018 : -.012
   );
   shade.position.set(7.815,spec.y,spec.z);
   shade.rotation.y=-Math.PI/2;
