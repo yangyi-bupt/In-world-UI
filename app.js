@@ -9076,7 +9076,7 @@ refLeafClusterTexture.anisotropy=8;
 
 const refLeafCardMaterials=[
   new THREE.MeshStandardMaterial({
-    color:0x8d9b82,
+    color:0x87987e,
     map:refLeafClusterTexture,
     transparent:true,
     alphaTest:.10,
@@ -9088,7 +9088,7 @@ const refLeafCardMaterials=[
     depthWrite:true
   }),
   new THREE.MeshStandardMaterial({
-    color:0x788b73,
+    color:0x65785f,
     map:refLeafClusterTexture,
     transparent:true,
     alphaTest:.11,
@@ -9100,7 +9100,7 @@ const refLeafCardMaterials=[
     depthWrite:true
   }),
   new THREE.MeshStandardMaterial({
-    color:0x9ba18a,
+    color:0xa6aa8c,
     map:refLeafClusterTexture,
     transparent:true,
     alphaTest:.10,
@@ -9132,7 +9132,7 @@ function loadPhotographicLeafCards(){
       texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy?.()||1,6);
     });
 
-    const colorTints=[0xffffff,0xe7efdf,0xf1f0dd];
+    const colorTints=[0xf2f4eb,0xc9d5c3,0xfff7df];
     refLeafCardMaterials.forEach((material,index)=>{
       const map=diffuse.clone();
       const alphaMap=alpha.clone();
@@ -9174,7 +9174,13 @@ function addLeafCardCloud(parent,scale=1,seed=1,count=18){
     const radius=Math.pow(rnd(),.68)*.90;
     const y=.03+rnd()*1.52;
     const size=(.34+rnd()*.48)*scale;
-    const materialIndex=i%refLeafCardMaterials.length;
+    // Interior/lower leaves stay darker; the exposed upper shell catches more
+    // sky and warm daylight. This removes the evenly-speckled procedural read.
+    const vertical=THREE.MathUtils.clamp(y/1.55,0,1);
+    const materialIndex=
+      vertical>.66
+        ? (rnd()>.28?2:0)
+        : (vertical<.30?(rnd()>.22?1:0):(rnd()>.62?2:0));
 
     dummy.position.set(
       Math.cos(angle)*radius*scale,
@@ -9210,7 +9216,9 @@ function addLeafCardCloud(parent,scale=1,seed=1,count=18){
     );
     matrices.forEach((matrix,instanceIndex)=>leaves.setMatrixAt(instanceIndex,matrix));
     leaves.instanceMatrix.needsUpdate=true;
-    leaves.castShadow=false;
+    // One darker bucket per crown casts broken alpha-tested sun shadows. Keeping
+    // the other buckets shadow-free preserves the current performance budget.
+    leaves.castShadow=index===1;
     leaves.receiveShadow=false;
     leaves.userData.foliageInstanced=true;
     parent.add(leaves);
@@ -12294,6 +12302,78 @@ function addVehicleStreetDetails(entry,root,targetLength,index=0){
   underbody.position.set(0,.18,-.015);
   entry.group.add(underbody);
 
+  // Seat/headrest silhouettes keep close glazing from reading as an empty shell.
+  const seatMat=new THREE.MeshStandardMaterial({
+    color:0x303433,
+    roughness:.96,
+    metalness:0,
+    envMapIntensity:.012
+  });
+  [-.23,.23].forEach((sx,seatIndex)=>{
+    const seatBack=new THREE.Mesh(
+      new THREE.BoxGeometry(width*.18,height*.25,targetLength*.12),
+      seatMat
+    );
+    seatBack.position.set(
+      sx*width,
+      height*.54,
+      -targetLength*.055+(seatIndex?-.015:.010)
+    );
+    entry.group.add(seatBack);
+
+    const headrest=new THREE.Mesh(
+      new THREE.SphereGeometry(width*.065,10,8),
+      seatMat
+    );
+    headrest.scale.set(.86,1.10,.78);
+    headrest.position.set(
+      sx*width,
+      height*.72,
+      -targetLength*.055+(seatIndex?-.015:.010)
+    );
+    entry.group.add(headrest);
+  });
+
+  if(entry.assetVariant==='secondary'){
+    // Hatchback roof rails + rear wiper preserve a different silhouette even
+    // after both vehicle paints are deliberately muted.
+    const railMat=new THREE.MeshStandardMaterial({
+      color:0x5f6665,
+      roughness:.36,
+      metalness:.58,
+      envMapIntensity:.66
+    });
+    [-1,1].forEach(side=>{
+      const rail=new THREE.Mesh(
+        new THREE.BoxGeometry(.030,.035,targetLength*.43),
+        railMat
+      );
+      rail.position.set(side*width*.27,height*.90,-targetLength*.035);
+      rail.rotation.x=.006*side;
+      entry.group.add(rail);
+    });
+
+    const wiper=new THREE.Mesh(
+      new THREE.BoxGeometry(width*.27,.018,.022),
+      railMat
+    );
+    wiper.position.set(0,height*.67,-targetLength*.495);
+    wiper.rotation.z=-.18;
+    entry.group.add(wiper);
+  }else{
+    const beltline=new THREE.Mesh(
+      new THREE.BoxGeometry(width*.72,.024,.026),
+      new THREE.MeshStandardMaterial({
+        color:0x949a98,
+        roughness:.34,
+        metalness:.62,
+        envMapIntensity:.70
+      })
+    );
+    beltline.position.set(0,height*.58,targetLength*.22);
+    entry.group.add(beltline);
+  }
+
   if(!entry.userGroundShadow){
     entry.userGroundShadow=createAttachedContactShadow(
       entry.group,
@@ -12308,6 +12388,14 @@ function attachCarAsset(entry,source,index=0,targetLength=3.85){
   const root=source.clone(true);
   prepareImportedModel(root,.72);
   normalizeCarAsset(root,targetLength);
+  if(entry.assetVariant==='secondary'){
+    root.scale.x*=.975;
+    root.scale.y*=1.035;
+  }else{
+    root.scale.x*=1.012;
+    root.scale.y*=.992;
+  }
+  root.updateMatrixWorld(true);
   const palette=[0xbfc3c0,0xd5ccbe,0xaebdc0,0xc7c6bf];
   entry.assetWheels=tuneVehicleAsset(root,entry.color ?? palette[index%palette.length]);
   entry.placeholderChildren?.forEach(child=>{child.visible=false;});
@@ -12398,7 +12486,7 @@ function attachMiraAsset(source,animations){
   normalizeHumanAsset(root,1.71);
   tuneMiraAsset(root);
   root.rotation.y=Math.PI-.10;
-  root.position.set(0,.008,.010);
+  root.position.set(0,.004,.010);
   root.scale.x*=.975;
   root.scale.z*=.985;
   miraRig.visible=false;
@@ -12825,6 +12913,16 @@ function animate(){
 
   worldAssetMixers.forEach(mixer=>mixer.update(dt));
 
+  // A long-period playback drift hides the loop cadence of a short authored
+  // idle clip without overriding its actual pose work.
+  if(miraIdleAction){
+    miraIdleAction.setEffectiveTimeScale(
+      .705+
+      Math.sin(t*.061+.8)*.018+
+      Math.sin(t*.017+2.1)*.010
+    );
+  }
+
   movingTraffic.forEach((traffic,index)=>{
     // City traffic should breathe instead of travelling at a perfect loop speed.
     // Layered long-period waves create gentle accelerator/coast behaviour while
@@ -13098,7 +13196,10 @@ function animate(){
         ? .104+weightShift*.020
         : .104-weightShift*.020;
       footShadow.material.opacity=THREE.MathUtils.clamp(footWeight,.078,.132);
-      footShadow.scale.x=.94+(index===0?weightShift:-weightShift)*.034;
+      const loaded=index===0?weightShift:-weightShift;
+      footShadow.scale.x=.94+loaded*.034;
+      footShadow.scale.y=1.48+loaded*.055;
+      footShadow.position.x=(index===0?-.095:.095)+loaded*.006;
     });
   }
   const idleBreath=Math.sin(t*1.55);
