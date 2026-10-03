@@ -6,24 +6,24 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.12;
+renderer.toneMappingExposure = .94;
 renderer.physicallyCorrectLights = true;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xd4e7ef);
-scene.fog = new THREE.Fog(0xe8edef, 52, 142);
+scene.background = new THREE.Color(0xc9dbe2);
+scene.fog = new THREE.Fog(0xdfe6e7, 46, 126);
 
 const skyCanvas=document.createElement('canvas');
 skyCanvas.width=256;
 skyCanvas.height=1024;
 const skyCtx=skyCanvas.getContext('2d');
 const skyGradient=skyCtx.createLinearGradient(0,0,0,1024);
-skyGradient.addColorStop(0,'#78b5d4');
-skyGradient.addColorStop(.22,'#9cc9dd');
-skyGradient.addColorStop(.48,'#c7dfe7');
-skyGradient.addColorStop(.70,'#e7ece9');
-skyGradient.addColorStop(.86,'#efe8dc');
-skyGradient.addColorStop(1,'#d7d8d1');
+skyGradient.addColorStop(0,'#73a9c1');
+skyGradient.addColorStop(.22,'#9fc2cf');
+skyGradient.addColorStop(.48,'#c7d9dc');
+skyGradient.addColorStop(.70,'#e2e4df');
+skyGradient.addColorStop(.86,'#e8dfd1');
+skyGradient.addColorStop(1,'#c9cbc5');
 skyCtx.fillStyle=skyGradient;
 skyCtx.fillRect(0,0,256,1024);
 
@@ -53,6 +53,23 @@ const skyDome=new THREE.Mesh(
 skyDome.position.y=3;
 scene.add(skyDome);
 
+// Very low-contrast horizon veil: distant geometry loses contrast in real daylight
+// before it disappears into fog. This keeps the far street from looking like a
+// perfectly crisp miniature while leaving the playable foreground untouched.
+const horizonVeilCanvas=document.createElement('canvas');
+horizonVeilCanvas.width=16;
+horizonVeilCanvas.height=256;
+const horizonVeilCtx=horizonVeilCanvas.getContext('2d');
+const horizonVeilGrad=horizonVeilCtx.createLinearGradient(0,0,0,256);
+horizonVeilGrad.addColorStop(0,'rgba(226,232,232,0)');
+horizonVeilGrad.addColorStop(.38,'rgba(226,232,232,.015)');
+horizonVeilGrad.addColorStop(.72,'rgba(226,232,232,.085)');
+horizonVeilGrad.addColorStop(1,'rgba(226,232,232,.16)');
+horizonVeilCtx.fillStyle=horizonVeilGrad;
+horizonVeilCtx.fillRect(0,0,16,256);
+const horizonVeilTexture=new THREE.CanvasTexture(horizonVeilCanvas);
+horizonVeilTexture.colorSpace=THREE.SRGBColorSpace;
+
 const sunCanvas=document.createElement('canvas');
 sunCanvas.width=256;
 sunCanvas.height=256;
@@ -72,10 +89,10 @@ const sunHaze=new THREE.Sprite(new THREE.SpriteMaterial({
   depthTest:true,
   depthWrite:false,
   toneMapped:false,
-  opacity:.84
+  opacity:.48
 }));
 sunHaze.position.set(-34,34,-46);
-sunHaze.scale.set(18,18,1);
+sunHaze.scale.set(12.5,12.5,1);
 scene.add(sunHaze);
 
 const cloudCanvas=document.createElement('canvas');
@@ -134,13 +151,13 @@ let cameraFovTarget = 49.5;
 // ---------- daylight ----------
 renderer.toneMappingExposure = 1.00;
 
-const skyLight = new THREE.HemisphereLight(0xf2f8fa, 0xb7bab7, 1.92);
+const skyLight = new THREE.HemisphereLight(0xe9f1f2, 0x8f928d, 1.26);
 scene.add(skyLight);
 
-const sun = new THREE.DirectionalLight(0xfff7ea, 2.18);
+const sun = new THREE.DirectionalLight(0xfff4df, 2.42);
 sun.position.set(-11, 15, 10);
 sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.left = -18;
 sun.shadow.camera.right = 18;
 sun.shadow.camera.top = 22;
@@ -149,18 +166,18 @@ sun.shadow.camera.near = 1;
 sun.shadow.camera.far = 52;
 sun.shadow.bias = -0.00028;
 sun.shadow.normalBias = .022;
-sun.shadow.radius = 3.8;
+sun.shadow.radius = 2.6;
 scene.add(sun);
 
-const daylightFill = new THREE.DirectionalLight(0xd9e9f0, .62);
+const daylightFill = new THREE.DirectionalLight(0xd4e3e8, .27);
 daylightFill.position.set(10, 8, -12);
 scene.add(daylightFill);
 
-const shopBounce = new THREE.DirectionalLight(0xffe5c9, .18);
+const shopBounce = new THREE.DirectionalLight(0xffdfbd, .075);
 shopBounce.position.set(9,5,6);
 scene.add(shopBounce);
 
-const faceLight = new THREE.SpotLight(0xffeadb, .42, 8.5, Math.PI * .28, .92, 1.7);
+const faceLight = new THREE.SpotLight(0xffeadb, .14, 7.0, Math.PI * .34, .96, 1.8);
 faceLight.position.set(1.1, 3.8, 3.2);
 faceLight.target.position.set(2.0, 1.45, -1.6);
 scene.add(faceLight, faceLight.target);
@@ -168,16 +185,16 @@ scene.add(faceLight, faceLight.target);
 // A broad, very soft bounce near Mira separates her from the storefront
 // without reading like a game spotlight. Its strength is modulated by player
 // distance later so she remains integrated with the street at long range.
-const miraPresenceLight=new THREE.PointLight(0xffeadb,.045,4.8,2.1);
+const miraPresenceLight=new THREE.PointLight(0xffeadb,.012,4.2,2.2);
 miraPresenceLight.position.set(2.75,2.05,-.85);
 scene.add(miraPresenceLight);
 
-const miraWarmBounce=new THREE.DirectionalLight(0xffead8,.035);
+const miraWarmBounce=new THREE.DirectionalLight(0xffead8,.012);
 miraWarmBounce.position.set(7.2,5.4,3.4);
 miraWarmBounce.target.position.set(2.0,1.15,-1.6);
 scene.add(miraWarmBounce,miraWarmBounce.target);
 
-const miraCoolRim=new THREE.DirectionalLight(0xd9edf2,.028);
+const miraCoolRim=new THREE.DirectionalLight(0xd9edf2,.010);
 miraCoolRim.position.set(-5.0,4.0,-7.5);
 miraCoolRim.target.position.set(2.0,1.25,-1.6);
 scene.add(miraCoolRim,miraCoolRim.target);
@@ -9231,8 +9248,8 @@ function tuneMiraAsset(root){
       }
 
       if(/eye|cornea|iris/.test(key)){
-        if('roughness' in material) material.roughness=.16;
-        if('envMapIntensity' in material) material.envMapIntensity=.22;
+        if('roughness' in material) material.roughness=.20;
+        if('envMapIntensity' in material) material.envMapIntensity=.34;
         if(material.color) material.color.lerp(new THREE.Color(0xdce8e7),.035);
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=.10;
@@ -9241,12 +9258,12 @@ function tuneMiraAsset(root){
         }
       }else if(/skin|face|head|body/.test(key)){
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .74,.72,.82);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .68,.62,.76);
         }
         if(material.color){
           material.color.lerp(new THREE.Color(0xd5a28e),.028);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.085;
+        if('envMapIntensity' in material) material.envMapIntensity=.16;
         if(hasUv && 'map' in material && !material.map){
           material.map=humanToneTexture;
         }
@@ -9255,11 +9272,11 @@ function tuneMiraAsset(root){
         }
         if(hasUv && 'bumpMap' in material && !material.bumpMap){
           material.bumpMap=skinMicroBump;
-          material.bumpScale=.00075;
+          material.bumpScale=.00052;
         }
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=0;
-          if('specularIntensity' in material) material.specularIntensity=.36;
+          if('specularIntensity' in material) material.specularIntensity=.48;
           if(hasUv && 'specularIntensityMap' in material){
             material.specularIntensityMap=skinSpecularTexture;
           }
