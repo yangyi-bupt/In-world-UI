@@ -9079,9 +9079,9 @@ function tunePedestrianAsset(root,index=0){
 
       if(/skin|face|head/.test(key)){
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .74,.70,.82);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .78,.74,.86);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.085;
+        if('envMapIntensity' in material) material.envMapIntensity=.070;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=skinOilRoughness;
         }
@@ -9091,9 +9091,9 @@ function tunePedestrianAsset(root,index=0){
         }
       }else if(/hair/.test(key)){
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .78,.72,.86);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .82,.78,.90);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.12;
+        if('envMapIntensity' in material) material.envMapIntensity=.090;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=hairRoughnessTexture;
         }
@@ -9124,6 +9124,98 @@ function tunePedestrianAsset(root,index=0){
   });
 }
 
+
+const humanToneCanvas=document.createElement('canvas');
+humanToneCanvas.width=humanToneCanvas.height=256;
+const humanToneCtx=humanToneCanvas.getContext('2d');
+const humanToneRnd=makeSeededRandom(0x4f9c31a2);
+humanToneCtx.fillStyle='#d3a18c';
+humanToneCtx.fillRect(0,0,256,256);
+for(let i=0;i<42;i++){
+  const x=humanToneRnd()*256;
+  const y=humanToneRnd()*256;
+  const radius=10+humanToneRnd()*42;
+  const warm=humanToneRnd()>.48;
+  const grad=humanToneCtx.createRadialGradient(x,y,0,x,y,radius);
+  grad.addColorStop(
+    0,
+    warm
+      ? 'rgba(188,102,82,'+(.015+humanToneRnd()*.030).toFixed(3)+')'
+      : 'rgba(196,159,139,'+(.012+humanToneRnd()*.024).toFixed(3)+')'
+  );
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  humanToneCtx.fillStyle=grad;
+  humanToneCtx.fillRect(x-radius,y-radius,radius*2,radius*2);
+}
+for(let i=0;i<900;i++){
+  const warm=humanToneRnd()>.55;
+  const base=warm?148:176;
+  humanToneCtx.fillStyle='rgba('+(base+24)+','+(base-2)+','+(base-12)+','+(.006+humanToneRnd()*.014).toFixed(3)+')';
+  const rr=.20+humanToneRnd()*.65;
+  humanToneCtx.fillRect(humanToneRnd()*256,humanToneRnd()*256,rr,rr);
+}
+const humanToneTexture=new THREE.CanvasTexture(humanToneCanvas);
+humanToneTexture.colorSpace=THREE.SRGBColorSpace;
+humanToneTexture.wrapS=humanToneTexture.wrapT=THREE.RepeatWrapping;
+humanToneTexture.repeat.set(2.2,2.2);
+humanToneTexture.anisotropy=8;
+
+const humanSkinRoughCanvas=document.createElement('canvas');
+humanSkinRoughCanvas.width=humanSkinRoughCanvas.height=256;
+const humanSkinRoughCtx=humanSkinRoughCanvas.getContext('2d');
+const humanSkinRoughRnd=makeSeededRandom(0xa1387d62);
+humanSkinRoughCtx.fillStyle='#c6c6c6';
+humanSkinRoughCtx.fillRect(0,0,256,256);
+for(let i=0;i<35;i++){
+  const x=humanSkinRoughRnd()*256;
+  const y=humanSkinRoughRnd()*256;
+  const radius=8+humanSkinRoughRnd()*36;
+  const v=165+Math.floor(humanSkinRoughRnd()*58);
+  const grad=humanSkinRoughCtx.createRadialGradient(x,y,0,x,y,radius);
+  grad.addColorStop(0,'rgba('+v+','+v+','+v+','+(.08+humanSkinRoughRnd()*.12).toFixed(3)+')');
+  grad.addColorStop(1,'rgba('+v+','+v+','+v+',0)');
+  humanSkinRoughCtx.fillStyle=grad;
+  humanSkinRoughCtx.fillRect(x-radius,y-radius,radius*2,radius*2);
+}
+for(let i=0;i<1200;i++){
+  const v=175+Math.floor(humanSkinRoughRnd()*60);
+  humanSkinRoughCtx.fillStyle='rgba('+v+','+v+','+v+','+(.012+humanSkinRoughRnd()*.030).toFixed(3)+')';
+  humanSkinRoughCtx.fillRect(humanSkinRoughRnd()*256,humanSkinRoughRnd()*256,.4+humanSkinRoughRnd()*.8,.4+humanSkinRoughRnd()*.8);
+}
+const humanSkinRoughTexture=new THREE.CanvasTexture(humanSkinRoughCanvas);
+humanSkinRoughTexture.wrapS=humanSkinRoughTexture.wrapT=THREE.RepeatWrapping;
+humanSkinRoughTexture.repeat.set(2.4,2.4);
+humanSkinRoughTexture.anisotropy=8;
+
+const humanHairRoughCanvas=document.createElement('canvas');
+humanHairRoughCanvas.width=128;
+humanHairRoughCanvas.height=256;
+const humanHairRoughCtx=humanHairRoughCanvas.getContext('2d');
+const humanHairRnd=makeSeededRandom(0x72b9c145);
+humanHairRoughCtx.fillStyle='#bcbcbc';
+humanHairRoughCtx.fillRect(0,0,128,256);
+for(let x=0;x<128;x++){
+  const wave=Math.sin(x*.43)+Math.sin(x*.093)*.55;
+  const v=Math.round(170+wave*18);
+  humanHairRoughCtx.fillStyle='rgba('+v+','+v+','+v+',.42)';
+  humanHairRoughCtx.fillRect(x,0,1,256);
+}
+for(let i=0;i<280;i++){
+  const x=humanHairRnd()*128;
+  const y=humanHairRnd()*256;
+  const len=8+humanHairRnd()*50;
+  humanHairRoughCtx.strokeStyle='rgba(220,220,220,'+(.035+humanHairRnd()*.070).toFixed(3)+')';
+  humanHairRoughCtx.lineWidth=.35+humanHairRnd()*.55;
+  humanHairRoughCtx.beginPath();
+  humanHairRoughCtx.moveTo(x,y);
+  humanHairRoughCtx.lineTo(x+(humanHairRnd()-.5)*2,y+len);
+  humanHairRoughCtx.stroke();
+}
+const humanHairRoughTexture=new THREE.CanvasTexture(humanHairRoughCanvas);
+humanHairRoughTexture.wrapS=humanHairRoughTexture.wrapT=THREE.RepeatWrapping;
+humanHairRoughTexture.repeat.set(3.5,1.0);
+humanHairRoughTexture.anisotropy=8;
+
 function tuneMiraAsset(root){
   root.traverse(object=>{
     if(!object.isMesh) return;
@@ -9139,27 +9231,31 @@ function tuneMiraAsset(root){
       }
 
       if(/eye|cornea|iris/.test(key)){
-        if('roughness' in material) material.roughness=.24;
-        if('envMapIntensity' in material) material.envMapIntensity=.28;
+        if('roughness' in material) material.roughness=.16;
+        if('envMapIntensity' in material) material.envMapIntensity=.22;
+        if(material.color) material.color.lerp(new THREE.Color(0xdce8e7),.035);
         if(material.isMeshPhysicalMaterial){
-          material.clearcoat=.16;
-          material.clearcoatRoughness=.20;
-          if('specularIntensity' in material) material.specularIntensity=.72;
+          material.clearcoat=.10;
+          material.clearcoatRoughness=.26;
+          if('specularIntensity' in material) material.specularIntensity=.58;
         }
       }else if(/skin|face|head|body/.test(key)){
         if('roughness' in material){
           material.roughness=THREE.MathUtils.clamp(material.roughness ?? .74,.72,.82);
         }
         if(material.color){
-          material.color.lerp(new THREE.Color(0xd6a18c),.040);
+          material.color.lerp(new THREE.Color(0xd5a28e),.028);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.10;
-        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
-          material.roughnessMap=skinOilRoughness;
+        if('envMapIntensity' in material) material.envMapIntensity=.085;
+        if(hasUv && 'map' in material && !material.map){
+          material.map=humanToneTexture;
+        }
+        if(hasUv && 'roughnessMap' in material){
+          material.roughnessMap=humanSkinRoughTexture;
         }
         if(hasUv && 'bumpMap' in material && !material.bumpMap){
           material.bumpMap=skinMicroBump;
-          material.bumpScale=.0012;
+          material.bumpScale=.00075;
         }
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=0;
@@ -9170,15 +9266,15 @@ function tuneMiraAsset(root){
         }
       }else if(/hair/.test(key)){
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .74,.68,.80);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .78,.75,.88);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.095;
-        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
-          material.roughnessMap=hairRoughnessTexture;
+        if('envMapIntensity' in material) material.envMapIntensity=.080;
+        if(hasUv && 'roughnessMap' in material){
+          material.roughnessMap=humanHairRoughTexture;
         }
         if(material.isMeshPhysicalMaterial){
-          material.sheen=.18;
-          material.sheenRoughness=.84;
+          material.sheen=.10;
+          material.sheenRoughness=.92;
           if(material.sheenColor && material.color){
             material.sheenColor.copy(material.color).lerp(new THREE.Color(0x8a766c),.20);
           }
@@ -9189,9 +9285,9 @@ function tuneMiraAsset(root){
         // Treat the remaining character materials as fabric/leather rather than
         // generic smooth plastic. Existing authored roughness maps are kept.
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .82,.78,.94);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .86,.84,.97);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.14;
+        if('envMapIntensity' in material) material.envMapIntensity=.075;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=clothRoughnessTexture;
         }
@@ -9201,8 +9297,8 @@ function tuneMiraAsset(root){
         }
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=0;
-          material.sheen=.18;
-          material.sheenRoughness=.95;
+          material.sheen=.11;
+          material.sheenRoughness=.98;
           if(material.sheenColor && material.color){
             material.sheenColor.copy(material.color).lerp(new THREE.Color(0xd8d1c8),.12);
           }
@@ -9296,7 +9392,9 @@ function attachCarAsset(entry,source,index=0,targetLength=3.85){
 function attachWalkerAsset(entry,source,animations,index){
   const root=cloneAssetScene(source);
   prepareImportedModel(root,.20);
-  normalizeHumanAsset(root,[1.66,1.62,1.60,1.68,1.58][index%5]);
+  normalizeHumanAsset(root,[1.68,1.63,1.60,1.71,1.58][index%5]);
+  root.scale.x*=[.97,1.00,.96,1.02,.95][index%5];
+  root.scale.z*=[.98,1.01,.97,1.00,.96][index%5];
   tunePedestrianAsset(root,index);
   root.rotation.y=(entry.direction>0?0:Math.PI)+entry.headingBias+(entry.modelYawOffset||0);
   entry.placeholderChildren?.forEach(child=>{child.visible=false;});
@@ -9366,17 +9464,19 @@ function setWalkerMotionState(walker,nextState){
 function attachMiraAsset(source,animations){
   const root=cloneAssetScene(source);
   prepareImportedModel(root,.28);
-  normalizeHumanAsset(root,1.68);
+  normalizeHumanAsset(root,1.71);
   tuneMiraAsset(root);
-  root.rotation.y=Math.PI-.12;
-  root.position.z=.015;
+  root.rotation.y=Math.PI-.10;
+  root.position.set(0,.008,.010);
+  root.scale.x*=.975;
+  root.scale.z*=.985;
   miraRig.visible=false;
   mira.add(root);
   miraGLBRoot=root;
   miraGLBBasePosition=root.position.clone();
   captureMiraBones(root);
   if(!mira.userData.glbContactShadow){
-    mira.userData.glbContactShadow=createAttachedContactShadow(mira,.68,.48,.082);
+    mira.userData.glbContactShadow=createAttachedContactShadow(mira,.60,.42,.060);
   }
 
   // Only play an explicitly named idle animation. Keep it slower than the
