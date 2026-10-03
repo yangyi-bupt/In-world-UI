@@ -9597,8 +9597,8 @@ async function loadPhotographicEnvironment(){
 function ensureWorldAssetEnvironment(){
   if(worldEnvironmentTexture) return;
 
-  const width=1024;
-  const height=512;
+  const width=512;
+  const height=256;
   const envCanvas=document.createElement('canvas');
   envCanvas.width=width;
   envCanvas.height=height;
@@ -10919,36 +10919,9 @@ function animate(){
     if(cloud.position.x>46) cloud.position.x=-46-index*7;
   });
 
-  glassReflectionTexture.offset.x=(Math.sin(t*.034)*.013+.013)%1;
-
-
-  // Curtain-wall reflections shift only a few texels with camera position and
-  // heading. The movement is intentionally sub-perceptual; it breaks the
-  // wallpaper effect without making the facade look animated.
-  const glassViewShiftX=camera.position.z*.00032+Math.sin(yaw)*.0018;
-  const glassViewShiftY=camera.position.x*.00020+Math.sin(pitch)*.0011;
-  refGlassCells.forEach((pane,index)=>{
-    const phase=pane.userData.phase || 0;
-    const strength=pane.userData.parallaxStrength || .003;
-    const map=pane.material.map;
-    const roughMap=pane.material.roughnessMap;
-    if(map && pane.userData.baseMapOffset){
-      map.offset.x=
-        pane.userData.baseMapOffset.x+
-        glassViewShiftX*strength*90+
-        Math.sin(t*.045+phase)*.0007;
-      map.offset.y=
-        pane.userData.baseMapOffset.y+
-        glassViewShiftY*strength*90+
-        Math.cos(t*.031+phase)*.00045;
-    }
-    if(roughMap && pane.userData.baseRoughOffset){
-      roughMap.offset.x=map?.offset.x ?? pane.userData.baseRoughOffset.x;
-      roughMap.offset.y=map?.offset.y ?? pane.userData.baseRoughOffset.y;
-    }
-    pane.material.envMapIntensity=
-      .74+Math.sin(yaw*.72+index*.31)*.045;
-  });
+  // Keep curtain-wall reflections static. Real architecture reads more like a
+  // photograph when large panes are stable; per-frame texture drift looked
+  // synthetic and also dirtied the CPU hot path.
 
   worldAssetMixers.forEach(mixer=>mixer.update(dt));
 
