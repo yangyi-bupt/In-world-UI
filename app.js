@@ -1,6 +1,6 @@
 const canvas = document.querySelector('#game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
@@ -11,7 +11,7 @@ renderer.physicallyCorrectLights = true;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xd4e7ef);
-scene.fog = new THREE.Fog(0xe5eceb, 38, 112);
+scene.fog = new THREE.Fog(0xe8edef, 52, 142);
 
 const skyCanvas=document.createElement('canvas');
 skyCanvas.width=32;
@@ -103,24 +103,24 @@ const skyClouds=[];
   skyClouds.push(cloud);
 });
 
-const camera = new THREE.PerspectiveCamera(56.5, window.innerWidth / window.innerHeight, 0.08, 160);
-camera.position.set(2.95, 1.68, 8.65);
+const camera = new THREE.PerspectiveCamera(49.5, window.innerWidth / window.innerHeight, 0.08, 180);
+camera.position.set(2.62, 1.70, 9.35);
 camera.rotation.order = 'YXZ';
 
 // A narrower architectural FOV is much closer to the supplied street reference
 // than an FPS-like wide lens. Tablet focus tightens it only slightly.
-let cameraFovTarget = 56.5;
+let cameraFovTarget = 49.5;
 
 // ---------- daylight ----------
-renderer.toneMappingExposure = 1.06;
+renderer.toneMappingExposure = 1.00;
 
-const skyLight = new THREE.HemisphereLight(0xecf7fa, 0xb9b7ae, 1.76);
+const skyLight = new THREE.HemisphereLight(0xf2f8fa, 0xb7bab7, 1.92);
 scene.add(skyLight);
 
-const sun = new THREE.DirectionalLight(0xfff4e3, 2.70);
+const sun = new THREE.DirectionalLight(0xfff7ea, 2.18);
 sun.position.set(-11, 15, 10);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(1024, 1024);
 sun.shadow.camera.left = -18;
 sun.shadow.camera.right = 18;
 sun.shadow.camera.top = 22;
@@ -5758,6 +5758,246 @@ for(let i=0;i<9;i++){
   }
 }
 
+
+/* ---------- reference street architecture reset ----------
+   The previous passes accumulated many small facade features. This layer resets
+   the dominant silhouette to a clean, contemporary office boulevard: tall
+   continuous street wall, large glass bays, pale stone piers and a recessed
+   lobby. It deliberately uses fewer, larger shapes so the first read is
+   architectural rather than game-prop driven. */
+const refStreet=new THREE.Group();
+refStreet.name='reference-street-reset';
+scene.add(refStreet);
+
+const refStone=new THREE.MeshStandardMaterial({
+  color:0xd8d9d5,
+  roughness:.74,
+  metalness:.01,
+  map:facadeSurface.map,
+  roughnessMap:facadeSurface.roughness,
+  normalMap:facadeSurface.normal,
+  normalScale:new THREE.Vector2(.10,.10),
+  envMapIntensity:.12
+});
+const refStoneDark=new THREE.MeshStandardMaterial({
+  color:0xb8b9b5,
+  roughness:.78,
+  metalness:.015,
+  map:concreteSurface.map,
+  roughnessMap:concreteSurface.roughness,
+  normalMap:concreteSurface.normal,
+  normalScale:new THREE.Vector2(.09,.09),
+  envMapIntensity:.08
+});
+const refMetal=new THREE.MeshStandardMaterial({
+  color:0x767d7d,
+  roughness:.36,
+  metalness:.42,
+  envMapIntensity:.72
+});
+const refGlass=new THREE.MeshPhysicalMaterial({
+  color:0x9fb6bd,
+  roughness:.17,
+  metalness:.02,
+  transparent:true,
+  opacity:.60,
+  transmission:.05,
+  clearcoat:.34,
+  clearcoatRoughness:.16,
+  envMapIntensity:.92,
+  depthWrite:true
+});
+const refLobbyGlass=new THREE.MeshPhysicalMaterial({
+  color:0x53666b,
+  roughness:.18,
+  metalness:.04,
+  transparent:true,
+  opacity:.82,
+  transmission:.02,
+  clearcoat:.28,
+  clearcoatRoughness:.18,
+  envMapIntensity:1.0
+});
+
+// Large backing mass hides the former low-rise silhouette and gives the street
+// a believable 5-storey office scale.
+const refOfficeMass=new THREE.Mesh(
+  new THREE.BoxGeometry(4.6,15.8,76),
+  refStone
+);
+refOfficeMass.position.set(10.15,7.88,-7);
+refOfficeMass.castShadow=false;
+refOfficeMass.receiveShadow=true;
+refStreet.add(refOfficeMass);
+
+// Continuous glazed face. The glass is intentionally broad; rhythm comes from
+// structural piers instead of dozens of tiny storefront pieces.
+const refGlassWall=new THREE.Mesh(
+  new THREE.PlaneGeometry(72,13.9),
+  refGlass
+);
+refGlassWall.position.set(7.77,8.05,-7);
+refGlassWall.rotation.y=-Math.PI/2;
+refGlassWall.receiveShadow=true;
+refStreet.add(refGlassWall);
+
+// Recessed dark ground floor reads as a real office lobby / retail base.
+const refLobbyBand=new THREE.Mesh(
+  new THREE.PlaneGeometry(70,3.05),
+  refLobbyGlass
+);
+refLobbyBand.position.set(7.64,1.75,-7);
+refLobbyBand.rotation.y=-Math.PI/2;
+refStreet.add(refLobbyBand);
+
+// Pale vertical piers create the strong architectural cadence visible in the
+// reference without turning the elevation into a grid of tiny meshes.
+for(let z=-40;z<=27;z+=4.75){
+  const pier=new THREE.Mesh(
+    new THREE.BoxGeometry(.32,15.2,.34),
+    refStone
+  );
+  pier.position.set(7.58,7.62,z);
+  pier.castShadow=true;
+  pier.receiveShadow=true;
+  refStreet.add(pier);
+}
+
+// Four floor plates are enough to give office scale from street level.
+[3.30,6.45,9.60,12.75].forEach((y,index)=>{
+  const slab=new THREE.Mesh(
+    new THREE.BoxGeometry(.46,.14,71.5),
+    index===0?refStoneDark:refMetal
+  );
+  slab.position.set(7.55,y,-7);
+  slab.castShadow=index===0;
+  refStreet.add(slab);
+});
+
+// Main lobby portal: a single deep, dark opening gives the facade a believable
+// entrance and a clear focal relationship to Mira.
+const refLobbyPortal=new THREE.Mesh(
+  new THREE.BoxGeometry(.52,3.35,6.2),
+  new THREE.MeshStandardMaterial({
+    color:0x3f4749,
+    roughness:.32,
+    metalness:.22,
+    envMapIntensity:.65
+  })
+);
+refLobbyPortal.position.set(7.34,1.76,-2.0);
+refLobbyPortal.castShadow=true;
+refStreet.add(refLobbyPortal);
+
+const refLobbyInset=new THREE.Mesh(
+  new THREE.PlaneGeometry(5.58,2.88),
+  new THREE.MeshPhysicalMaterial({
+    color:0x40585f,
+    roughness:.16,
+    metalness:.03,
+    transparent:true,
+    opacity:.88,
+    transmission:.035,
+    clearcoat:.30,
+    clearcoatRoughness:.16,
+    envMapIntensity:1.05
+  })
+);
+refLobbyInset.position.set(7.04,1.77,-2.0);
+refLobbyInset.rotation.y=-Math.PI/2;
+refStreet.add(refLobbyInset);
+
+const refCanopy=new THREE.Mesh(
+  new THREE.BoxGeometry(1.55,.15,6.7),
+  new THREE.MeshStandardMaterial({
+    color:0xcfd1cd,
+    roughness:.48,
+    metalness:.12,
+    envMapIntensity:.28
+  })
+);
+refCanopy.position.set(6.86,3.25,-2.0);
+refCanopy.castShadow=true;
+refStreet.add(refCanopy);
+
+// Upper glass bays get only sparse mullions; big panes make the building read
+// much more like a photographed commercial facade.
+for(let z=-37.6;z<=24.6;z+=4.75){
+  const mullion=new THREE.Mesh(
+    new THREE.BoxGeometry(.09,9.15,.07),
+    refMetal
+  );
+  mullion.position.set(7.72,9.55,z+2.37);
+  refStreet.add(mullion);
+}
+
+// Clean the foreground sidewalk visually. This broad slab suppresses the old
+// patchwork of small paving accents while retaining curb, trees and characters.
+const refWalk=new THREE.Mesh(
+  new THREE.PlaneGeometry(7.35,78),
+  new THREE.MeshStandardMaterial({
+    color:0xd4d4cf,
+    roughness:.97,
+    map:pavementTexture,
+    roughnessMap:pavementRoughness,
+    bumpMap:pavementMicroBump,
+    bumpScale:.005,
+    envMapIntensity:.025
+  })
+);
+refWalk.rotation.x=-Math.PI/2;
+refWalk.position.set(4.05,.058,-6);
+refWalk.receiveShadow=true;
+refStreet.add(refWalk);
+
+// Restrained expansion joints restore scale after the clean-up slab.
+const refJointMat=new THREE.MeshBasicMaterial({
+  color:0xaeb0ac,
+  transparent:true,
+  opacity:.22,
+  depthWrite:false
+});
+for(let z=-42;z<31;z+=4.1){
+  const joint=new THREE.Mesh(new THREE.PlaneGeometry(7.0,.018),refJointMat);
+  joint.rotation.x=-Math.PI/2;
+  joint.position.set(4.05,.061,z);
+  refStreet.add(joint);
+}
+
+// Two slim street trees near the focal zone establish the reference-image
+// rhythm while leaving the facade visible between trunks.
+function createReferenceTree(x,z,scale=1){
+  const tree=new THREE.Group();
+  const trunkMat=new THREE.MeshStandardMaterial({color:0x756454,roughness:.94});
+  const trunk=new THREE.Mesh(
+    new THREE.CylinderGeometry(.10*scale,.15*scale,3.7*scale,10),
+    trunkMat
+  );
+  trunk.position.y=1.85*scale;
+  trunk.castShadow=true;
+  tree.add(trunk);
+
+  const leafMats=[
+    new THREE.MeshStandardMaterial({color:0x6f8d62,roughness:.92}),
+    new THREE.MeshStandardMaterial({color:0x7f9c70,roughness:.93})
+  ];
+  [[0,0,0,.98],[.38,.08,-.05,.66],[-.38,.05,.03,.70],[.05,.54,0,.72]].forEach((v,i)=>{
+    const crown=new THREE.Mesh(
+      new THREE.IcosahedronGeometry(v[3]*scale,2),
+      leafMats[i%2]
+    );
+    crown.position.set(v[0]*scale,(3.65+v[1])*scale,v[2]*scale);
+    crown.scale.set(.92,1.18,.90);
+    crown.castShadow=true;
+    tree.add(crown);
+  });
+  tree.position.set(x,0,z);
+  refStreet.add(tree);
+}
+createReferenceTree(.92,-4.9,.95);
+createReferenceTree(.92,7.8,1.02);
+
+
 // Trees, planters and street furniture make this feel like somewhere Mira
 // actually spends time instead of a sterile tech showcase.
 const streetTreeCrowns=[];
@@ -8218,7 +8458,7 @@ window.addEventListener('tablet-message-reply',()=>{
 
 // ---------- player controls ----------
 const keys = new Set();
-let yaw=.105, pitch=-.010, targetYaw=.105, targetPitch=-.010, turnImpulse=0;
+let yaw=.145, pitch=-.018, targetYaw=.145, targetPitch=-.018, turnImpulse=0;
 let tabletOpen=false, started=false;
 const velocity=new THREE.Vector3();
 const dir=new THREE.Vector3();
@@ -8257,7 +8497,7 @@ function openTablet(){
   }
 
   tabletOpen=true; keys.clear(); document.exitPointerLock?.();
-  cameraFovTarget=55.0;
+  cameraFovTarget=48.2;
   document.body.classList.add('device-open');
   tabletLayer?.classList.remove('closing');
   tabletLayer?.classList.add('open');
@@ -8271,7 +8511,7 @@ function openTablet(){
 function closeTablet(){
   if(!tabletOpen) return;
 
-  tabletOpen=false; cameraFovTarget=56.5;
+  tabletOpen=false; cameraFovTarget=49.5;
   tabletLayer?.classList.add('closing');
   tabletLayer?.setAttribute('aria-hidden','true');
   window.dispatchEvent(new CustomEvent('tablet-close'));
@@ -8381,7 +8621,7 @@ function animate(){
   dappleTexture.offset.x=Math.sin(t*.052)*.0022;
   dappleTexture.offset.y=Math.cos(t*.044)*.0015;
   sunHaze.material.opacity=.80+Math.sin(t*.11)*.018;
-  sun.intensity=2.78+Math.sin(t*.045)*.018;
+  sun.intensity=2.18+Math.sin(t*.045)*.014;
 
   skyClouds.forEach((cloud,index)=>{
     cloud.position.x+=dt*(.055+index*.018);
