@@ -179,7 +179,7 @@ const shopBounce = new THREE.DirectionalLight(0xffdfbf, .040);
 shopBounce.position.set(9,5,6);
 scene.add(shopBounce);
 
-const faceLight = new THREE.SpotLight(0xffeadb, .085, 6.5, Math.PI * .36, .97, 1.9);
+const faceLight = new THREE.SpotLight(0xffeadb, .062, 6.5, Math.PI * .36, .97, 1.9);
 faceLight.position.set(1.1, 3.8, 3.2);
 faceLight.target.position.set(2.0, 1.45, 2.0);
 scene.add(faceLight, faceLight.target);
@@ -7142,6 +7142,42 @@ for(let bay=0;bay<15;bay++){
   });
 }
 
+// Selected panes get a recessed interior tone behind the glass. The variation is
+// sparse and low contrast: enough to create depth, but not a checkerboard facade.
+const refInteriorShadeMat=new THREE.MeshBasicMaterial({
+  color:0x3d4848,
+  transparent:true,
+  opacity:.16,
+  depthWrite:false,
+  toneMapped:true,
+  side:THREE.DoubleSide
+});
+[
+  {z:-30.45,y:4.88,w:3.38,h:2.15,o:.13},
+  {z:-20.95,y:8.03,w:3.60,h:2.22,o:.17},
+  {z:-16.20,y:11.18,w:3.46,h:2.18,o:.11},
+  {z:-6.70,y:4.88,w:3.55,h:2.20,o:.18},
+  {z:-1.95,y:11.18,w:3.40,h:2.16,o:.12},
+  {z:7.55,y:8.03,w:3.56,h:2.20,o:.15},
+  {z:12.30,y:11.18,w:3.44,h:2.18,o:.10},
+  {z:21.80,y:4.88,w:3.62,h:2.22,o:.16}
+].forEach((spec,index)=>{
+  const shade=new THREE.Mesh(
+    new THREE.PlaneGeometry(spec.w,spec.h),
+    refInteriorShadeMat.clone()
+  );
+  shade.material.opacity=spec.o;
+  shade.material.color.offsetHSL(
+    index%3===0?.010:(index%3===1?-.008:0),
+    -.03,
+    index%2?.018:-.012
+  );
+  shade.position.set(7.815,spec.y,spec.z);
+  shade.rotation.y=-Math.PI/2;
+  shade.renderOrder=0;
+  refStreet.add(shade);
+});
+
 // Extremely thin highlights on selected pane edges mimic grazing-angle Fresnel
 // without a custom shader. They are sparse enough to avoid a neon outline.
 const refGlassEdgeMat=new THREE.MeshBasicMaterial({
@@ -8983,18 +9019,63 @@ refCurbContact.position.set(.58,.064,-7);
 refCurbContact.renderOrder=3;
 refStreet.add(refCurbContact);
 
-// Restrained expansion joints restore scale after the clean-up slab.
+// Real sidewalks almost never keep a mathematically perfect cadence after years
+// of repairs. Deterministic spacing/width variation preserves construction scale
+// while removing the obvious procedural grid.
 const refJointMat=new THREE.MeshBasicMaterial({
-  color:0x9fa19d,
+  color:0x91938f,
   transparent:true,
-  opacity:.18,
-  depthWrite:false
+  opacity:.16,
+  depthWrite:false,
+  toneMapped:true
 });
-for(let z=-42;z<31;z+=4.1){
-  const joint=new THREE.Mesh(new THREE.PlaneGeometry(7.0,.018),refJointMat);
+const refJointRnd=makeSeededRandom(0x3a8f120d);
+let refJointZ=-42.0;
+let refJointIndex=0;
+while(refJointZ<31){
+  const jointMat=refJointMat.clone();
+  jointMat.opacity=.105+refJointRnd()*.075;
+  const jointWidth=.011+refJointRnd()*.014;
+  const joint=new THREE.Mesh(new THREE.PlaneGeometry(6.92,jointWidth),jointMat);
   joint.rotation.x=-Math.PI/2;
-  joint.position.set(4.05,.061,z);
+  joint.rotation.z=(refJointRnd()-.5)*.0035;
+  joint.position.set(
+    4.05+(refJointRnd()-.5)*.018,
+    .061+refJointIndex%2*.0006,
+    refJointZ
+  );
   refStreet.add(joint);
+  refJointZ+=3.68+refJointRnd()*1.02;
+  refJointIndex++;
+}
+
+// A handful of low-contrast stains / old maintenance marks make the clean slab
+// feel occupied without turning it into a grungy game texture.
+const refWalkPatinaRnd=makeSeededRandom(0x71ce09b4);
+const refWalkPatinaMat=new THREE.MeshBasicMaterial({
+  color:0x716f68,
+  transparent:true,
+  opacity:.025,
+  depthWrite:false,
+  toneMapped:true
+});
+for(let i=0;i<11;i++){
+  const radius=.12+refWalkPatinaRnd()*.28;
+  const stain=new THREE.Mesh(
+    new THREE.CircleGeometry(radius,18),
+    refWalkPatinaMat.clone()
+  );
+  stain.material.opacity=.012+refWalkPatinaRnd()*.025;
+  stain.scale.set(.65+refWalkPatinaRnd()*1.9,.45+refWalkPatinaRnd()*.85,1);
+  stain.rotation.x=-Math.PI/2;
+  stain.rotation.z=refWalkPatinaRnd()*Math.PI;
+  stain.position.set(
+    1.85+refWalkPatinaRnd()*4.55,
+    .0705,
+    -31+refWalkPatinaRnd()*56
+  );
+  stain.renderOrder=2;
+  refStreet.add(stain);
 }
 
 // Two slim street trees near the focal zone establish the reference-image
@@ -13082,10 +13163,12 @@ function animate(){
   // Focal lighting is distance-aware: enough facial separation up close, but
   // almost indistinguishable from ordinary daylight from across the block.
   const presence=1-THREE.MathUtils.smoothstep(miraDistance,2.4,10.5);
-  faceLight.intensity=.052+presence*.030;
-  miraPresenceLight.intensity=.006+presence*.004;
-  miraWarmBounce.intensity=.006+presence*.003;
-  miraCoolRim.intensity=.005+presence*.002;
+  // Keep Mira inside the same daylight exposure as the street. Near-field
+  // assistance is now only a faint facial lift, not a game-style hero light.
+  faceLight.intensity=.036+presence*.020;
+  miraPresenceLight.intensity=.0038+presence*.0022;
+  miraWarmBounce.intensity=.0040+presence*.0018;
+  miraCoolRim.intensity=.0032+presence*.0014;
 
   if(miraGLBRoot && miraGLBBasePosition){
     const weightShift=
@@ -13130,13 +13213,13 @@ function animate(){
       Math.sin(t*.071+.2)*.030+
       storefrontAttention*.070
     )*(1-miraAttention);
-    const headYaw=relativePlayerYaw*miraAttention*.68+ambientHeadYaw;
+    const headYaw=relativePlayerYaw*miraAttention*.52+ambientHeadYaw;
     const headPitch=
       Math.sin(t*.16+.9)*.012*(1-miraAttention)-
       greetingEnvelope*.045+
       replyAttention*.018;
-    const neckYaw=headYaw*.34;
-    const chestYaw=headYaw*.12;
+    const neckYaw=headYaw*.28;
+    const chestYaw=headYaw*.08;
     const chestRoll=weightShift*.0030-greetingEnvelope*.006;
 
     // Hips and upper legs carry most of the idle weight transfer. The values
