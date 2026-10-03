@@ -6500,7 +6500,7 @@ function installPhotographicSetExtensions(){
   const loader=new THREE.TextureLoader();
   loader.setCrossOrigin('anonymous');
 
-  const farUrl='https://images.pexels.com/photos/4947391/pexels-photo-4947391.jpeg?auto=compress&cs=tinysrgb&w=1260';
+  const farUrl='https://images.pexels.com/photos/4947391/pexels-photo-4947391.jpeg?auto=compress&cs=tinysrgb&w=900';
   loader.load(farUrl,texture=>{
     texture.colorSpace=THREE.SRGBColorSpace;
     texture.minFilter=THREE.LinearMipmapLinearFilter;
@@ -6525,31 +6525,6 @@ function installPhotographicSetExtensions(){
     console.warn('Far photographic set extension failed.',error);
   });
 
-  // A second real photograph sits just behind the curtain wall. At low opacity
-  // it reads as reflected architecture / interior depth instead of a pasted image.
-  const facadeUrl='https://images.pexels.com/photos/20580323/pexels-photo-20580323/free-photo-of-office-block-entrance-in-perspective-and-plants-in-the-pavement.jpeg?auto=compress&cs=tinysrgb&w=1260';
-  loader.load(facadeUrl,texture=>{
-    texture.colorSpace=THREE.SRGBColorSpace;
-    texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
-    texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy?.()||1,4);
-
-    const material=new THREE.MeshBasicMaterial({
-      map:texture,
-      transparent:true,
-      opacity:.115,
-      depthWrite:false,
-      toneMapped:true,
-      blending:THREE.NormalBlending,
-      side:THREE.DoubleSide
-    });
-    const reflectedCity=new THREE.Mesh(new THREE.PlaneGeometry(66,12.6),material);
-    reflectedCity.position.set(7.88,8.0,-7.2);
-    reflectedCity.rotation.y=-Math.PI/2;
-    reflectedCity.renderOrder=0;
-    photographicSetExtensionGroup.add(reflectedCity);
-  },undefined,error=>{
-    console.warn('Facade photographic set extension failed.',error);
-  });
 }
 
 const refHazeMaterialA=new THREE.MeshBasicMaterial({
