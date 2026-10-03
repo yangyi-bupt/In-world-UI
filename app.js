@@ -7548,37 +7548,59 @@ const refLeafCardMaterials=[
   })
 ];
 
+const refLeafCardGeometry=new THREE.PlaneGeometry(1,.72);
 function addLeafCardCloud(parent,scale=1,seed=1,count=18){
   const rnd=makeSeededRandom(seed);
-  for(let i=0;i<count;i++){
+  const buckets=refLeafCardMaterials.map(()=>[]);
+  const dummy=new THREE.Object3D();
+  const visualCount=Math.max(20,Math.round(count*1.45));
+
+  for(let i=0;i<visualCount;i++){
     const angle=rnd()*Math.PI*2;
-    const radius=Math.pow(rnd(),.72)*.82;
-    const y=.05+rnd()*1.45;
-    const size=(.52+rnd()*.72)*scale;
-    const card=new THREE.Mesh(
-      new THREE.PlaneGeometry(size,size*.76),
-      refLeafCardMaterials[i%refLeafCardMaterials.length]
-    );
-    card.position.set(
+    const radius=Math.pow(rnd(),.68)*.90;
+    const y=.03+rnd()*1.52;
+    const size=(.34+rnd()*.48)*scale;
+    const materialIndex=i%refLeafCardMaterials.length;
+
+    dummy.position.set(
       Math.cos(angle)*radius*scale,
       y*scale,
-      Math.sin(angle)*radius*.68*scale
+      Math.sin(angle)*radius*.72*scale
     );
-    card.rotation.set(
-      (rnd()-.5)*.36,
+    dummy.rotation.set(
+      (rnd()-.5)*.42,
       rnd()*Math.PI,
-      (rnd()-.5)*.28
+      (rnd()-.5)*.34
     );
-    card.castShadow=true;
-    card.receiveShadow=true;
-    parent.add(card);
-    if(i%3===0){
-      const cross=card.clone();
-      cross.rotation.y+=Math.PI*.52;
-      cross.scale.set(.86,.90,.86);
-      parent.add(cross);
+    dummy.scale.set(size,size*(.82+rnd()*.22),1);
+    dummy.updateMatrix();
+    buckets[materialIndex].push(dummy.matrix.clone());
+
+    // Crossed leaf clusters have real volume from multiple view angles, but are
+    // instances rather than extra Mesh objects/draw calls.
+    if(i%2===0){
+      dummy.rotation.y+=Math.PI*(.44+rnd()*.12);
+      dummy.scale.multiplyScalar(.78+rnd()*.14);
+      dummy.position.y+=(rnd()-.5)*.08*scale;
+      dummy.updateMatrix();
+      buckets[(materialIndex+1)%buckets.length].push(dummy.matrix.clone());
     }
   }
+
+  buckets.forEach((matrices,index)=>{
+    if(!matrices.length) return;
+    const leaves=new THREE.InstancedMesh(
+      refLeafCardGeometry,
+      refLeafCardMaterials[index],
+      matrices.length
+    );
+    matrices.forEach((matrix,instanceIndex)=>leaves.setMatrixAt(instanceIndex,matrix));
+    leaves.instanceMatrix.needsUpdate=true;
+    leaves.castShadow=true;
+    leaves.receiveShadow=false;
+    leaves.userData.foliageInstanced=true;
+    parent.add(leaves);
+  });
 }
 
 function createReferenceTree(x,z,scale=1){
@@ -10695,17 +10717,11 @@ function animate(){
   camera.updateProjectionMatrix();
 
   streetTreeCrowns.forEach((crown,i)=>{
-    crown.rotation.z=Math.sin(t*.34+i*.9)*.0045;
-    crown.rotation.x=Math.sin(t*.27+i*1.4)*.0035;
-    crown.children.forEach((leaf,j)=>{
-      if(!leaf.isMesh) return;
-      leaf.rotation.z+=Math.sin(t*.62+i*.7+j*.41)*.00016;
-      leaf.rotation.x+=Math.cos(t*.53+i*.8+j*.29)*.00010;
-      if(leaf.material && 'envMapIntensity' in leaf.material){
-        leaf.material.envMapIntensity=
-          .010+Math.max(0,Math.sin(t*.13+i*.7+j*.19))*.006;
-      }
-    });
+    // Animate the crown as a mass. Individual leaf cards are instanced now,
+    // which keeps hundreds of tiny JS transforms out of the hot frame loop.
+    crown.rotation.z=Math.sin(t*.34+i*.9)*.0052;
+    crown.rotation.x=Math.sin(t*.27+i*1.4)*.0040;
+    crown.rotation.y=Math.sin(t*.19+i*.55)*.0024;
   });
   dappleTexture.offset.x=Math.sin(t*.052)*.0022;
   dappleTexture.offset.y=Math.cos(t*.044)*.0015;
