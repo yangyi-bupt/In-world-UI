@@ -10,20 +10,20 @@ renderer.toneMappingExposure = .94;
 renderer.physicallyCorrectLights = true;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xc9dbe2);
-scene.fog = new THREE.Fog(0xdfe6e7, 46, 126);
+scene.background = new THREE.Color(0xc6cecd);
+scene.fog = new THREE.Fog(0xd5d6d1, 44, 118);
 
 const skyCanvas=document.createElement('canvas');
 skyCanvas.width=256;
 skyCanvas.height=1024;
 const skyCtx=skyCanvas.getContext('2d');
 const skyGradient=skyCtx.createLinearGradient(0,0,0,1024);
-skyGradient.addColorStop(0,'#73a9c1');
-skyGradient.addColorStop(.22,'#9fc2cf');
-skyGradient.addColorStop(.48,'#c7d9dc');
-skyGradient.addColorStop(.70,'#e2e4df');
-skyGradient.addColorStop(.86,'#e8dfd1');
-skyGradient.addColorStop(1,'#c9cbc5');
+skyGradient.addColorStop(0,'#7899a5');
+skyGradient.addColorStop(.22,'#9fb4ba');
+skyGradient.addColorStop(.48,'#c5cecc');
+skyGradient.addColorStop(.70,'#dddcd5');
+skyGradient.addColorStop(.86,'#e4d9cb');
+skyGradient.addColorStop(1,'#c4c0b7');
 skyCtx.fillStyle=skyGradient;
 skyCtx.fillRect(0,0,256,1024);
 
@@ -149,12 +149,12 @@ camera.rotation.order = 'YXZ';
 let cameraFovTarget = 49.5;
 
 // ---------- daylight ----------
-renderer.toneMappingExposure = 1.00;
+renderer.toneMappingExposure = .92;
 
-const skyLight = new THREE.HemisphereLight(0xe9f1f2, 0x8f928d, 1.26);
+const skyLight = new THREE.HemisphereLight(0xe7ece9, 0x817d75, 1.18);
 scene.add(skyLight);
 
-const sun = new THREE.DirectionalLight(0xfff4df, 2.42);
+const sun = new THREE.DirectionalLight(0xffefd8, 2.56);
 sun.position.set(-11, 15, 10);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -169,11 +169,11 @@ sun.shadow.normalBias = .022;
 sun.shadow.radius = 2.6;
 scene.add(sun);
 
-const daylightFill = new THREE.DirectionalLight(0xd4e3e8, .27);
+const daylightFill = new THREE.DirectionalLight(0xd8dfdd, .20);
 daylightFill.position.set(10, 8, -12);
 scene.add(daylightFill);
 
-const shopBounce = new THREE.DirectionalLight(0xffdfbd, .075);
+const shopBounce = new THREE.DirectionalLight(0xffd8b6, .055);
 shopBounce.position.set(9,5,6);
 scene.add(shopBounce);
 
@@ -2282,7 +2282,7 @@ function plane(w,h,color,x,y,z,rx=-Math.PI/2,ry=0,rz=0,roughness=.9){
   return mesh;
 }
 
-function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x9fc7d6){
+function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x929e9e){
   const panel=new THREE.Mesh(
     new THREE.PlaneGeometry(w,h),
     new THREE.MeshPhysicalMaterial({
@@ -3930,7 +3930,7 @@ for(let i=0;i<4;i++){
 }
 
 // Street-facing buildings: warm stone + glass + shaded shopfronts.
-const rightFacade=box(3.4,7.6,66,0xcfd1cc,10.15,3.75,-5,.82);
+const rightFacade=box(3.4,7.6,66,0xb9aea0,10.15,3.75,-5,.82);
 rightFacade.castShadow=false;
 rightFacade.material.map=facadeSurface.map;
 rightFacade.material.roughnessMap=facadeSurface.roughness;
@@ -3946,7 +3946,7 @@ rightFacade.material.needsUpdate=true;
 const upperRecess=new THREE.Mesh(
   new THREE.BoxGeometry(.18,2.10,63.9),
   new THREE.MeshStandardMaterial({
-    color:0xc9c5bd,
+    color:0xa79d91,
     roughness:.88,
     map:concreteSurface.map,
     roughnessMap:concreteSurface.roughness,
@@ -3964,7 +3964,7 @@ scene.add(upperRecess);
 const topCornice=new THREE.Mesh(
   new THREE.BoxGeometry(.56,.20,65.0),
   new THREE.MeshStandardMaterial({
-    color:0xe6ded1,
+    color:0xd6cab9,
     roughness:.84,
     map:concreteSurface.map,
     roughnessMap:concreteSurface.roughness,
@@ -3984,7 +3984,7 @@ scene.add(topCornice);
 const corniceUnder=new THREE.Mesh(
   new THREE.BoxGeometry(.38,.09,64.86),
   new THREE.MeshStandardMaterial({
-    color:0xcac1b5,
+    color:0xb5aa9b,
     roughness:.90,
     map:concreteSurface.map,
     roughnessMap:concreteSurface.roughness,
@@ -4002,7 +4002,7 @@ scene.add(corniceUnder);
 const corniceLip=new THREE.Mesh(
   new THREE.BoxGeometry(.68,.055,65.08),
   new THREE.MeshStandardMaterial({
-    color:0xeee6da,
+    color:0xe0d3c2,
     roughness:.86,
     map:concreteSurface.map,
     roughnessMap:concreteSurface.roughness,
@@ -4020,7 +4020,7 @@ scene.add(corniceLip);
 const facadeBaseBand=new THREE.Mesh(
   new THREE.BoxGeometry(.36,.20,64.8),
   new THREE.MeshStandardMaterial({
-    color:0xd1c6b6,
+    color:0xafa394,
     roughness:.93,
     map:concreteSurface.map,
     roughnessMap:concreteSurface.roughness,
@@ -4179,16 +4179,16 @@ function createFacadeZone(z,width,color,opacity=.34){
   scene.add(zone);
   return zone;
 }
-createFacadeZone(-20.4,24.0,0xbfc8c6,.28);
-createFacadeZone(-2.7,12.4,0xd2d2cd,.30);
-createFacadeZone(5.1,9.6,0xc5c4be,.24);
-createFacadeZone(18.1,15.0,0xc5cdcb,.28);
+createFacadeZone(-20.4,24.0,0xa9a39b,.28);
+createFacadeZone(-2.7,12.4,0xc8bdad,.30);
+createFacadeZone(5.1,9.6,0xb9aea1,.24);
+createFacadeZone(18.1,15.0,0xa6a098,.28);
 
 // A continuous corporate lobby skin simplifies the ground floor. The older
 // cafe/shop geometry stays behind the glass as interior depth instead of
 // dominating the streetscape.
 const lobbyGlassMat=new THREE.MeshPhysicalMaterial({
-  color:0xa9bec1,
+  color:0x879494,
   map:glassReflectionTexture,
   roughnessMap:glassRoughnessTexture,
   roughness:.18,
@@ -4204,7 +4204,7 @@ const lobbyGlassMat=new THREE.MeshPhysicalMaterial({
   side:THREE.DoubleSide
 });
 const lobbyFrameMat=new THREE.MeshStandardMaterial({
-  color:0x4e585a,
+  color:0x2f3333,
   roughness:.40,
   metalness:.46,
   map:metalSurface.map,
@@ -4276,7 +4276,7 @@ for(let z=-29.5;z<=23.5;z+=2.65){
 const lobbyCanopy=new THREE.Mesh(
   new THREE.BoxGeometry(1.30,.12,55.4),
   new THREE.MeshStandardMaterial({
-    color:0xc7ccca,
+    color:0x8f8c85,
     roughness:.58,
     metalness:.18,
     map:metalSurface.map,
@@ -4296,7 +4296,7 @@ scene.add(lobbyCanopy);
 // earlier mixed facade so the first read is clean glass, stone piers and deep
 // recessed entries rather than many small storefront objects.
 const heroGlassMat=new THREE.MeshPhysicalMaterial({
-  color:0x9fb9bf,
+  color:0x8b9999,
   map:glassReflectionTexture,
   roughnessMap:glassRoughnessTexture,
   roughness:.17,
@@ -4312,7 +4312,7 @@ const heroGlassMat=new THREE.MeshPhysicalMaterial({
   side:THREE.DoubleSide
 });
 const heroPierMat=new THREE.MeshStandardMaterial({
-  color:0xc8cbc7,
+  color:0xb9ac9a,
   roughness:.82,
   map:fineConcreteSurface.map,
   roughnessMap:fineConcreteSurface.roughness,
@@ -4323,7 +4323,7 @@ const heroPierMat=new THREE.MeshStandardMaterial({
   envMapIntensity:.08
 });
 const heroFrameMat=new THREE.MeshStandardMaterial({
-  color:0x414b4e,
+  color:0x292d2e,
   roughness:.34,
   metalness:.54,
   map:metalSurface.map,
@@ -4411,7 +4411,7 @@ const heroFrameMat=new THREE.MeshStandardMaterial({
 });
 
 const facadeRibMat=new THREE.MeshStandardMaterial({
-  color:0xb9c0be,
+  color:0xa79b8d,
   roughness:.87,
   map:facadeSurface.map,
   roughnessMap:facadeSurface.roughness,
@@ -4433,7 +4433,7 @@ const facadeRibMat=new THREE.MeshStandardMaterial({
 });
 
 const balconyStone=new THREE.MeshStandardMaterial({
-  color:0xd8cfc2,
+  color:0xb6a793,
   roughness:.90,
   map:concreteSurface.map,
   roughnessMap:concreteSurface.roughness,
@@ -4444,10 +4444,10 @@ const balconyStone=new THREE.MeshStandardMaterial({
 });
 const balconyGreenMats=[
   new THREE.MeshStandardMaterial({
-    color:0x789a70,roughness:.93,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
+    color:0x586f53,roughness:.93,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
   }),
   new THREE.MeshStandardMaterial({
-    color:0x93ad80,roughness:.91,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
+    color:0x708267,roughness:.91,map:foliageSurface.map,bumpMap:foliageSurface.bump,bumpScale:.008
   })
 ];
 [-15.2,-.8,13.6].forEach((z,balconyIndex)=>{
@@ -6885,7 +6885,7 @@ const refGlassMaps=makeReferenceGlassMaps(0x93a7c151);
 const refPavingMaps=makeReferencePavingMaps(0x74b82d1e);
 
 const refStone=new THREE.MeshStandardMaterial({
-  color:0xf0f0eb,
+  color:0xc8bcae,
   roughness:.72,
   metalness:.005,
   map:refStoneMaps.map,
@@ -6897,7 +6897,7 @@ const refStone=new THREE.MeshStandardMaterial({
   envMapIntensity:.10
 });
 const refStoneDark=new THREE.MeshStandardMaterial({
-  color:0xc7c9c5,
+  color:0x9d958b,
   roughness:.78,
   metalness:.012,
   map:refStoneMaps.map,
@@ -6909,7 +6909,7 @@ const refStoneDark=new THREE.MeshStandardMaterial({
   envMapIntensity:.08
 });
 const refMetal=new THREE.MeshStandardMaterial({
-  color:0x737b7b,
+  color:0x313535,
   roughness:.34,
   metalness:.48,
   map:metalSurface.map,
@@ -6919,7 +6919,7 @@ const refMetal=new THREE.MeshStandardMaterial({
   envMapIntensity:.78
 });
 const refGlass=new THREE.MeshPhysicalMaterial({
-  color:0xdce8e9,
+  color:0xaeb8b6,
   map:refGlassMaps.map,
   roughnessMap:refGlassMaps.roughness,
   roughness:.12,
@@ -6933,7 +6933,7 @@ const refGlass=new THREE.MeshPhysicalMaterial({
   depthWrite:true
 });
 const refLobbyGlass=new THREE.MeshPhysicalMaterial({
-  color:0xb7c7c7,
+  color:0x8e9b99,
   map:refGlassMaps.map,
   roughnessMap:refGlassMaps.roughness,
   roughness:.15,
@@ -9540,7 +9540,20 @@ function installScannedBuildingSkins(){
     balconyStone
   ].filter(Boolean);
 
+  const skinPalette=[
+    0xb8ad9f,
+    0xa69c90,
+    0xd1c4b4,
+    0xb2a798,
+    0xddd0bf,
+    0xa99d8e,
+    0xb7aa98,
+    0xa79b8d,
+    0xb6a793
+  ];
+
   materials.forEach((material,index)=>{
+    material.color?.setHex(skinPalette[index%skinPalette.length]);
     material.map=cloneTextureVariant(
       realStuccoColor,
       (index*.173)%1,
@@ -9567,7 +9580,7 @@ function installScannedBuildingSkins(){
     );
     material.normalScale?.set(.26,.26);
     material.bumpMap=null;
-    material.roughness=.84+(index%3)*.025;
+    material.roughness=.76+(index%3)*.035;
     material.metalness=0;
     material.envMapIntensity=Math.min(material.envMapIntensity??.08,.10);
     material.needsUpdate=true;
@@ -9577,7 +9590,7 @@ installScannedBuildingSkins();
 
 function tuneVehicleAsset(root,bodyColor){
   const bodyTint=new THREE.Color(bodyColor);
-  const mutedTint=bodyTint.clone().lerp(new THREE.Color(0xd9d8d1),.10);
+  const mutedTint=bodyTint.clone().lerp(new THREE.Color(0xbdbcb7),.46);
 
   root.traverse(object=>{
     if(!object.isMesh) return;
@@ -9596,7 +9609,7 @@ function tuneVehicleAsset(root,bodyColor){
       if(/glass|window|windshield|windscreen/.test(key)){
         const glass=new THREE.MeshPhysicalMaterial({
           ...common,
-          color:0x9eb1b5,
+          color:0x899493,
           roughness:.11,
           metalness:0,
           transparent:true,
@@ -9632,13 +9645,13 @@ function tuneVehicleAsset(root,bodyColor){
         const paint=new THREE.MeshPhysicalMaterial({
           ...common,
           color:paintColor,
-          roughness:THREE.MathUtils.clamp(.245+panelVariation*.020,.225,.275),
+          roughness:THREE.MathUtils.clamp(.315+panelVariation*.022,.292,.338),
           metalness:.015,
-          clearcoat:.92,
-          clearcoatRoughness:THREE.MathUtils.clamp(.105+panelVariation*.018,.085,.125),
+          clearcoat:.72,
+          clearcoatRoughness:THREE.MathUtils.clamp(.18+panelVariation*.020,.155,.205),
           specularIntensity:.64,
           envMap:worldEnvironmentTexture,
-          envMapIntensity:1.18
+          envMapIntensity:.88
         });
         if(hasUv){
           paint.normalMap=realVehicleNormal;
