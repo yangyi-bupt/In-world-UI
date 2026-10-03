@@ -239,13 +239,13 @@
 
     function appShell(accent='#397fa7',rgb='127,214,255'){
       ctx.save();
-      ctx.shadowColor='rgba(33,40,46,.050)';
-      ctx.shadowBlur=20;
-      ctx.shadowOffsetY=7;
-      ctx.fillStyle='rgba(255,255,255,.90)';
+      ctx.shadowColor='rgba(33,40,46,.045)';
+      ctx.shadowBlur=16;
+      ctx.shadowOffsetY=5;
+      ctx.fillStyle='rgba(255,255,255,.94)';
       roundedRect(44,194,936,468,34,true);
       ctx.restore();
-      strokeRoundRect(44,194,936,468,34,'rgba(37,47,57,.085)',1);
+      strokeRoundRect(44,194,936,468,34,'rgba(37,47,57,.075)',1);
 
       // A very faint pointer-driven light stays under the content hierarchy.
       // It reads as light moving inside cover glass without washing out text.
@@ -476,31 +476,31 @@
     function base(){
       ctx.clearRect(0,0,width,height);
       const screenBase=ctx.createLinearGradient(0,0,0,height);
-      screenBase.addColorStop(0,'#fbfbf8');
-      screenBase.addColorStop(.48,'#f7f7f3');
-      screenBase.addColorStop(1,'#f1f2ef');
+      screenBase.addColorStop(0,'#ffffff');
+      screenBase.addColorStop(.52,'#fafaf8');
+      screenBase.addColorStop(1,'#f4f5f2');
       ctx.fillStyle=screenBase;
       ctx.fillRect(0,0,width,height);
 
       // Cool daylight at the top and a restrained warm street reflection at the
       // lower edge tie the device visually to the world around it.
       const ambientA=ctx.createRadialGradient(148,48,12,148,48,560);
-      ambientA.addColorStop(0,'rgba(93,151,170,.085)');
-      ambientA.addColorStop(.42,'rgba(80,121,136,.030)');
+      ambientA.addColorStop(0,'rgba(93,151,170,.050)');
+      ambientA.addColorStop(.42,'rgba(80,121,136,.016)');
       ambientA.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=ambientA;
       ctx.fillRect(0,0,width,height);
 
       const ambientB=ctx.createRadialGradient(860,720,20,860,720,520);
-      ambientB.addColorStop(0,'rgba(201,163,126,.060)');
-      ambientB.addColorStop(.55,'rgba(132,104,82,.020)');
+      ambientB.addColorStop(0,'rgba(201,163,126,.032)');
+      ambientB.addColorStop(.55,'rgba(132,104,82,.010)');
       ambientB.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=ambientB;
       ctx.fillRect(0,0,width,height);
 
       // Sparse micro-grid gives the display texture without looking like a
       // website background. It remains under 3% alpha for text clarity.
-      ctx.fillStyle='rgba(46,55,63,.008)';
+      ctx.fillStyle='rgba(46,55,63,.0045)';
       for(let y=118;y<height-42;y+=54){
         for(let x=52+(Math.floor(y/54)%2)*27;x<width-42;x+=54){
           ctx.beginPath();
@@ -539,13 +539,13 @@
       // Flagship home: one calm world-status surface above a compact app deck.
       // The hierarchy is intentionally OS-like rather than a grid of web cards.
       ctx.save();
-      ctx.shadowColor='rgba(35,42,48,.060)';
-      ctx.shadowBlur=18;
-      ctx.shadowOffsetY=6;
-      ctx.fillStyle='rgba(255,255,255,.84)';
+      ctx.shadowColor='rgba(35,42,48,.045)';
+      ctx.shadowBlur=15;
+      ctx.shadowOffsetY=5;
+      ctx.fillStyle='rgba(255,255,255,.92)';
       roundedRect(52,112,920,136,32,true);
       ctx.restore();
-      strokeRoundRect(52,112,920,136,32,'rgba(38,47,56,.085)',1);
+      strokeRoundRect(52,112,920,136,32,'rgba(38,47,56,.070)',1);
 
       const heroGlow=ctx.createRadialGradient(860,174,10,860,174,210);
       heroGlow.addColorStop(0,'rgba(127,214,255,.11)');
@@ -643,8 +643,8 @@
         ctx.shadowOffsetY=hoverMix>.01 ? 5+3*hoverMix : 5;
 
         const surface=ctx.createLinearGradient(x,y,x+420,y+126);
-        surface.addColorStop(0,'rgba(255,255,255,'+(.88+.08*hoverMix).toFixed(3)+')');
-        surface.addColorStop(1,'rgba(245,247,248,'+(.92+.06*hoverMix).toFixed(3)+')');
+        surface.addColorStop(0,'rgba(255,255,255,'+(.94+.05*hoverMix).toFixed(3)+')');
+        surface.addColorStop(1,'rgba(248,249,249,'+(.95+.04*hoverMix).toFixed(3)+')');
         ctx.fillStyle=surface;
         roundedRect(x,y,420,126,28,true);
 
@@ -656,7 +656,7 @@
           x,y,420,126,28,
           hoverMix>.01
             ? 'rgba('+app.rgb+','+(.065+.215*hoverMix).toFixed(3)+')'
-            : 'rgba(38,47,56,.10)',
+            : 'rgba(38,47,56,.075)',
           1+.3*hoverMix
         );
 
@@ -1189,10 +1189,10 @@
       // Keep decorative glass treatment at the extreme edges so text and icons
       // remain crisp. The physical runtime bridge handles the moving highlights.
       const edge=ctx.createLinearGradient(0,0,width,0);
-      edge.addColorStop(0,'rgba(168,214,255,.035)');
+      edge.addColorStop(0,'rgba(168,214,255,.018)');
       edge.addColorStop(.08,'rgba(168,214,255,0)');
       edge.addColorStop(.92,'rgba(255,255,255,0)');
-      edge.addColorStop(1,'rgba(210,232,255,.025)');
+      edge.addColorStop(1,'rgba(210,232,255,.014)');
       ctx.fillStyle=edge;
       ctx.fillRect(0,0,width,height);
 
@@ -1200,7 +1200,7 @@
       vignette.addColorStop(0,'rgba(255,255,255,.015)');
       vignette.addColorStop(.14,'rgba(255,255,255,0)');
       vignette.addColorStop(.86,'rgba(0,0,0,0)');
-      vignette.addColorStop(1,'rgba(0,0,0,.10)');
+      vignette.addColorStop(1,'rgba(0,0,0,.045)');
       ctx.fillStyle=vignette;
       ctx.fillRect(0,0,width,height);
     }
