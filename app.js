@@ -8699,23 +8699,6 @@ refNeighborWeather.rotation.y=-Math.PI/2;
 refNeighborWeather.renderOrder=6;
 refNeighbor.add(refNeighborWeather);
 
-// Slight building-foot contact shade anchors the second facade to the shared
-// sidewalk without requiring another shadow-casting light.
-const refNeighborContact=new THREE.Mesh(
-  new THREE.PlaneGeometry(.82,10.90),
-  new THREE.MeshBasicMaterial({
-    map:refContactTexture,
-    transparent:true,
-    opacity:.56,
-    depthWrite:false,
-    toneMapped:true
-  })
-);
-refNeighborContact.rotation.x=-Math.PI/2;
-refNeighborContact.position.set(6.93,.067,21.05);
-refNeighborContact.renderOrder=4;
-refNeighbor.add(refNeighborContact);
-
 // Clean the foreground sidewalk visually with a dedicated architectural paving
 // map rather than reusing the noisier legacy sidewalk texture.
 const refWalk=new THREE.Mesh(
@@ -8954,6 +8937,23 @@ refBuildingContact.rotation.x=-Math.PI/2;
 refBuildingContact.position.set(7.05,.066,-7);
 refBuildingContact.renderOrder=3;
 refStreet.add(refBuildingContact);
+
+// The neighboring masonry building shares the same broad architectural contact
+// gradient, but it must be created only after refContactTexture exists.
+const refNeighborContact=new THREE.Mesh(
+  new THREE.PlaneGeometry(.82,10.90),
+  new THREE.MeshBasicMaterial({
+    map:refContactTexture,
+    transparent:true,
+    opacity:.56,
+    depthWrite:false,
+    toneMapped:true
+  })
+);
+refNeighborContact.rotation.x=-Math.PI/2;
+refNeighborContact.position.set(6.93,.067,21.05);
+refNeighborContact.renderOrder=4;
+refNeighbor.add(refNeighborContact);
 
 // A second, much softer curb-side shadow ties paving and road together.
 const refCurbContactCanvas=document.createElement('canvas');
