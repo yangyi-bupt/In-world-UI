@@ -5,8 +5,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.04;
+renderer.toneMapping = THREE.AgXToneMapping ?? THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.00;
 renderer.physicallyCorrectLights = true;
 
 const scene = new THREE.Scene();
@@ -140,13 +140,13 @@ const skyClouds=[];
   skyClouds.push(cloud);
 });
 
-const camera = new THREE.PerspectiveCamera(45.5, window.innerWidth / window.innerHeight, 0.08, 180);
+const camera = new THREE.PerspectiveCamera(44.0, window.innerWidth / window.innerHeight, 0.08, 180);
 camera.position.set(2.62, 1.70, 9.35);
 camera.rotation.order = 'YXZ';
 
 // A narrower architectural FOV is much closer to the supplied street reference
 // than an FPS-like wide lens. Tablet focus tightens it only slightly.
-let cameraFovTarget = 45.5;
+let cameraFovTarget = 44.0;
 
 // ---------- daylight ----------
 renderer.toneMappingExposure = 1.04;
@@ -9276,6 +9276,12 @@ createAmbientWalker(5.45,13.5,-1,0x8d9a73,.50,'tertiary');
 createAmbientWalker(4.72,-24.8,1,0x8c8580,.55,'quaternary');
 createAmbientWalker(6.38,24.6,-1,0x7e8982,.48,'quinary');
 
+// The reference image is a photographic street with one focal character, not a
+// game plaza full of equally readable NPCs. Keep only two distant walkers.
+ambientWalkers.forEach((walker,index)=>{
+  walker.group.visible=index===0 || index===3;
+});
+
 const movingTraffic=[];
 function createTrafficCar(x,z,color,speed,assetVariant='primary'){
   const bodyMat=new THREE.MeshStandardMaterial({color,roughness:.42,metalness:.14});
@@ -10673,7 +10679,7 @@ function initWorldGLBAssets(){
 
     if(!sources.length) return;
     ambientWalkers.forEach((entry,index)=>{
-      if(entry.assetRoot) return;
+      if(entry.assetRoot || !entry.group.visible) return;
       const source=sources[index%sources.length];
       attachWalkerAsset(entry,source.scene,source.animations,index);
     });
@@ -10797,7 +10803,7 @@ function openTablet(){
   }
 
   tabletOpen=true; keys.clear(); document.exitPointerLock?.();
-  cameraFovTarget=44.2;
+  cameraFovTarget=43.0;
   document.body.classList.add('device-open');
   tabletLayer?.classList.remove('closing');
   tabletLayer?.classList.add('open');
@@ -10811,7 +10817,7 @@ function openTablet(){
 function closeTablet(){
   if(!tabletOpen) return;
 
-  tabletOpen=false; cameraFovTarget=45.5;
+  tabletOpen=false; cameraFovTarget=44.0;
   tabletLayer?.classList.add('closing');
   tabletLayer?.setAttribute('aria-hidden','true');
   window.dispatchEvent(new CustomEvent('tablet-close'));
