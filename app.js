@@ -4042,14 +4042,15 @@ scene.add(corniceLip);
 const facadeBaseBand=new THREE.Mesh(
   new THREE.BoxGeometry(.36,.20,64.8),
   new THREE.MeshStandardMaterial({
-    color:0xafa394,
-    roughness:.93,
+    color:0xb8aea1,
+    roughness:.94,
     map:concreteSurface.map,
     roughnessMap:concreteSurface.roughness,
     normalMap:concreteSurface.normal,
-    normalScale:new THREE.Vector2(.22,.22),
+    normalScale:new THREE.Vector2(.070,.070),
     bumpMap:concreteSurface.bump,
-    bumpScale:.014
+    bumpScale:.0032,
+    envMapIntensity:.028
   })
 );
 facadeBaseBand.position.set(8.36,.20,-5);
@@ -4057,11 +4058,11 @@ facadeBaseBand.castShadow=true;
 facadeBaseBand.receiveShadow=true;
 scene.add(facadeBaseBand);
 
-const storefrontPavingMap=cloneTextureVariant(pavementGround.map,.31,.17,.74,.88,.012);
-const storefrontPavingRough=cloneTextureVariant(pavementGround.roughness,.31,.17,.74,.88,.012);
-const storefrontPavingNormal=cloneTextureVariant(pavementGround.normal,.31,.17,.74,.88,.012);
-const storefrontPavingBump=cloneTextureVariant(pavementGround.bump,.31,.17,.74,.88,.012);
-const storefrontPavingAO=cloneTextureVariant(pavementGround.ao,.31,.17,.74,.88,.012);
+const storefrontPavingMap=cloneTextureVariant(pavementGround.map,.31,.17,.42,.54,.006);
+const storefrontPavingRough=cloneTextureVariant(pavementGround.roughness,.31,.17,.42,.54,.006);
+const storefrontPavingNormal=cloneTextureVariant(pavementGround.normal,.31,.17,.42,.54,.006);
+const storefrontPavingBump=cloneTextureVariant(pavementGround.bump,.31,.17,.42,.54,.006);
+const storefrontPavingAO=cloneTextureVariant(pavementGround.ao,.31,.17,.42,.54,.006);
 const storefrontPavingBand=new THREE.Mesh(
   new THREE.PlaneGeometry(.72,63.8),
   new THREE.MeshStandardMaterial({
@@ -4069,13 +4070,13 @@ const storefrontPavingBand=new THREE.Mesh(
     map:storefrontPavingMap,
     roughnessMap:storefrontPavingRough,
     normalMap:storefrontPavingNormal,
-    normalScale:new THREE.Vector2(.050,.050),
+    normalScale:new THREE.Vector2(.026,.026),
     bumpMap:storefrontPavingBump,
-    bumpScale:.0030,
+    bumpScale:.0014,
     aoMap:storefrontPavingAO,
-    aoMapIntensity:.12,
-    roughness:.90,
-    envMapIntensity:.055
+    aoMapIntensity:.065,
+    roughness:.92,
+    envMapIntensity:.040
   })
 );
 storefrontPavingBand.rotation.x=-Math.PI/2;
@@ -4334,15 +4335,15 @@ const heroGlassMat=new THREE.MeshPhysicalMaterial({
   side:THREE.DoubleSide
 });
 const heroPierMat=new THREE.MeshStandardMaterial({
-  color:0xb9ac9a,
-  roughness:.82,
+  color:0xc0b5a6,
+  roughness:.86,
   map:fineConcreteSurface.map,
   roughnessMap:fineConcreteSurface.roughness,
   normalMap:fineConcreteSurface.normal,
-  normalScale:new THREE.Vector2(.12,.12),
+  normalScale:new THREE.Vector2(.055,.055),
   bumpMap:fineConcreteSurface.bump,
-  bumpScale:.006,
-  envMapIntensity:.08
+  bumpScale:.0028,
+  envMapIntensity:.055
 });
 const heroFrameMat=new THREE.MeshStandardMaterial({
   color:0x292d2e,
@@ -4363,6 +4364,14 @@ const heroFrameMat=new THREE.MeshStandardMaterial({
   glass.material.opacity=.40+(bayIndex%3)*.025;
   glass.material.roughness=.13+(bayIndex%2)*.035;
   glass.material.envMapIntensity=.94+(bayIndex%2)*.11;
+  if(bayIndex===2){
+    glass.material.color.set(0xaab5b2);
+    glass.material.opacity=.36;
+    glass.material.roughness=.21;
+    glass.material.envMapIntensity=.82;
+    glass.material.clearcoat=.045;
+    glass.material.clearcoatRoughness=.38;
+  }
   glass.position.set(7.34,5.60,z);
   glass.rotation.y=-Math.PI/2;
   glass.receiveShadow=true;
@@ -5346,23 +5355,39 @@ const cafeDoorFrame=new THREE.MeshStandardMaterial({
 });
 
 const cafeDoorGlass=glassPanel(.88,2.28,7.91,1.58,2.20,-Math.PI/2,0xc7d9d7);
-cafeDoorGlass.material.opacity=.40;
-cafeDoorGlass.material.roughness=.32;
-addGlassEdgeDirt(.88,2.28,7.904,1.58,2.20,-Math.PI/2,.30);
+cafeDoorGlass.material.opacity=.36;
+cafeDoorGlass.material.roughness=.35;
+addGlassEdgeDirt(.88,2.28,7.904,1.58,2.20,-Math.PI/2,.18);
+
+const cafeDoorSealMat=new THREE.MeshStandardMaterial({
+  color:0x303432,
+  roughness:.90,
+  metalness:0,
+  envMapIntensity:.02
+});
+[
+  [7.895,1.58,1.755,.028,2.20,.025],
+  [7.895,1.58,2.645,.028,2.20,.025],
+  [7.895,2.67,2.20,.028,.025,.91]
+].forEach(([x,y,z,w,h,d])=>{
+  const seal=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),cafeDoorSealMat);
+  seal.position.set(x,y,z);
+  scene.add(seal);
+});
 
 const cafeThreshold=new THREE.Mesh(
   new THREE.BoxGeometry(.34,.045,1.02),
   new THREE.MeshStandardMaterial({
-    color:0x8a8177,
-    roughness:.52,
-    metalness:.22,
+    color:0x999188,
+    roughness:.66,
+    metalness:.16,
     map:metalSurface.map,
     roughnessMap:metalSurface.roughness,
     normalMap:metalSurface.normal,
-    normalScale:new THREE.Vector2(.10,.10),
+    normalScale:new THREE.Vector2(.045,.045),
     bumpMap:metalSurface.bump,
-    bumpScale:.003,
-    envMapIntensity:.72
+    bumpScale:.0015,
+    envMapIntensity:.38
   })
 );
 cafeThreshold.position.set(7.73,.075,2.20);
@@ -7531,11 +7556,23 @@ const refHeroBlindMat=new THREE.MeshStandardMaterial({
 });
 const refHeroShopFrameMat=new THREE.MeshStandardMaterial({
   color:0x4a4640,
-  roughness:.31,
-  metalness:.58,
+  roughness:.36,
+  metalness:.52,
   map:metalSurface.map,
   roughnessMap:metalSurface.roughness,
-  envMapIntensity:.86
+  envMapIntensity:.72
+});
+const refHeroDoorThresholdMat=new THREE.MeshStandardMaterial({
+  color:0x9c978d,
+  roughness:.58,
+  metalness:.22,
+  envMapIntensity:.30
+});
+const refHeroDoorGasketMat=new THREE.MeshStandardMaterial({
+  color:0x2f3332,
+  roughness:.90,
+  metalness:0,
+  envMapIntensity:.020
 });
 const refHeroShopInteriorMat=new THREE.MeshStandardMaterial({
   color:0x504d47,
@@ -7777,6 +7814,45 @@ function addHeroStorefront(z,width,doorOffset,variant=0){
   );
   doorTop.position.set(7.54,2.30,doorZ);
   refHeroFacade.add(doorTop);
+
+  // Door sill + compression gaskets give the opening believable construction
+  // scale when the player is within a few metres.
+  const threshold=new THREE.Mesh(
+    new THREE.BoxGeometry(.30,.030,1.12),
+    refHeroDoorThresholdMat
+  );
+  threshold.position.set(7.50,.080,doorZ);
+  threshold.castShadow=true;
+  threshold.receiveShadow=true;
+  refHeroFacade.add(threshold);
+
+  [-.505,.505].forEach(side=>{
+    const gasket=new THREE.Mesh(
+      new THREE.BoxGeometry(.032,2.12,.022),
+      refHeroDoorGasketMat
+    );
+    gasket.position.set(7.405,1.20,doorZ+side);
+    refHeroFacade.add(gasket);
+  });
+  const gasketTop=new THREE.Mesh(
+    new THREE.BoxGeometry(.032,.022,1.03),
+    refHeroDoorGasketMat
+  );
+  gasketTop.position.set(7.405,2.255,doorZ);
+  refHeroFacade.add(gasketTop);
+
+  const innerJoint=new THREE.Mesh(
+    new THREE.BoxGeometry(.20,.008,1.05),
+    new THREE.MeshBasicMaterial({
+      color:0x393b38,
+      transparent:true,
+      opacity:.22,
+      depthWrite:false,
+      toneMapped:true
+    })
+  );
+  innerJoint.position.set(7.63,.096,doorZ);
+  refHeroFacade.add(innerJoint);
 
   const handle=new THREE.Mesh(
     new THREE.BoxGeometry(.055,.48,.028),
