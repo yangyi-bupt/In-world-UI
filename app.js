@@ -103,13 +103,13 @@ const skyClouds=[];
   skyClouds.push(cloud);
 });
 
-const camera = new THREE.PerspectiveCamera(61.5, window.innerWidth / window.innerHeight, 0.08, 140);
-camera.position.set(1.32, 1.68, 7.05);
+const camera = new THREE.PerspectiveCamera(56.5, window.innerWidth / window.innerHeight, 0.08, 160);
+camera.position.set(2.55, 1.68, 8.25);
 camera.rotation.order = 'YXZ';
 
 // A narrower architectural FOV is much closer to the supplied street reference
 // than an FPS-like wide lens. Tablet focus tightens it only slightly.
-let cameraFovTarget = 61.5;
+let cameraFovTarget = 56.5;
 
 // ---------- daylight ----------
 renderer.toneMappingExposure = 1.06;
@@ -2968,6 +2968,7 @@ const edgeLine=new THREE.Mesh(
 );
 edgeLine.rotation.x=-Math.PI/2;
 edgeLine.position.set(-.45,.025,-4);
+edgeLine.material.opacity=.26;
 scene.add(edgeLine);
 
 const focalCurbMark=new THREE.Mesh(
@@ -3520,6 +3521,99 @@ const lobbyCanopy=new THREE.Mesh(
 lobbyCanopy.position.set(7.10,3.86,-3.0);
 lobbyCanopy.castShadow=true;
 scene.add(lobbyCanopy);
+
+// Dominant reference-style office street wall. This sits just in front of the
+// earlier mixed facade so the first read is clean glass, stone piers and deep
+// recessed entries rather than many small storefront objects.
+const heroGlassMat=new THREE.MeshPhysicalMaterial({
+  color:0x9fb9bf,
+  map:glassReflectionTexture,
+  roughnessMap:glassRoughnessTexture,
+  roughness:.14,
+  metalness:.015,
+  transparent:true,
+  opacity:.46,
+  transmission:.14,
+  ior:1.49,
+  thickness:.016,
+  clearcoat:.08,
+  clearcoatRoughness:.24,
+  envMapIntensity:1.02,
+  side:THREE.DoubleSide
+});
+const heroPierMat=new THREE.MeshStandardMaterial({
+  color:0xc8cbc7,
+  roughness:.82,
+  map:fineConcreteSurface.map,
+  roughnessMap:fineConcreteSurface.roughness,
+  normalMap:fineConcreteSurface.normal,
+  normalScale:new THREE.Vector2(.12,.12),
+  bumpMap:fineConcreteSurface.bump,
+  bumpScale:.006,
+  envMapIntensity:.08
+});
+const heroFrameMat=new THREE.MeshStandardMaterial({
+  color:0x414b4e,
+  roughness:.34,
+  metalness:.54,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
+  normalMap:metalSurface.normal,
+  normalScale:new THREE.Vector2(.07,.07),
+  bumpMap:metalSurface.bump,
+  bumpScale:.002,
+  envMapIntensity:.98
+});
+
+[-23.5,-11.5,.8,13.1].forEach((z,bayIndex)=>{
+  const glass=new THREE.Mesh(new THREE.PlaneGeometry(10.6,6.55),heroGlassMat.clone());
+  glass.material.color.offsetHSL(0,0,(bayIndex-1.5)*.012);
+  glass.position.set(7.34,4.85,z);
+  glass.rotation.y=-Math.PI/2;
+  glass.receiveShadow=true;
+  scene.add(glass);
+
+  for(let dz=-4.0;dz<=4.0;dz+=2.0){
+    const mullion=new THREE.Mesh(new THREE.BoxGeometry(.055,6.55,.05),heroFrameMat);
+    mullion.position.set(7.30,4.85,z+dz);
+    mullion.castShadow=true;
+    scene.add(mullion);
+  }
+  [2.10,3.55,5.00,6.45,7.90].forEach(y=>{
+    const rail=new THREE.Mesh(new THREE.BoxGeometry(.055,.045,10.45),heroFrameMat);
+    rail.position.set(7.30,y,z);
+    scene.add(rail);
+  });
+});
+
+[-29.2,-17.5,-5.4,6.9,19.0].forEach((z,index)=>{
+  const pier=new THREE.Mesh(new THREE.BoxGeometry(.78,8.25,.92),heroPierMat);
+  pier.position.set(7.38,4.15,z);
+  pier.castShadow=true;
+  pier.receiveShadow=true;
+  scene.add(pier);
+
+  const cap=new THREE.Mesh(new THREE.BoxGeometry(1.08,.16,1.10),heroPierMat);
+  cap.position.set(7.30,8.30,z);
+  cap.castShadow=true;
+  scene.add(cap);
+});
+
+// Deep, dark entry recesses are the main ground-level accents.
+[-11.5,13.0].forEach(z=>{
+  const recess=new THREE.Mesh(
+    new THREE.PlaneGeometry(3.45,3.05),
+    new THREE.MeshBasicMaterial({color:0x374244,transparent:true,opacity:.64})
+  );
+  recess.position.set(7.26,1.72,z);
+  recess.rotation.y=-Math.PI/2;
+  scene.add(recess);
+
+  const portal=new THREE.Mesh(new THREE.BoxGeometry(.42,3.55,3.95),heroFrameMat);
+  portal.position.set(7.12,1.90,z);
+  portal.castShadow=true;
+  scene.add(portal);
+});
 
 const facadeRibMat=new THREE.MeshStandardMaterial({
   color:0xb9c0be,
@@ -5780,11 +5874,11 @@ function createStreetTree(x,z,scale=1){
 }
 
 [
-  [1.08,-13.4,1.02],
-  [.94,-6.55,.95],
-  [1.00,4.45,.92],
-  [1.06,10.55,1.00],
-  [.92,16.65,.93]
+  [.72,-16.0,.96],
+  [.72,-8.0,.98],
+  [.72,0.4,.97],
+  [.72,8.8,.99],
+  [.72,17.2,.95]
 ].forEach(([x,z,scale])=>createStreetTree(x,z,scale));
 
 const curbGroundcoverMat=makeFoliageMaterial(0x8ea27a,.93,.009,.018);
@@ -5900,6 +5994,7 @@ miraPocket.rotation.x=-Math.PI/2;
 miraPocket.position.set(3.75,.044,-1.55);
 miraPocket.receiveShadow=true;
 scene.add(miraPocket);
+miraPocket.visible=false;
 
 const miraAmbientPool=createSunPool(3.18,-1.62,3.5,3.9,.10);
 miraAmbientPool.position.y=.056;
@@ -5993,8 +6088,9 @@ const ramp=new THREE.Mesh(
 ramp.rotation.x=-Math.PI/2;
 ramp.position.set(.76,.050,-1.55);
 scene.add(ramp);
+ramp.visible=false;
 
-const dotMat=new THREE.MeshStandardMaterial({color:0xc6b678,roughness:.92});
+const dotMat=new THREE.MeshStandardMaterial({color:0xd4d5d1,roughness:.96,transparent:true,opacity:0});
 for(let dz=-.48;dz<=.48;dz+=.24){
   for(let dx=-.42;dx<=.42;dx+=.21){
     const dot=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.012,10),dotMat);
@@ -6019,11 +6115,13 @@ pocketSeat.position.set(6.25,.20,-1.70);
 pocketSeat.castShadow=true;
 pocketSeat.receiveShadow=true;
 scene.add(pocketSeat);
+pocketSeat.visible=false;
 
 const pocketPlanter=new THREE.Mesh(new THREE.BoxGeometry(2.55,.52,.62),seatStone);
 pocketPlanter.position.set(6.25,.27,-2.27);
 pocketPlanter.castShadow=true;
 scene.add(pocketPlanter);
+pocketPlanter.visible=false;
 
 const pocketBook=new THREE.Mesh(
   new THREE.BoxGeometry(.28,.028,.20),
@@ -6033,6 +6131,7 @@ pocketBook.position.set(5.88,.392,-1.70);
 pocketBook.rotation.y=.16;
 pocketBook.castShadow=true;
 scene.add(pocketBook);
+pocketBook.visible=false;
 
 const pocketCup=new THREE.Mesh(
   new THREE.CylinderGeometry(.052,.044,.105,12),
@@ -6041,6 +6140,7 @@ const pocketCup=new THREE.Mesh(
 pocketCup.position.set(6.45,.425,-1.70);
 pocketCup.castShadow=true;
 scene.add(pocketCup);
+pocketCup.visible=false;
 
 const pocketGreenMats=[
   makeFoliageMaterial(0x789a70,.92,.009,.016),
@@ -6055,6 +6155,7 @@ for(let i=0;i<7;i++){
   shrub.position.set(5.30+i*.31,.66,-2.27+(i%2)*.035);
   shrub.rotation.set((i%2?.06:-.05),i*.27,(i%3-1)*.08);
   shrub.castShadow=true;
+  shrub.visible=false;
   scene.add(shrub);
 }
 
@@ -6102,6 +6203,7 @@ focalPlanterBase.position.set(4.95,.18,-4.72);
 focalPlanterBase.castShadow=true;
 focalPlanterBase.receiveShadow=true;
 scene.add(focalPlanterBase);
+focalPlanterBase.visible=false;
 
 const focalPlantMats=[
   makeFoliageMaterial(0x7d9f72,.92,.009,.016),
@@ -6120,6 +6222,7 @@ const focalPlantMats=[
   plant.position.set(4.95+ox,.48+(i%2)*.035,-4.72+oz);
   plant.rotation.set((i%2?.07:-.05),i*.35,(i%3-1)*.09);
   plant.castShadow=true;
+  plant.visible=false;
   scene.add(plant);
 });
 
@@ -6151,7 +6254,7 @@ function createLampPost(x,z,withBanner=true){
     bumpScale:.004,
     envMapIntensity:.94
   });
-  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.060,3.2,12),metal);
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.032,.044,3.35,12),metal);
   pole.position.set(x,1.6,z);
   pole.castShadow=true;
   scene.add(pole);
@@ -6180,7 +6283,7 @@ function createLampPost(x,z,withBanner=true){
   scene.add(armB);
 
   const lampHousing=new THREE.Mesh(
-    new THREE.BoxGeometry(.34,.115,.19),
+    new THREE.BoxGeometry(.26,.085,.15),
     new THREE.MeshStandardMaterial({
       color:0x7a8380,
       roughness:.38,
@@ -6691,6 +6794,7 @@ const cafeSeatMat=new THREE.MeshStandardMaterial({
 });
 
 function createCafeTable(x,z){
+  return;
   const top=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.050,32),cafeTableWood);
   top.position.set(x,.72,z);
   top.castShadow=true;
@@ -8053,7 +8157,7 @@ window.addEventListener('tablet-message-reply',()=>{
 
 // ---------- player controls ----------
 const keys = new Set();
-let yaw=0, pitch=0, targetYaw=0, targetPitch=0, turnImpulse=0;
+let yaw=.065, pitch=-.012, targetYaw=.065, targetPitch=-.012, turnImpulse=0;
 let tabletOpen=false, started=false;
 const velocity=new THREE.Vector3();
 const dir=new THREE.Vector3();
@@ -8092,7 +8196,7 @@ function openTablet(){
   }
 
   tabletOpen=true; keys.clear(); document.exitPointerLock?.();
-  cameraFovTarget=59.5;
+  cameraFovTarget=55.0;
   document.body.classList.add('device-open');
   tabletLayer?.classList.remove('closing');
   tabletLayer?.classList.add('open');
@@ -8106,7 +8210,7 @@ function openTablet(){
 function closeTablet(){
   if(!tabletOpen) return;
 
-  tabletOpen=false; cameraFovTarget=61.5;
+  tabletOpen=false; cameraFovTarget=56.5;
   tabletLayer?.classList.add('closing');
   tabletLayer?.setAttribute('aria-hidden','true');
   window.dispatchEvent(new CustomEvent('tablet-close'));
