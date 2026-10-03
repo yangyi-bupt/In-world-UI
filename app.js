@@ -154,8 +154,10 @@ renderer.toneMappingExposure = 1.04;
 const skyLight = new THREE.HemisphereLight(0xf0f5f2, 0x8d8a82, 1.18);
 scene.add(skyLight);
 
-const sun = new THREE.DirectionalLight(0xfff0d7, 3.18);
-sun.position.set(-11, 15, 10);
+const sun = new THREE.DirectionalLight(0xfff0d7, 3.06);
+// Match the actual key light to the visible sun in the sky. The previous
+// opposite-Z setup made highlights and cast shadows disagree with the sun disc.
+sun.position.set(-17.5, 19.0, -23.5);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
 sun.shadow.camera.left = -18;
@@ -169,7 +171,7 @@ sun.shadow.normalBias = .022;
 sun.shadow.radius = 1.15;
 scene.add(sun);
 
-const daylightFill = new THREE.DirectionalLight(0xdce8ea, .18);
+const daylightFill = new THREE.DirectionalLight(0xdce8ea, .145);
 daylightFill.position.set(10, 8, -12);
 scene.add(daylightFill);
 
@@ -177,7 +179,7 @@ const shopBounce = new THREE.DirectionalLight(0xffdfbf, .040);
 shopBounce.position.set(9,5,6);
 scene.add(shopBounce);
 
-const faceLight = new THREE.SpotLight(0xffeadb, .14, 7.0, Math.PI * .34, .96, 1.8);
+const faceLight = new THREE.SpotLight(0xffeadb, .085, 6.5, Math.PI * .36, .97, 1.9);
 faceLight.position.set(1.1, 3.8, 3.2);
 faceLight.target.position.set(2.0, 1.45, 2.0);
 scene.add(faceLight, faceLight.target);
@@ -9646,7 +9648,7 @@ function ensureWorldAssetEnvironment(){
   for(let i=0;i<18;i++){
     const x=i*(width/18)-20+rnd()*36;
     const w=32+rnd()*88;
-    const top=275+rnd()*64;
+    const top=146+rnd()*42;
     const shade=84+Math.floor(rnd()*45);
     g.fillStyle='rgba('+shade+','+(shade+7)+','+(shade+5)+','+(.055+rnd()*.085).toFixed(3)+')';
     g.fillRect(x,top,w,height-top);
@@ -9655,7 +9657,7 @@ function ensureWorldAssetEnvironment(){
   // Tree masses near the horizon add natural green reflection breakup.
   for(let i=0;i<20;i++){
     const x=rnd()*width;
-    const y=300+rnd()*42;
+    const y=151+rnd()*34;
     const rx=24+rnd()*70;
     const ry=10+rnd()*28;
     const grad=g.createRadialGradient(x,y,2,x,y,rx);
@@ -9669,6 +9671,24 @@ function ensureWorldAssetEnvironment(){
     g.arc(0,0,rx,0,Math.PI*2);
     g.fill();
     g.restore();
+  }
+
+  // A low-frequency road band and vertical facade rhythm supply the reflections
+  // that real cars, glazing and skin pick up at street level. These shapes stay
+  // intentionally abstract; PMREM turns them into soft environmental structure.
+  const roadGrad=g.createLinearGradient(0,height*.63,0,height);
+  roadGrad.addColorStop(0,'rgba(78,82,79,0)');
+  roadGrad.addColorStop(.28,'rgba(69,72,70,.18)');
+  roadGrad.addColorStop(1,'rgba(45,48,47,.34)');
+  g.fillStyle=roadGrad;
+  g.fillRect(0,height*.58,width,height*.42);
+
+  for(let i=0;i<26;i++){
+    const x=i*(width/26)+(rnd()-.5)*14;
+    const w=4+rnd()*15;
+    const a=.018+rnd()*.040;
+    g.fillStyle='rgba(214,219,215,'+a.toFixed(3)+')';
+    g.fillRect(x,height*.50,w,height*.26);
   }
 
   // Soft off-axis sun disc and surrounding warm sky.
@@ -9685,7 +9705,7 @@ function ensureWorldAssetEnvironment(){
   // Soft clouds affect specular highlights without producing graphic shapes.
   for(let i=0;i<28;i++){
     const x=rnd()*width;
-    const y=60+rnd()*190;
+    const y=26+rnd()*112;
     const rx=22+rnd()*80;
     const ry=8+rnd()*24;
     const grad=g.createRadialGradient(x,y,3,x,y,rx);
@@ -10357,22 +10377,22 @@ function tuneMiraAsset(root){
       }
 
       if(/eye|cornea|iris/.test(key)){
-        if('roughness' in material) material.roughness=.28;
-        if('envMapIntensity' in material) material.envMapIntensity=.22;
+        if('roughness' in material) material.roughness=.18;
+        if('envMapIntensity' in material) material.envMapIntensity=.32;
         if(material.color) material.color.lerp(new THREE.Color(0xdce8e7),.035);
         if(material.isMeshPhysicalMaterial){
-          material.clearcoat=.035;
-          material.clearcoatRoughness=.38;
-          if('specularIntensity' in material) material.specularIntensity=.38;
+          material.clearcoat=.07;
+          material.clearcoatRoughness=.30;
+          if('specularIntensity' in material) material.specularIntensity=.50;
         }
       }else if(/skin|face|head|body/.test(key)){
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .80,.76,.88);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .68,.62,.76);
         }
         if(material.color){
           material.color.lerp(new THREE.Color(0xd5a28e),.028);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.16;
+        if('envMapIntensity' in material) material.envMapIntensity=.20;
         if(hasUv && 'map' in material && !material.map){
           material.map=humanToneTexture;
         }
@@ -10381,20 +10401,20 @@ function tuneMiraAsset(root){
         }
         if(hasUv && 'bumpMap' in material && !material.bumpMap){
           material.bumpMap=skinMicroBump;
-          material.bumpScale=.00038;
+          material.bumpScale=.00030;
         }
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=0;
-          if('specularIntensity' in material) material.specularIntensity=.26;
+          if('specularIntensity' in material) material.specularIntensity=.42;
           if(hasUv && 'specularIntensityMap' in material){
             material.specularIntensityMap=skinSpecularTexture;
           }
         }
       }else if(/hair/.test(key)){
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .78,.75,.88);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .70,.60,.78);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.080;
+        if('envMapIntensity' in material) material.envMapIntensity=.12;
         if(hasUv && 'roughnessMap' in material){
           material.roughnessMap=humanHairRoughTexture;
         }
@@ -10703,6 +10723,17 @@ function initWorldGLBAssets(){
   scheduleWorldStream(()=>{
     loadPhotographicLeafCards();
   },1050);
+  // On capable devices upgrade the fallback PMREM to a real outdoor HDR after
+  // the focal world assets are already visible. Save-data / low-memory clients
+  // keep the lightweight procedural reflection environment.
+  const connection=navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  const memory=navigator.deviceMemory;
+  if(!connection?.saveData && (memory===undefined || memory>=6)){
+    scheduleWorldStream(()=>{
+      loadPhotographicEnvironment();
+    },3600);
+  }
+
   scheduleWorldStream(()=>{
     const targetPixelRatio=Math.min(window.devicePixelRatio,1.30);
     if(Math.abs(renderer.getPixelRatio()-targetPixelRatio)>.05){
@@ -10936,7 +10967,7 @@ function animate(){
   dappleTexture.offset.x=Math.sin(t*.052)*.0022;
   dappleTexture.offset.y=Math.cos(t*.044)*.0015;
   sunHaze.material.opacity=.34+Math.sin(t*.11)*.008;
-  sun.intensity=3.18+Math.sin(t*.045)*.020;
+  sun.intensity=3.06;
 
   skyClouds.forEach((cloud,index)=>{
     cloud.position.x+=dt*(.055+index*.018);
@@ -11108,10 +11139,10 @@ function animate(){
   // Focal lighting is distance-aware: enough facial separation up close, but
   // almost indistinguishable from ordinary daylight from across the block.
   const presence=1-THREE.MathUtils.smoothstep(miraDistance,2.4,10.5);
-  faceLight.intensity=.09+presence*.045;
-  miraPresenceLight.intensity=.010+presence*.008;
-  miraWarmBounce.intensity=.010+presence*.006;
-  miraCoolRim.intensity=.008+presence*.004;
+  faceLight.intensity=.052+presence*.030;
+  miraPresenceLight.intensity=.006+presence*.004;
+  miraWarmBounce.intensity=.006+presence*.003;
+  miraCoolRim.intensity=.005+presence*.002;
 
   if(miraGLBRoot && miraGLBBasePosition){
     const weightShift=Math.sin(t*.37+.6);
