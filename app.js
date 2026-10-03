@@ -9485,134 +9485,246 @@ function normalizeCarAsset(root,targetLength=3.85){
   root.updateMatrixWorld(true);
 }
 
+// ---------- scanned world skins ----------
+// Photo-based CC0 PBR maps replace the most visible procedural surfaces.
+// They are intentionally 1K in the runtime demo to keep startup reasonable.
+const realSkinLoader=new THREE.TextureLoader();
+realSkinLoader.setCrossOrigin('anonymous');
+
+function loadRuntimeSkin(url,{srgb=false,repeatX=1,repeatY=1}={}){
+  const texture=realSkinLoader.load(
+    url,
+    loaded=>{ loaded.needsUpdate=true; },
+    undefined,
+    error=>console.warn('Scanned skin texture failed; keeping fallback surface.',url,error)
+  );
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(repeatX,repeatY);
+  texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy?.()||1,8);
+  if(srgb) texture.colorSpace=THREE.SRGBColorSpace;
+  return texture;
+}
+
+const realStuccoColor=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_stucco/white_stucco_diff_1k.jpg',
+  {srgb:true,repeatX:1.15,repeatY:2.35}
+);
+const realStuccoNormal=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_stucco/white_stucco_nor_gl_1k.jpg',
+  {repeatX:1.15,repeatY:2.35}
+);
+const realStuccoRough=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_stucco/white_stucco_rough_1k.jpg',
+  {repeatX:1.15,repeatY:2.35}
+);
+
+const realVehicleNormal=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/blue_metal_plate/blue_metal_plate_nor_gl_1k.jpg',
+  {repeatX:14,repeatY:14}
+);
+const realVehicleRough=loadRuntimeSkin(
+  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/blue_metal_plate/blue_metal_plate_rough_1k.jpg',
+  {repeatX:14,repeatY:14}
+);
+
+function installScannedBuildingSkins(){
+  const materials=[
+    rightFacade?.material,
+    upperRecess?.material,
+    topCornice?.material,
+    corniceUnder?.material,
+    corniceLip?.material,
+    facadeBaseBand?.material,
+    heroPierMat,
+    facadeRibMat,
+    balconyStone
+  ].filter(Boolean);
+
+  materials.forEach((material,index)=>{
+    material.map=cloneTextureVariant(
+      realStuccoColor,
+      (index*.173)%1,
+      (index*.281)%1,
+      .92+(index%3)*.055,
+      .88+((index+1)%3)*.060,
+      ((index%5)-2)*.006
+    );
+    material.roughnessMap=cloneTextureVariant(
+      realStuccoRough,
+      (index*.173)%1,
+      (index*.281)%1,
+      .92+(index%3)*.055,
+      .88+((index+1)%3)*.060,
+      ((index%5)-2)*.006
+    );
+    material.normalMap=cloneTextureVariant(
+      realStuccoNormal,
+      (index*.173)%1,
+      (index*.281)%1,
+      .92+(index%3)*.055,
+      .88+((index+1)%3)*.060,
+      ((index%5)-2)*.006
+    );
+    material.normalScale?.set(.26,.26);
+    material.bumpMap=null;
+    material.roughness=.84+(index%3)*.025;
+    material.metalness=0;
+    material.envMapIntensity=Math.min(material.envMapIntensity??.08,.10);
+    material.needsUpdate=true;
+  });
+}
+installScannedBuildingSkins();
+
 function tuneVehicleAsset(root,bodyColor){
   const bodyTint=new THREE.Color(bodyColor);
-  const mutedTint=bodyTint.clone().lerp(new THREE.Color(0xd9d8d1),.16);
-  const wheels=[];
+  const mutedTint=bodyTint.clone().lerp(new THREE.Color(0xd9d8d1),.10);
 
   root.traverse(object=>{
     if(!object.isMesh) return;
     const hasUv=Boolean(object.geometry?.attributes?.uv);
-    const materials=Array.isArray(object.material)?object.material:[object.material];
+    const sourceMaterials=Array.isArray(object.material)?object.material:[object.material];
 
-    materials.forEach(material=>{
-      if(!material) return;
-      const key=((object.name||'')+' '+(material.name||'')).toLowerCase();
+    const tunedMaterials=sourceMaterials.map((source,materialIndex)=>{
+      if(!source) return source;
+      const key=((object.name||'')+' '+(source.name||'')).toLowerCase();
+      const common={
+        name:source.name||'',
+        side:source.side,
+        alphaTest:source.alphaTest||0
+      };
 
       if(/glass|window|windshield|windscreen/.test(key)){
-        if(material.color) material.color.lerp(new THREE.Color(0xb5c8ca),.36);
-        material.transparent=true;
-        material.opacity=.62;
-        material.roughness=.16;
-        if('metalness' in material) material.metalness=0;
-        if('envMapIntensity' in material) material.envMapIntensity=.92;
-        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
-          material.roughnessMap=glassRoughnessTexture;
-        }
-        if(material.isMeshPhysicalMaterial){
-          material.transmission=Math.max(material.transmission ?? 0,.08);
-          material.ior=1.50;
-          material.thickness=.008;
-          material.clearcoat=.02;
-          material.clearcoatRoughness=.40;
-        }
-        material.depthWrite=false;
-      }else if(/head.?light|lamp_front|front.?light/.test(key)){
-        if(material.color) material.color.lerp(new THREE.Color(0xf4ecdc),.76);
-        if(material.emissive) material.emissive.set(0x988a70);
-        if('emissiveIntensity' in material) material.emissiveIntensity=.075;
-        material.roughness=.20;
-        if('metalness' in material) material.metalness=.02;
-        if('envMapIntensity' in material) material.envMapIntensity=.78;
-      }else if(/tail.?light|rear.?light|brake/.test(key)){
-        if(material.color) material.color.lerp(new THREE.Color(0xa26059),.76);
-        if(material.emissive) material.emissive.set(0x64231f);
-        if('emissiveIntensity' in material) material.emissiveIntensity=.055;
-        material.roughness=.24;
-        if('metalness' in material) material.metalness=.01;
-        if('envMapIntensity' in material) material.envMapIntensity=.74;
-      }else if(/tire|tyre|rubber/.test(key)){
-        if(material.color) material.color.set(0x292d2d);
-        material.roughness=.98;
-        if('metalness' in material) material.metalness=0;
-        if('envMapIntensity' in material) material.envMapIntensity=.08;
-        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
-          material.roughnessMap=rubberAging.roughness;
-        }
-        if(hasUv && 'bumpMap' in material && !material.bumpMap){
-          material.bumpMap=rubberAging.bump;
-          material.bumpScale=.014;
-        }
-      }else if(/wheel|rim/.test(key)){
-        if(material.color) material.color.lerp(new THREE.Color(0xa5aaa7),.54);
-        material.roughness=.38;
-        if('metalness' in material) material.metalness=.68;
-        if('envMapIntensity' in material) material.envMapIntensity=.78;
-        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
-          material.roughnessMap=metalSurface.roughness;
-        }
-      }else if(/body|paint|carpaint|car_paint|coachwork|exterior/.test(key)){
-        if(material.color) material.color.lerp(mutedTint,.72);
+        const glass=new THREE.MeshPhysicalMaterial({
+          ...common,
+          color:0x9eb1b5,
+          roughness:.11,
+          metalness:0,
+          transparent:true,
+          opacity:.54,
+          transmission:.18,
+          ior:1.50,
+          thickness:.010,
+          clearcoat:.05,
+          clearcoatRoughness:.22,
+          envMap:worldEnvironmentTexture,
+          envMapIntensity:1.08,
+          depthWrite:false
+        });
+        if(hasUv) glass.roughnessMap=glassRoughnessTexture;
+        return glass;
+      }
 
+      if(/body|paint|carpaint|car_paint|coachwork|exterior/.test(key)){
         let panelHash=2166136261;
-        const panelKey=(object.name||'')+'|'+(material.name||'');
+        const panelKey=(object.name||'')+'|'+(source.name||'')+'|'+materialIndex;
         for(let pi=0;pi<panelKey.length;pi++){
           panelHash^=panelKey.charCodeAt(pi);
           panelHash=Math.imul(panelHash,16777619);
         }
         const panelVariation=((panelHash>>>0)%1000)/1000-.5;
-
-        // Automotive paint is a dielectric colored layer under a glossy clear
-        // coat, not a bulk metal. Small per-mesh variation keeps adjacent body
-        // panels from reflecting as one perfectly uniform plastic shell.
-        material.roughness=THREE.MathUtils.clamp(
-          (material.roughness ?? .31)+panelVariation*.028,
-          .275,
-          .37
+        const paintColor=mutedTint.clone();
+        paintColor.offsetHSL(
+          panelVariation*.004,
+          panelVariation*.025,
+          panelVariation*.018
         );
-        if('metalness' in material) material.metalness=.025;
-        if('envMapIntensity' in material) material.envMapIntensity=.82;
 
-        if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
-          material.roughnessMap=vehiclePaintRoughness;
+        const paint=new THREE.MeshPhysicalMaterial({
+          ...common,
+          color:paintColor,
+          roughness:THREE.MathUtils.clamp(.245+panelVariation*.020,.225,.275),
+          metalness:.015,
+          clearcoat:.92,
+          clearcoatRoughness:THREE.MathUtils.clamp(.105+panelVariation*.018,.085,.125),
+          specularIntensity:.64,
+          envMap:worldEnvironmentTexture,
+          envMapIntensity:1.18
+        });
+        if(hasUv){
+          paint.normalMap=realVehicleNormal;
+          paint.normalScale=new THREE.Vector2(.018,.018);
+          paint.roughnessMap=realVehicleRough;
+          paint.clearcoatNormalMap=realVehicleNormal;
+          paint.clearcoatNormalScale=new THREE.Vector2(.010,.010);
         }
-        if(hasUv && 'bumpMap' in material && !material.bumpMap){
-          material.bumpMap=vehiclePaintMicroBump;
-          material.bumpScale=.0022;
+        return paint;
+      }
+
+      if(/head.?light|lamp_front|front.?light/.test(key)){
+        return new THREE.MeshPhysicalMaterial({
+          ...common,
+          color:0xf1eadb,
+          roughness:.17,
+          metalness:0,
+          clearcoat:.66,
+          clearcoatRoughness:.12,
+          transmission:.10,
+          transparent:source.transparent||false,
+          opacity:source.opacity??1,
+          emissive:0x6c624f,
+          emissiveIntensity:.055,
+          envMap:worldEnvironmentTexture,
+          envMapIntensity:.92
+        });
+      }
+
+      if(/tail.?light|rear.?light|brake/.test(key)){
+        return new THREE.MeshPhysicalMaterial({
+          ...common,
+          color:0xa75149,
+          roughness:.19,
+          metalness:0,
+          clearcoat:.72,
+          clearcoatRoughness:.13,
+          transmission:.06,
+          transparent:source.transparent||false,
+          opacity:source.opacity??1,
+          emissive:0x3b0f0c,
+          emissiveIntensity:.045,
+          envMap:worldEnvironmentTexture,
+          envMapIntensity:.86
+        });
+      }
+
+      const material=source.clone?.()||source;
+      if(/tire|tyre|rubber/.test(key)){
+        if(material.color) material.color.set(0x242727);
+        material.roughness=.96;
+        if('metalness' in material) material.metalness=0;
+        if('envMapIntensity' in material) material.envMapIntensity=.08;
+        if(hasUv){
+          if('roughnessMap' in material) material.roughnessMap=rubberAging.roughness;
+          if('bumpMap' in material){
+            material.bumpMap=rubberAging.bump;
+            material.bumpScale=.010;
+          }
         }
-        if(material.isMeshPhysicalMaterial){
-          material.clearcoat=THREE.MathUtils.clamp(.68+panelVariation*.06,.63,.73);
-          material.clearcoatRoughness=THREE.MathUtils.clamp(.17+panelVariation*.045,.145,.195);
-          material.clearcoatRoughnessMap=vehicleDustRoughness;
-          material.clearcoatNormalMap=vehicleClearcoatNormal;
-          material.clearcoatNormalScale?.set(.040,.040);
-          if('specularIntensity' in material) material.specularIntensity=.72;
+      }else if(/wheel|rim/.test(key)){
+        if(material.color) material.color.set(0x9a9f9d);
+        material.roughness=.32;
+        if('metalness' in material) material.metalness=.74;
+        if('envMapIntensity' in material) material.envMapIntensity=.96;
+        if(hasUv && 'roughnessMap' in material) material.roughnessMap=metalSurface.roughness;
+      }else{
+        if(material.color){
+          const hsl={h:0,s:0,l:0};
+          material.color.getHSL(hsl);
+          if(hsl.s>.35 && hsl.l>.12){
+            material.color.setHSL(hsl.h,hsl.s*.62,THREE.MathUtils.lerp(hsl.l,.46,.10));
+          }
         }
-      }else if(material.color){
-        const hsl={h:0,s:0,l:0};
-        material.color.getHSL(hsl);
-        if(hsl.s>.46 && hsl.l>.12){
-          material.color.lerp(mutedTint,.30);
-        }
-        if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .60,.48,.86);
-        }
-        if('metalness' in material){
-          material.metalness=Math.min(material.metalness ?? 0,.12);
-        }
+        if('roughness' in material) material.roughness=THREE.MathUtils.clamp(material.roughness??.66,.52,.90);
+        if('metalness' in material) material.metalness=Math.min(material.metalness??0,.12);
+        if('envMapIntensity' in material) material.envMapIntensity=.16;
       }
       material.needsUpdate=true;
+      return material;
     });
 
-    const meshKey=(object.name||'').toLowerCase();
-    if(/wheel|tire|tyre/.test(meshKey)) wheels.push(object);
+    object.material=Array.isArray(object.material)?tunedMaterials:tunedMaterials[0];
   });
 
-  // These source GLBs do not guarantee wheel-mesh pivots at the wheel hubs.
-  // Rotating a mesh whose geometry is baked around a body/root pivot makes the
-  // wheel orbit the car ("flying wheels"). Keep authored wheels static rather
-  // than applying unsafe runtime rotation; the vehicle translation still sells
-  // the slow street traffic motion.
+  // Keep authored wheel meshes static; translation already sells slow traffic.
   return [];
 }
 
