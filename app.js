@@ -8280,7 +8280,7 @@ refHeroBaseWear.renderOrder=5;
 refHeroFacade.add(refHeroBaseWear);
 
 // A few restrained interior objects create scale and occlusion behind the glass.
-const refHeroInteriorWoodMat=new THREE.MeshStandardMaterial({
+const refHeroInteriorDisplayWoodMat=new THREE.MeshStandardMaterial({
   color:0x76685a,
   roughness:.79,
   metalness:.01,
@@ -8305,7 +8305,7 @@ const refHeroInteriorWarmMat=new THREE.MeshBasicMaterial({
 ].forEach((spec,index)=>{
   const display=new THREE.Mesh(
     new THREE.BoxGeometry(.54,.055,spec.w),
-    refHeroInteriorWoodMat
+    refHeroInteriorDisplayWoodMat
   );
   display.position.set(spec.x,.86,spec.z);
   refHeroFacade.add(display);
@@ -8346,7 +8346,7 @@ const refHeroInteriorWarmMat=new THREE.MeshBasicMaterial({
 for(let shelf=0;shelf<3;shelf++){
   const board=new THREE.Mesh(
     new THREE.BoxGeometry(.42,.045,2.05),
-    refHeroInteriorWoodMat
+    refHeroInteriorDisplayWoodMat
   );
   board.position.set(8.42,.70+shelf*.62,9.90);
   refHeroFacade.add(board);
