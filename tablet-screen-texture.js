@@ -238,9 +238,14 @@
     }
 
     function appShell(accent='#397fa7',rgb='127,214,255'){
-      ctx.fillStyle='rgba(255,255,255,.88)';
+      ctx.save();
+      ctx.shadowColor='rgba(33,40,46,.050)';
+      ctx.shadowBlur=20;
+      ctx.shadowOffsetY=7;
+      ctx.fillStyle='rgba(255,255,255,.90)';
       roundedRect(44,194,936,468,34,true);
-      strokeRoundRect(44,194,936,468,34,'rgba(37,47,57,.10)',1);
+      ctx.restore();
+      strokeRoundRect(44,194,936,468,34,'rgba(37,47,57,.085)',1);
 
       // A very faint pointer-driven light stays under the content hierarchy.
       // It reads as light moving inside cover glass without washing out text.
@@ -495,7 +500,7 @@
 
       // Sparse micro-grid gives the display texture without looking like a
       // website background. It remains under 3% alpha for text clarity.
-      ctx.fillStyle='rgba(46,55,63,.018)';
+      ctx.fillStyle='rgba(46,55,63,.008)';
       for(let y=118;y<height-42;y+=54){
         for(let x=52+(Math.floor(y/54)%2)*27;x<width-42;x+=54){
           ctx.beginPath();
@@ -533,9 +538,14 @@
     function drawHome(){
       // Flagship home: one calm world-status surface above a compact app deck.
       // The hierarchy is intentionally OS-like rather than a grid of web cards.
-      ctx.fillStyle='rgba(255,255,255,.82)';
+      ctx.save();
+      ctx.shadowColor='rgba(35,42,48,.060)';
+      ctx.shadowBlur=18;
+      ctx.shadowOffsetY=6;
+      ctx.fillStyle='rgba(255,255,255,.84)';
       roundedRect(52,112,920,136,32,true);
-      strokeRoundRect(52,112,920,136,32,'rgba(38,47,56,.10)',1);
+      ctx.restore();
+      strokeRoundRect(52,112,920,136,32,'rgba(38,47,56,.085)',1);
 
       const heroGlow=ctx.createRadialGradient(860,174,10,860,174,210);
       heroGlow.addColorStop(0,'rgba(127,214,255,.11)');
@@ -626,11 +636,11 @@
         ctx.globalAlpha=focusAlpha;
         ctx.translate(0,yLift);
 
-        if(hoverMix>.01){
-          ctx.shadowColor='rgba('+app.rgb+','+(.05+.11*hoverMix).toFixed(3)+')';
-          ctx.shadowBlur=14+12*hoverMix;
-          ctx.shadowOffsetY=5+4*hoverMix;
-        }
+        ctx.shadowColor=hoverMix>.01
+          ? 'rgba('+app.rgb+','+(.045+.095*hoverMix).toFixed(3)+')'
+          : 'rgba(33,40,46,.055)';
+        ctx.shadowBlur=hoverMix>.01 ? 14+10*hoverMix : 15;
+        ctx.shadowOffsetY=hoverMix>.01 ? 5+3*hoverMix : 5;
 
         const surface=ctx.createLinearGradient(x,y,x+420,y+126);
         surface.addColorStop(0,'rgba(255,255,255,'+(.88+.08*hoverMix).toFixed(3)+')');
@@ -699,13 +709,13 @@
         text(app.short,x+112+magnetX*.22,y+72+magnetY*.16,13,'520','#6d7985');
 
         // System state on every tile makes the deck feel coherent and alive.
-        ctx.fillStyle='rgba(255,255,255,.035)';
+        ctx.fillStyle='rgba(38,47,56,.045)';
         roundedRect(x+112,y+88,88,22,11,true);
         ctx.fillStyle=app.accent;
         ctx.beginPath();
         ctx.arc(x+126,y+99,2.8,0,Math.PI*2);
         ctx.fill();
-        text('READY',x+136,y+103,9,'800','#7e8fa7');
+        text('READY',x+136,y+103,9,'800','#697684');
 
         text('0'+(i+1),x+24,y+111,10,'800','rgba('+app.rgb+',.60)');
 
