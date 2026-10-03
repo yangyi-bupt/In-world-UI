@@ -457,3 +457,25 @@ body.device-open #game{
   border-color:rgba(239,232,221,.10);
   color:rgba(239,232,221,.54);
 }
+
+
+/* ---------- realism cleanup v5 ---------- */
+/* The legacy CSS gradient arms predate the 3D hand rig. Keeping both visible
+   makes the foreground read like layered illustration/plastic. */
+.tablet-layer .arm,
+.tablet-layer.open .arm{
+  display:none !important;
+  opacity:0 !important;
+}
+
+/* Remove glossy modal-like framing from the held device presentation. */
+.tablet-shell{
+  box-shadow:0 34px 70px rgba(20,18,16,.28),0 9px 22px rgba(20,18,16,.18);
+}
+.tablet-layer.open .tablet3d{
+  filter:drop-shadow(0 24px 32px rgba(20,18,16,.18)) drop-shadow(0 5px 10px rgba(20,18,16,.12));
+}
+.orb{
+  filter:saturate(.62) contrast(.92);
+  box-shadow:none;
+}
