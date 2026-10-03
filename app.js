@@ -9355,6 +9355,50 @@ let miraNearLatch=false;
 const miraBoneOffsetQuaternion=new THREE.Quaternion();
 const miraBoneOffsetEuler=new THREE.Euler(0,0,0,'YXZ');
 let worldEnvironmentTexture=null;
+let photographicEnvironmentLoadStarted=false;
+
+function loadPhotographicEnvironment(){
+  if(photographicEnvironmentLoadStarted || !window.RGBELoader) return;
+  photographicEnvironmentLoadStarted=true;
+
+  const hdrLoader=new window.RGBELoader();
+  hdrLoader.load(
+    'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/wide_street_02_1k.hdr',
+    hdrTexture=>{
+      hdrTexture.mapping=THREE.EquirectangularReflectionMapping;
+      const pmrem=new THREE.PMREMGenerator(renderer);
+      pmrem.compileEquirectangularShader();
+      const target=pmrem.fromEquirectangular(hdrTexture);
+      const previousEnvironment=worldEnvironmentTexture;
+
+      worldEnvironmentTexture=target.texture;
+      scene.environment=worldEnvironmentTexture;
+
+      // Imported assets sometimes hold an explicit reference to the fallback
+      // environment. Swap only those references; materials that intentionally
+      // have no envMap keep using scene.environment normally.
+      scene.traverse(object=>{
+        if(!object.isMesh) return;
+        const materials=Array.isArray(object.material)?object.material:[object.material];
+        materials.forEach(material=>{
+          if(!material) return;
+          if(material.envMap===previousEnvironment){
+            material.envMap=worldEnvironmentTexture;
+            material.needsUpdate=true;
+          }
+        });
+      });
+
+      previousEnvironment?.dispose?.();
+      hdrTexture.dispose();
+      pmrem.dispose();
+    },
+    undefined,
+    error=>{
+      console.warn('Photographic HDR environment failed; using procedural fallback.',error);
+    }
+  );
+}
 
 function ensureWorldAssetEnvironment(){
   if(worldEnvironmentTexture) return;
@@ -9451,6 +9495,11 @@ function ensureWorldAssetEnvironment(){
 
   envTexture.dispose();
   pmrem.dispose();
+
+  // Keep the generated environment as an immediate fallback, then upgrade to a
+  // real outdoor HDR as soon as the loader is available. The HDR is reflection
+  // and IBL only: the authored sky dome remains the visible background.
+  loadPhotographicEnvironment();
 }
 
 function cloneAssetScene(source){
