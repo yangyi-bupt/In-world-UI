@@ -1997,6 +1997,23 @@ function cloneTextureVariant(texture,offsetX,offsetY,repeatScaleX=1,repeatScaleY
   return clone;
 }
 
+function makeMaterialPhaseVariant(baseMaterial,index,scaleBias=0){
+  const material=baseMaterial.clone();
+  const ox=(.071+index*.173)%1;
+  const oy=(.113+index*.287)%1;
+  const sx=1+scaleBias+((index%3)-1)*.035;
+  const sy=1+scaleBias+(((index+1)%4)-1.5)*.028;
+  const rotation=((index%5)-2)*.010;
+
+  ['map','roughnessMap','normalMap','bumpMap','aoMap'].forEach(key=>{
+    const texture=material[key];
+    if(!texture?.isTexture) return;
+    material[key]=cloneTextureVariant(texture,ox,oy,sx,sy,rotation);
+  });
+  material.needsUpdate=true;
+  return material;
+}
+
 function makeFoliageMaterial(color,roughness=.91,bumpScale=.009,lightness=.020){
   const base=new THREE.Color(color);
   return new THREE.MeshPhysicalMaterial({
@@ -3293,6 +3310,69 @@ curbCap.material.bumpMap=concreteSurface.bump;
 curbCap.material.bumpScale=.008;
 curbCap.material.needsUpdate=true;
 
+// Unique long-axis curb-top weathering. This texture spans the full street once
+// so dark water pickup, rubber scuffs and pale worn zones do not repeat every
+// few metres like a tiled material.
+const curbTopPatinaCanvas=document.createElement('canvas');
+curbTopPatinaCanvas.width=1024;
+curbTopPatinaCanvas.height=96;
+const curbTopPatinaCtx=curbTopPatinaCanvas.getContext('2d');
+const curbTopPatinaRnd=makeSeededRandom(0x4ce381b2);
+curbTopPatinaCtx.clearRect(0,0,1024,96);
+
+for(let i=0;i<46;i++){
+  const x=curbTopPatinaRnd()*1024;
+  const y=12+curbTopPatinaRnd()*72;
+  const rx=8+curbTopPatinaRnd()*55;
+  const ry=3+curbTopPatinaRnd()*15;
+  const dark=curbTopPatinaRnd()>.42;
+  const grad=curbTopPatinaCtx.createRadialGradient(x,y,1,x,y,rx);
+  grad.addColorStop(
+    0,
+    dark
+      ? 'rgba(72,70,64,'+(.018+curbTopPatinaRnd()*.050).toFixed(3)+')'
+      : 'rgba(240,234,219,'+(.018+curbTopPatinaRnd()*.040).toFixed(3)+')'
+  );
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  curbTopPatinaCtx.fillStyle=grad;
+  curbTopPatinaCtx.save();
+  curbTopPatinaCtx.translate(x,y);
+  curbTopPatinaCtx.scale(1,ry/rx);
+  curbTopPatinaCtx.beginPath();
+  curbTopPatinaCtx.arc(0,0,rx,0,Math.PI*2);
+  curbTopPatinaCtx.fill();
+  curbTopPatinaCtx.restore();
+}
+for(let i=0;i<28;i++){
+  const x=curbTopPatinaRnd()*1024;
+  const y=curbTopPatinaRnd()*96;
+  const len=8+curbTopPatinaRnd()*42;
+  curbTopPatinaCtx.strokeStyle='rgba(69,67,61,'+(.020+curbTopPatinaRnd()*.035).toFixed(3)+')';
+  curbTopPatinaCtx.lineWidth=.35+curbTopPatinaRnd()*.75;
+  curbTopPatinaCtx.beginPath();
+  curbTopPatinaCtx.moveTo(x,y);
+  curbTopPatinaCtx.lineTo(x+len,y+(curbTopPatinaRnd()-.5)*5);
+  curbTopPatinaCtx.stroke();
+}
+const curbTopPatinaTexture=new THREE.CanvasTexture(curbTopPatinaCanvas);
+curbTopPatinaTexture.colorSpace=THREE.SRGBColorSpace;
+curbTopPatinaTexture.wrapS=curbTopPatinaTexture.wrapT=THREE.ClampToEdgeWrapping;
+curbTopPatinaTexture.anisotropy=8;
+const curbTopPatina=new THREE.Mesh(
+  new THREE.PlaneGeometry(.25,91.5),
+  new THREE.MeshBasicMaterial({
+    map:curbTopPatinaTexture,
+    transparent:true,
+    opacity:.66,
+    depthWrite:false,
+    toneMapped:true
+  })
+);
+curbTopPatina.rotation.x=-Math.PI/2;
+curbTopPatina.position.set(.05,.190,-4);
+curbTopPatina.renderOrder=3;
+scene.add(curbTopPatina);
+
 // A narrow rounded nose catches daylight along the curb edge. The original box
 // remains the structural/collision-friendly base while this adds the missing
 // masonry profile without changing world dimensions.
@@ -3802,9 +3882,26 @@ facadeBaseBand.castShadow=true;
 facadeBaseBand.receiveShadow=true;
 scene.add(facadeBaseBand);
 
+const storefrontPavingMap=cloneTextureVariant(pavementGround.map,.31,.17,.74,.88,.012);
+const storefrontPavingRough=cloneTextureVariant(pavementGround.roughness,.31,.17,.74,.88,.012);
+const storefrontPavingNormal=cloneTextureVariant(pavementGround.normal,.31,.17,.74,.88,.012);
+const storefrontPavingBump=cloneTextureVariant(pavementGround.bump,.31,.17,.74,.88,.012);
+const storefrontPavingAO=cloneTextureVariant(pavementGround.ao,.31,.17,.74,.88,.012);
 const storefrontPavingBand=new THREE.Mesh(
   new THREE.PlaneGeometry(.72,63.8),
-  new THREE.MeshStandardMaterial({color:0xd9d0c3,roughness:.96})
+  new THREE.MeshStandardMaterial({
+    color:0xd6d0c5,
+    map:storefrontPavingMap,
+    roughnessMap:storefrontPavingRough,
+    normalMap:storefrontPavingNormal,
+    normalScale:new THREE.Vector2(.19,.19),
+    bumpMap:storefrontPavingBump,
+    bumpScale:.014,
+    aoMap:storefrontPavingAO,
+    aoMapIntensity:.20,
+    roughness:.95,
+    envMapIntensity:.035
+  })
 );
 storefrontPavingBand.rotation.x=-Math.PI/2;
 storefrontPavingBand.position.set(7.62,.047,-5);
@@ -3896,13 +3993,25 @@ scene.add(facadeJointOverlay);
 // Three shallow backing planes give the long frontage three distinct identities:
 // muted grey-green shops, a cream stone home block around Mira, and the warm cafe.
 function createFacadeZone(z,width,color,opacity=.34){
+  const zoneIndex=Math.round((z+40)*3);
+  const zoneMap=cloneTextureVariant(facadeSurface.map,(zoneIndex*.137)%1,(zoneIndex*.193)%1,.72,.58,.006);
+  const zoneRough=cloneTextureVariant(facadeSurface.roughness,(zoneIndex*.137)%1,(zoneIndex*.193)%1,.72,.58,.006);
+  const zoneNormal=cloneTextureVariant(facadeSurface.normal,(zoneIndex*.137)%1,(zoneIndex*.193)%1,.72,.58,.006);
+  const zoneBump=cloneTextureVariant(facadeSurface.bump,(zoneIndex*.137)%1,(zoneIndex*.193)%1,.72,.58,.006);
   const zone=new THREE.Mesh(
     new THREE.PlaneGeometry(width,5.82),
     new THREE.MeshStandardMaterial({
       color,
-      roughness:.84,
+      map:zoneMap,
+      roughnessMap:zoneRough,
+      normalMap:zoneNormal,
+      normalScale:new THREE.Vector2(.10,.10),
+      bumpMap:zoneBump,
+      bumpScale:.006,
+      roughness:.88,
       transparent:true,
       opacity,
+      envMapIntensity:.055,
       side:THREE.DoubleSide
     })
   );
@@ -4109,13 +4218,19 @@ const heroFrameMat=new THREE.MeshStandardMaterial({
 });
 
 [-29.2,-17.5,-5.4,6.9,19.0].forEach((z,index)=>{
-  const pier=new THREE.Mesh(new THREE.BoxGeometry(.72,9.70,.88),heroPierMat);
+  const pierMat=makeMaterialPhaseVariant(heroPierMat,index,.015);
+  pierMat.roughness=THREE.MathUtils.clamp(.80+(index%3)*.025,.80,.85);
+  const pier=new THREE.Mesh(new THREE.BoxGeometry(.72,9.70,.88),pierMat);
   pier.position.set(7.38,4.90,z);
   pier.castShadow=true;
   pier.receiveShadow=true;
   scene.add(pier);
 
-  const cap=new THREE.Mesh(new THREE.BoxGeometry(1.08,.16,1.10),heroPierMat);
+  // Caps are separate cast/cladding pieces, so shift the texture phase again
+  // while keeping all PBR channels registered to one another.
+  const capMat=makeMaterialPhaseVariant(heroPierMat,index+11,-.010);
+  capMat.roughness=.83+(index%2)*.025;
+  const cap=new THREE.Mesh(new THREE.BoxGeometry(1.08,.16,1.10),capMat);
   cap.position.set(7.30,9.80,z);
   cap.castShadow=true;
   scene.add(cap);
@@ -4149,7 +4264,10 @@ const facadeRibMat=new THREE.MeshStandardMaterial({
 });
 [-34.2,-27.0,-18.9,-11.2,-3.7,4.1,12.4,20.7,27.3].forEach((z,i)=>{
   const ribWidth=i===4||i===5?.26:.18;
-  const rib=new THREE.Mesh(new THREE.BoxGeometry(.20,5.82,ribWidth),facadeRibMat);
+  const ribMat=makeMaterialPhaseVariant(facadeRibMat,i+23,.020);
+  ribMat.color.offsetHSL(0,0,((i%4)-1.5)*.006);
+  ribMat.roughness=.85+(i%3)*.018;
+  const rib=new THREE.Mesh(new THREE.BoxGeometry(.20,5.82,ribWidth),ribMat);
   rib.position.set(8.42,3.32,z);
   rib.castShadow=true;
   rib.receiveShadow=true;
