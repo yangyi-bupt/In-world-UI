@@ -104,7 +104,7 @@ const skyClouds=[];
 });
 
 const camera = new THREE.PerspectiveCamera(56.5, window.innerWidth / window.innerHeight, 0.08, 160);
-camera.position.set(2.55, 1.68, 8.25);
+camera.position.set(2.95, 1.68, 8.65);
 camera.rotation.order = 'YXZ';
 
 // A narrower architectural FOV is much closer to the supplied street reference
@@ -3581,12 +3581,12 @@ const heroFrameMat=new THREE.MeshStandardMaterial({
 });
 
 [-23.5,-11.5,.8,13.1].forEach((z,bayIndex)=>{
-  const glass=new THREE.Mesh(new THREE.PlaneGeometry(10.6,6.55),heroGlassMat.clone());
+  const glass=new THREE.Mesh(new THREE.PlaneGeometry(10.6,8.05),heroGlassMat.clone());
   glass.material.color.offsetHSL(0,0,(bayIndex-1.5)*.012);
   glass.material.opacity=.40+(bayIndex%3)*.025;
   glass.material.roughness=.13+(bayIndex%2)*.035;
   glass.material.envMapIntensity=.94+(bayIndex%2)*.11;
-  glass.position.set(7.34,4.85,z);
+  glass.position.set(7.34,5.60,z);
   glass.rotation.y=-Math.PI/2;
   glass.receiveShadow=true;
   scene.add(glass);
@@ -3608,12 +3608,12 @@ const heroFrameMat=new THREE.MeshStandardMaterial({
   });
 
   for(let dz=-4.0;dz<=4.0;dz+=2.0){
-    const mullion=new THREE.Mesh(new THREE.BoxGeometry(.055,6.55,.05),heroFrameMat);
-    mullion.position.set(7.30,4.85,z+dz);
+    const mullion=new THREE.Mesh(new THREE.BoxGeometry(.050,8.05,.045),heroFrameMat);
+    mullion.position.set(7.30,5.60,z+dz);
     mullion.castShadow=true;
     scene.add(mullion);
   }
-  [2.10,3.55,5.00,6.45,7.90].forEach(y=>{
+  [2.05,3.48,4.91,6.34,7.77,9.20].forEach(y=>{
     const rail=new THREE.Mesh(new THREE.BoxGeometry(.055,.045,10.45),heroFrameMat);
     rail.position.set(7.30,y,z);
     scene.add(rail);
@@ -3621,14 +3621,14 @@ const heroFrameMat=new THREE.MeshStandardMaterial({
 });
 
 [-29.2,-17.5,-5.4,6.9,19.0].forEach((z,index)=>{
-  const pier=new THREE.Mesh(new THREE.BoxGeometry(.78,8.25,.92),heroPierMat);
-  pier.position.set(7.38,4.15,z);
+  const pier=new THREE.Mesh(new THREE.BoxGeometry(.72,9.70,.88),heroPierMat);
+  pier.position.set(7.38,4.90,z);
   pier.castShadow=true;
   pier.receiveShadow=true;
   scene.add(pier);
 
   const cap=new THREE.Mesh(new THREE.BoxGeometry(1.08,.16,1.10),heroPierMat);
-  cap.position.set(7.30,8.30,z);
+  cap.position.set(7.30,9.80,z);
   cap.castShadow=true;
   scene.add(cap);
 });
@@ -5454,9 +5454,9 @@ function createModernOfficeSlab(z,h,d,tint){
   scene.add(cap);
 }
 
-createModernOfficeSlab(-22.5,11.8,13.5,0x93b5bd);
-createModernOfficeSlab(-5.0,15.2,14.0,0x9abcc3);
-createModernOfficeSlab(14.8,13.6,14.5,0xa0bdc1);
+createModernOfficeSlab(-22.5,15.4,14.5,0x91b4bd);
+createModernOfficeSlab(-5.0,19.6,15.2,0x98bbc3);
+createModernOfficeSlab(14.8,17.8,15.4,0x9ebbc1);
 
 // A continuous dark spandrel ribbon visually ties the three masses together,
 // reading as one contemporary office complex rather than separate game props.
@@ -5933,11 +5933,11 @@ function createStreetTree(x,z,scale=1){
 }
 
 [
-  [.72,-16.0,.96],
-  [.72,-8.0,.98],
-  [.72,0.4,.97],
-  [.72,8.8,.99],
-  [.72,17.2,.95]
+  [1.18,-16.4,.90],
+  [1.14,-8.2,.92],
+  [1.16,.2,.91],
+  [1.18,8.7,.93],
+  [1.15,17.1,.89]
 ].forEach(([x,z,scale])=>createStreetTree(x,z,scale));
 
 const curbGroundcoverMat=makeFoliageMaterial(0x8ea27a,.93,.009,.018);
@@ -7388,6 +7388,7 @@ for(let i=0;i<14;i++){
     .73+(i%3)*.035,
     -8.55+Math.floor(i/7)*.32
   );
+  bloom.visible=false;
   scene.add(bloom);
 }
 
@@ -7956,7 +7957,7 @@ function attachCarAsset(entry,source,index=0,targetLength=3.85){
 function attachWalkerAsset(entry,source,animations,index){
   const root=cloneAssetScene(source);
   prepareImportedModel(root,.28);
-  normalizeHumanAsset(root,[1.74,1.69,1.66,1.78,1.63][index%5]);
+  normalizeHumanAsset(root,[1.66,1.62,1.60,1.68,1.58][index%5]);
   tunePedestrianAsset(root,index);
   root.rotation.y=(entry.direction>0?0:Math.PI)+entry.headingBias+(entry.modelYawOffset||0);
   entry.placeholderChildren?.forEach(child=>{child.visible=false;});
@@ -8026,7 +8027,7 @@ function setWalkerMotionState(walker,nextState){
 function attachMiraAsset(source,animations){
   const root=cloneAssetScene(source);
   prepareImportedModel(root,.36);
-  normalizeHumanAsset(root,1.72);
+  normalizeHumanAsset(root,1.68);
   tuneMiraAsset(root);
   root.rotation.y=Math.PI-.12;
   root.position.z=.015;
@@ -8061,8 +8062,8 @@ function setPlaceholderVisibility(entries,visible){
 function carTargetLength(entry){
   const parked=entry.baseSpeed===undefined;
   return entry.assetVariant==='secondary'
-    ? (parked?4.16:4.02)
-    : (parked?4.52:4.42);
+    ? (parked?3.92:3.82)
+    : (parked?4.20:4.10);
 }
 
 async function initWorldGLBAssets(){
@@ -8217,7 +8218,7 @@ window.addEventListener('tablet-message-reply',()=>{
 
 // ---------- player controls ----------
 const keys = new Set();
-let yaw=.065, pitch=-.012, targetYaw=.065, targetPitch=-.012, turnImpulse=0;
+let yaw=.105, pitch=-.010, targetYaw=.105, targetPitch=-.010, turnImpulse=0;
 let tabletOpen=false, started=false;
 const velocity=new THREE.Vector3();
 const dir=new THREE.Vector3();
