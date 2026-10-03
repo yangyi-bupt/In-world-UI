@@ -9343,7 +9343,7 @@ const WORLD_GLB_ASSETS={
 };
 const worldAssetMixers=[];
 let worldGLBLoadStarted=false;
-let worldCoreAssetsReady=false;
+let worldCoreAssetsReady=true;
 let miraGLBRoot=null;
 let miraGLBBasePosition=null;
 let miraIdleAction=null;
@@ -9496,10 +9496,9 @@ function ensureWorldAssetEnvironment(){
   envTexture.dispose();
   pmrem.dispose();
 
-  // Keep the generated environment as an immediate fallback, then upgrade to a
-  // real outdoor HDR as soon as the loader is available. The HDR is reflection
-  // and IBL only: the authored sky dome remains the visible background.
-  loadPhotographicEnvironment();
+  // The photographic HDR is intentionally loaded later. Starting it here made
+  // the largest texture download compete with Mira and the first vehicle.
+  // The generated PMREM is enough for the first painted frame.
 }
 
 function cloneAssetScene(source){
@@ -9605,10 +9604,7 @@ const realStuccoNormal=loadRuntimeSkin(
   'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_wall_009/concrete_wall_009_nor_gl_1k.jpg',
   {repeatX:1.55,repeatY:3.10}
 );
-const realStuccoRough=loadRuntimeSkin(
-  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_wall_009/concrete_wall_009_rough_1k.jpg',
-  {repeatX:1.55,repeatY:3.10}
-);
+const realStuccoRough=facadeSurface.roughness;
 
 const realAsphaltColor=loadRuntimeSkin(
   'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_01/asphalt_01_diff_1k.jpg',
@@ -9618,10 +9614,7 @@ const realAsphaltNormal=loadRuntimeSkin(
   'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_01/asphalt_01_nor_gl_1k.jpg',
   {repeatX:5.2,repeatY:31}
 );
-const realAsphaltRough=loadRuntimeSkin(
-  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_01/asphalt_01_rough_1k.jpg',
-  {repeatX:5.2,repeatY:31}
-);
+const realAsphaltRough=asphaltRoughness;
 
 const realPavingColor=loadRuntimeSkin(
   'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement_02/concrete_pavement_02_diff_1k.jpg',
@@ -9631,10 +9624,7 @@ const realPavingNormal=loadRuntimeSkin(
   'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement_02/concrete_pavement_02_nor_gl_1k.jpg',
   {repeatX:4.6,repeatY:33}
 );
-const realPavingRough=loadRuntimeSkin(
-  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement_02/concrete_pavement_02_rough_1k.jpg',
-  {repeatX:4.6,repeatY:33}
-);
+const realPavingRough=pavementRoughness;
 
 const realBarkColor=loadRuntimeSkin(
   'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/tree_bark_03/tree_bark_03_diff_1k.jpg',
@@ -9644,19 +9634,10 @@ const realBarkNormal=loadRuntimeSkin(
   'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/tree_bark_03/tree_bark_03_nor_gl_1k.jpg',
   {repeatX:1.0,repeatY:3.7}
 );
-const realBarkRough=loadRuntimeSkin(
-  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/tree_bark_03/tree_bark_03_rough_1k.jpg',
-  {repeatX:1.0,repeatY:3.7}
-);
+const realBarkRough=barkSurface.roughness;
 
-const realVehicleNormal=loadRuntimeSkin(
-  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/blue_metal_plate/blue_metal_plate_nor_gl_1k.jpg',
-  {repeatX:14,repeatY:14}
-);
-const realVehicleRough=loadRuntimeSkin(
-  'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/blue_metal_plate/blue_metal_plate_rough_1k.jpg',
-  {repeatX:14,repeatY:14}
-);
+const realVehicleNormal=null;
+const realVehicleRough=vehiclePaintRoughness;
 
 function installScannedBuildingSkins(){
   const materials=[
@@ -10410,101 +10391,96 @@ function carTargetLength(entry){
     : (parked?4.20:4.10);
 }
 
-async function initWorldGLBAssets(){
+function scheduleWorldStream(task,delay=0){
+  window.setTimeout(()=>{
+    const run=()=>Promise.resolve().then(task).catch(error=>{
+      console.warn('Deferred world asset failed:',error);
+    });
+    if('requestIdleCallback' in window){
+      window.requestIdleCallback(run,{timeout:1400});
+    }else{
+      run();
+    }
+  },delay);
+}
+
+function initWorldGLBAssets(){
   if(worldGLBLoadStarted || !window.GLTFLoader) return;
   worldGLBLoadStarted=true;
-  ensureWorldAssetEnvironment();
+
   const loader=new window.GLTFLoader();
   const vehicleEntries=[...parkedCars,...movingTraffic];
 
-  // Load and attach the two visible car variants independently. Previously all
-  // nine world GLBs were held behind one Promise.allSettled(), so even a slow
-  // pedestrian download delayed the cars and Mira.
-  async function loadCarVariant(variant,url){
-    try{
-      const result=await loadGLB(loader,url);
-      vehicleEntries.forEach((entry,index)=>{
-        if(entry.assetVariant===variant && !entry.assetRoot){
-          attachCarAsset(entry,result.scene,index,carTargetLength(entry));
-        }
-      });
-      return result;
-    }catch(error){
-      console.warn('Vehicle GLB failed:',variant,error);
-      return null;
-    }
-  }
+  // Entry is never blocked by remote GLBs. The street shell is already usable;
+  // authored assets progressively replace empty/fallback slots as they arrive.
+  worldCoreAssetsReady=true;
+  window.dispatchEvent(new Event('world-core-assets-ready'));
 
-  const primaryCarTask=loadCarVariant('primary',WORLD_GLB_ASSETS.carPrimary);
-  const secondaryCarTask=loadCarVariant('secondary',WORLD_GLB_ASSETS.carSecondary);
-
-  const carTask=Promise.all([primaryCarTask,secondaryCarTask]).then(async ([primary,secondary])=>{
-    if(primary && secondary) return;
-
-    try{
-      const fallback=await loadGLB(loader,WORLD_GLB_ASSETS.carFallback);
-      vehicleEntries.forEach((entry,index)=>{
-        const variantLoaded=entry.assetVariant==='secondary'?secondary:primary;
-        if(!variantLoaded && !entry.assetRoot){
-          attachCarAsset(entry,fallback.scene,index,carTargetLength(entry));
-        }
-      });
-    }catch(error){
-      console.warn('Vehicle fallback GLB failed; revealing procedural fallback.',error);
-      vehicleEntries
-        .filter(entry=>!entry.assetRoot)
-        .forEach(entry=>entry.placeholderChildren?.forEach(child=>{child.visible=true;}));
-    }
-  });
-
-  const pedestrianDefinitions=[
-    ['primary',WORLD_GLB_ASSETS.pedestrianPrimary],
-    ['secondary',WORLD_GLB_ASSETS.pedestrianSecondary],
-    ['tertiary',WORLD_GLB_ASSETS.pedestrianTertiary],
-    ['quaternary',WORLD_GLB_ASSETS.pedestrianQuaternary],
-    ['quinary',WORLD_GLB_ASSETS.pedestrianQuinary]
-  ];
-  const pedestrianSources={};
-
-  const pedestrianTask=Promise.all(pedestrianDefinitions.map(async ([variant,url])=>{
-    try{
-      const result=await loadGLB(loader,url);
-      pedestrianSources[variant]=result;
-      ambientWalkers.forEach((entry,index)=>{
-        if(entry.assetVariant===variant && !entry.assetRoot){
-          attachWalkerAsset(entry,result.scene,result.animations,index);
-        }
-      });
-    }catch(error){
-      console.warn('Pedestrian GLB failed:',variant,error);
-    }
-  })).then(()=>{
-    const fallback=Object.values(pedestrianSources)[0] || null;
-    ambientWalkers.forEach((entry,index)=>{
-      if(entry.assetRoot) return;
-      if(fallback){
-        attachWalkerAsset(entry,fallback.scene,fallback.animations,index);
-      }else{
-        entry.placeholderChildren?.forEach(child=>{child.visible=true;});
-      }
-    });
-  });
-
-  const miraTask=loadGLB(loader,WORLD_GLB_ASSETS.mira)
+  // Priority 1: Mira is the focal subject, so her single GLB starts first.
+  loadGLB(loader,WORLD_GLB_ASSETS.mira)
     .then(result=>attachMiraAsset(result.scene,result.animations))
     .catch(error=>{
       console.warn('Mira GLB failed; revealing procedural fallback.',error);
       miraRig.visible=true;
     });
 
-  // The player can enter as soon as the focal character and cars have settled.
-  // Ambient walkers continue streaming independently instead of blocking entry.
-  await Promise.allSettled([carTask,miraTask]);
-  worldCoreAssetsReady=true;
-  window.dispatchEvent(new Event('world-core-assets-ready'));
+  // Priority 2: one sedan source is reused for all traffic slots. Re-tinting in
+  // tuneVehicleAsset keeps visual variation while avoiding a second large GLB.
+  scheduleWorldStream(async()=>{
+    try{
+      const result=await loadGLB(loader,WORLD_GLB_ASSETS.carPrimary);
+      vehicleEntries.forEach((entry,index)=>{
+        if(!entry.assetRoot){
+          attachCarAsset(entry,result.scene,index,carTargetLength(entry));
+        }
+      });
+    }catch(error){
+      console.warn('Primary vehicle GLB failed; trying compact fallback.',error);
+      try{
+        const fallback=await loadGLB(loader,WORLD_GLB_ASSETS.carFallback);
+        vehicleEntries.forEach((entry,index)=>{
+          if(!entry.assetRoot){
+            attachCarAsset(entry,fallback.scene,index,carTargetLength(entry));
+          }
+        });
+      }catch(fallbackError){
+        console.warn('Vehicle fallback failed.',fallbackError);
+      }
+    }
+  },180);
 
-  await Promise.allSettled([pedestrianTask]);
-  window.dispatchEvent(new Event('world-assets-ready'));
+  // Priority 3: two pedestrians are enough for a believable street and cut the
+  // previous five-character startup burst by more than half. Both are cloned.
+  scheduleWorldStream(async()=>{
+    const sources=[];
+    const pedestrianUrls=[
+      WORLD_GLB_ASSETS.pedestrianPrimary,
+      WORLD_GLB_ASSETS.pedestrianTertiary
+    ];
+    const settled=await Promise.allSettled(
+      pedestrianUrls.map(url=>loadGLB(loader,url))
+    );
+    settled.forEach(result=>{
+      if(result.status==='fulfilled') sources.push(result.value);
+    });
+
+    if(!sources.length) return;
+    ambientWalkers.forEach((entry,index)=>{
+      if(entry.assetRoot) return;
+      const source=sources[index%sources.length];
+      attachWalkerAsset(entry,source.scene,source.animations,index);
+    });
+    window.dispatchEvent(new Event('world-assets-ready'));
+  },1650);
+
+  // CPU-side PMREM and the HDR download are pushed behind the focal assets so
+  // they cannot delay the first interaction. Reflections upgrade seamlessly.
+  scheduleWorldStream(()=>{
+    ensureWorldAssetEnvironment();
+  },650);
+  scheduleWorldStream(()=>{
+    loadPhotographicEnvironment();
+  },2800);
 }
 
 if(window.GLTFLoader){
