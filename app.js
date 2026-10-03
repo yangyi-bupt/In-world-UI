@@ -7077,7 +7077,7 @@ refStreet.add(refGlassWall);
 // Replace the single synchronized curtain-wall read with individually varied
 // glass cells. The original wall remains as a subtle backing/reflection layer,
 // while each cell gets its own sample window, tint and micro-roughness.
-refGlassWall.material.opacity=.30;
+refGlassWall.material.opacity=.22;
 refGlassWall.material.envMapIntensity=.70;
 
 const refPaneRnd=makeSeededRandom(0x2d7f91c3);
@@ -7113,24 +7113,24 @@ for(let bay=0;bay<15;bay++){
       color:tintPalette[(bay+floorIndex*2)%tintPalette.length],
       map,
       roughnessMap:roughMap,
-      roughness:.16+refPaneRnd()*.055,
+      roughness:.14+refPaneRnd()*.050,
       metalness:.012,
       transparent:true,
-      opacity:.44+refPaneRnd()*.07,
+      opacity:.48+refPaneRnd()*.08,
       transmission:.018,
       clearcoat:.15,
       clearcoatRoughness:.24+refPaneRnd()*.05,
-      envMapIntensity:.68+refPaneRnd()*.14,
+      envMapIntensity:.78+refPaneRnd()*.16,
       ior:1.46,
       reflectivity:.38,
       depthWrite:true
     });
 
     const pane=new THREE.Mesh(
-      new THREE.PlaneGeometry(4.34,floor.h),
+      new THREE.PlaneGeometry(4.18,floor.h-.14),
       material
     );
-    pane.position.set(7.745,floor.y,z);
+    pane.position.set(7.765,floor.y,z);
     pane.rotation.y=-Math.PI/2;
     pane.renderOrder=1;
     pane.userData.baseMapOffset=map.offset.clone();
@@ -7410,6 +7410,323 @@ const refCanopy=new THREE.Mesh(
 refCanopy.position.set(6.86,3.25,-2.0);
 refCanopy.castShadow=true;
 refStreet.add(refCanopy);
+
+/* ---------- near-camera hero facade ----------
+   The long office wall stays inexpensive in the distance, but the five bays
+   closest to the spawn/Mira zone receive real architectural depth.  The key
+   change is not more surface noise: glass now sits inside a thick frame with
+   projected sills, opaque spandrels and visible interior ceiling planes. */
+const refHeroFacade=new THREE.Group();
+refHeroFacade.name='reference-hero-facade';
+refStreet.add(refHeroFacade);
+
+const refHeroStone=refStone.clone();
+refHeroStone.color=new THREE.Color(0xd2cec4);
+refHeroStone.roughness=.82;
+refHeroStone.envMapIntensity=.12;
+refHeroStone.normalScale=new THREE.Vector2(.095,.095);
+refHeroStone.bumpScale=.009;
+
+const refHeroMetal=refMetal.clone();
+refHeroMetal.color=new THREE.Color(0x454b4b);
+refHeroMetal.roughness=.34;
+refHeroMetal.metalness=.56;
+refHeroMetal.envMapIntensity=.88;
+
+const refHeroRevealMat=new THREE.MeshStandardMaterial({
+  color:0x42494a,
+  roughness:.58,
+  metalness:.18,
+  envMapIntensity:.22
+});
+const refHeroUndersideMat=new THREE.MeshBasicMaterial({
+  color:0x202526,
+  transparent:true,
+  opacity:.13,
+  depthWrite:false,
+  toneMapped:true
+});
+const refHeroCeilingMat=new THREE.MeshStandardMaterial({
+  color:0xb9b8b0,
+  roughness:.91,
+  metalness:0,
+  envMapIntensity:.025
+});
+const refHeroBlindMat=new THREE.MeshStandardMaterial({
+  color:0xbfc3bd,
+  roughness:.88,
+  metalness:.01,
+  transparent:true,
+  opacity:.34,
+  side:THREE.DoubleSide,
+  depthWrite:false,
+  envMapIntensity:.03
+});
+const refHeroShopFrameMat=new THREE.MeshStandardMaterial({
+  color:0x4a4640,
+  roughness:.31,
+  metalness:.58,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
+  envMapIntensity:.86
+});
+const refHeroShopInteriorMat=new THREE.MeshStandardMaterial({
+  color:0x504d47,
+  roughness:.89,
+  metalness:0,
+  envMapIntensity:.025
+});
+
+const refHeroBayCenters=[-6.73,-1.98,2.77,7.52,12.27];
+const refHeroUpperFloors=[
+  {y:4.88,h:2.84},
+  {y:8.03,h:2.84},
+  {y:11.18,h:2.84},
+  {y:14.02,h:1.72}
+];
+
+// Thicker stone piers give the close facade a believable wall section instead
+// of paper-thin bars laid over glass.
+refHeroBayCenters.slice(0,1).concat(refHeroBayCenters.map(z=>z+2.375)).forEach((z,index)=>{
+  if(index>0 && index<refHeroBayCenters.length && Math.abs(z-refHeroBayCenters[index-1]-2.375)<.01) return;
+});
+[-9.105,-4.355,.395,5.145,9.895,14.645].forEach(z=>{
+  const pier=new THREE.Mesh(
+    new THREE.BoxGeometry(.58,15.18,.38),
+    refHeroStone
+  );
+  pier.position.set(7.53,7.62,z);
+  pier.castShadow=true;
+  pier.receiveShadow=true;
+  refHeroFacade.add(pier);
+});
+
+// Projected opaque bands conceal the otherwise perfectly continuous glass wall.
+// A darker underside strip makes each floor plate read as actual thickness.
+refHeroBayCenters.forEach((z,bayIndex)=>{
+  [3.30,6.45,9.60,12.75].forEach((y,floorIndex)=>{
+    const spandrel=new THREE.Mesh(
+      new THREE.BoxGeometry(.48,.31,4.34),
+      floorIndex===0?refHeroStone:refHeroMetal
+    );
+    spandrel.position.set(7.48,y,z);
+    spandrel.castShadow=floorIndex===0;
+    spandrel.receiveShadow=true;
+    refHeroFacade.add(spandrel);
+
+    const underside=new THREE.Mesh(
+      new THREE.PlaneGeometry(4.18,.055),
+      refHeroUndersideMat
+    );
+    underside.position.set(7.225,y-.175,z);
+    underside.rotation.y=-Math.PI/2;
+    underside.renderOrder=3;
+    refHeroFacade.add(underside);
+  });
+
+  refHeroUpperFloors.forEach((floor,floorIndex)=>{
+    // Deep head + sill returns: from oblique street angles the viewer now sees
+    // a real reveal before the glazing plane.
+    const head=new THREE.Mesh(
+      new THREE.BoxGeometry(.62,.075,4.12),
+      refHeroRevealMat
+    );
+    head.position.set(7.56,floor.y+floor.h*.5-.035,z);
+    refHeroFacade.add(head);
+
+    const sill=head.clone();
+    sill.position.y=floor.y-floor.h*.5+.035;
+    refHeroFacade.add(sill);
+
+    // A restrained centre mullion appears only on alternating bays/floors,
+    // preventing the close elevation from becoming a perfectly repeated grid.
+    if((bayIndex+floorIndex)%3!==1){
+      const mullion=new THREE.Mesh(
+        new THREE.BoxGeometry(.24,floor.h-.22,.065),
+        refHeroMetal
+      );
+      mullion.position.set(7.50,floor.y,z+(bayIndex%2?.18:-.14));
+      refHeroFacade.add(mullion);
+    }
+
+    // Interior ceiling slab directly behind the window is one of the strongest
+    // real-world depth cues at street eye level.
+    const ceiling=new THREE.Mesh(
+      new THREE.BoxGeometry(.92,.055,3.94),
+      refHeroCeilingMat
+    );
+    ceiling.position.set(8.08,floor.y+floor.h*.5-.18,z);
+    refHeroFacade.add(ceiling);
+
+    // Sparse blinds / privacy screens create occupancy variation.  They sit far
+    // enough behind the glass to avoid the sticker-on-window look.
+    if((bayIndex*2+floorIndex)%4===0){
+      const blind=new THREE.Mesh(
+        new THREE.PlaneGeometry(2.55,floor.h*.70),
+        refHeroBlindMat
+      );
+      blind.position.set(8.16,floor.y-.02,z+(bayIndex%2?.52:-.44));
+      blind.rotation.y=-Math.PI/2;
+      refHeroFacade.add(blind);
+
+      for(let stripe=0;stripe<7;stripe++){
+        const slat=new THREE.Mesh(
+          new THREE.PlaneGeometry(2.46,.018),
+          new THREE.MeshBasicMaterial({
+            color:0x8f9691,
+            transparent:true,
+            opacity:.10,
+            depthWrite:false,
+            toneMapped:true
+          })
+        );
+        slat.position.set(
+          8.145,
+          floor.y-floor.h*.24+stripe*(floor.h*.48/6),
+          z+(bayIndex%2?.52:-.44)
+        );
+        slat.rotation.y=-Math.PI/2;
+        refHeroFacade.add(slat);
+      }
+    }
+  });
+});
+
+// Ground-floor retail / lobby frontage closest to the camera.  Two different
+// modules replace the single uninterrupted dark strip with doors, transoms,
+// display zones and deep stone jambs.
+const refHeroShopGlass=refLobbyGlass.clone();
+refHeroShopGlass.opacity=.82;
+refHeroShopGlass.roughness=.15;
+refHeroShopGlass.envMapIntensity=1.02;
+
+function addHeroStorefront(z,width,doorOffset,variant=0){
+  const jambDepth=.76;
+  const leftJamb=new THREE.Mesh(
+    new THREE.BoxGeometry(jambDepth,3.06,.34),
+    refHeroStone
+  );
+  leftJamb.position.set(7.48,1.59,z-width*.5);
+  leftJamb.castShadow=true;
+  refHeroFacade.add(leftJamb);
+
+  const rightJamb=leftJamb.clone();
+  rightJamb.position.z=z+width*.5;
+  refHeroFacade.add(rightJamb);
+
+  const head=new THREE.Mesh(
+    new THREE.BoxGeometry(jambDepth,.34,width+.32),
+    refHeroStone
+  );
+  head.position.set(7.48,3.02,z);
+  head.castShadow=true;
+  refHeroFacade.add(head);
+
+  const recess=new THREE.Mesh(
+    new THREE.PlaneGeometry(width-.26,2.58),
+    refHeroShopGlass
+  );
+  recess.position.set(7.70,1.63,z);
+  recess.rotation.y=-Math.PI/2;
+  refHeroFacade.add(recess);
+
+  const rear=new THREE.Mesh(
+    new THREE.BoxGeometry(.70,2.42,width-.46),
+    refHeroShopInteriorMat
+  );
+  rear.position.set(8.28,1.56,z);
+  refHeroFacade.add(rear);
+
+  const transom=new THREE.Mesh(
+    new THREE.BoxGeometry(.24,.065,width-.24),
+    refHeroShopFrameMat
+  );
+  transom.position.set(7.55,2.36,z);
+  refHeroFacade.add(transom);
+
+  const doorZ=z+doorOffset;
+  const doorFrame=new THREE.Mesh(
+    new THREE.BoxGeometry(.25,2.28,.065),
+    refHeroShopFrameMat
+  );
+  doorFrame.position.set(7.54,1.20,doorZ-.52);
+  refHeroFacade.add(doorFrame);
+  const doorFrameR=doorFrame.clone();
+  doorFrameR.position.z=doorZ+.52;
+  refHeroFacade.add(doorFrameR);
+
+  const doorTop=new THREE.Mesh(
+    new THREE.BoxGeometry(.25,.065,1.10),
+    refHeroShopFrameMat
+  );
+  doorTop.position.set(7.54,2.30,doorZ);
+  refHeroFacade.add(doorTop);
+
+  const handle=new THREE.Mesh(
+    new THREE.BoxGeometry(.055,.48,.028),
+    new THREE.MeshStandardMaterial({
+      color:0xb9b4a6,
+      roughness:.25,
+      metalness:.72,
+      envMapIntensity:.88
+    })
+  );
+  handle.position.set(7.39,1.34,doorZ+(doorOffset>0?-.34:.34));
+  refHeroFacade.add(handle);
+
+  // Low display plinth catches a little street light behind the glass.
+  const plinth=new THREE.Mesh(
+    new THREE.BoxGeometry(.52,.42,width*.34),
+    new THREE.MeshStandardMaterial({
+      color:variant?0x81796e:0x706f69,
+      roughness:.76,
+      metalness:.02,
+      envMapIntensity:.06
+    })
+  );
+  plinth.position.set(7.96,.28,z-doorOffset*.62);
+  refHeroFacade.add(plinth);
+
+  const ceiling=new THREE.Mesh(
+    new THREE.BoxGeometry(.92,.075,width-.44),
+    refHeroCeilingMat
+  );
+  ceiling.position.set(8.05,2.77,z);
+  refHeroFacade.add(ceiling);
+}
+
+addHeroStorefront(5.15,4.34,.82,0);
+addHeroStorefront(9.90,4.34,-.72,1);
+
+// A narrow stone base and sparse panel joints make the scale legible at walking
+// distance without drawing a noisy checkerboard over the whole building.
+const refHeroBase=new THREE.Mesh(
+  new THREE.BoxGeometry(.66,.44,24.1),
+  refHeroStoneDark || refStoneDark
+);
+refHeroBase.position.set(7.52,.25,2.75);
+refHeroBase.castShadow=true;
+refHeroFacade.add(refHeroBase);
+
+const refHeroJointMat=new THREE.MeshBasicMaterial({
+  color:0x777a76,
+  transparent:true,
+  opacity:.16,
+  depthWrite:false
+});
+[-9.105,-4.355,.395,5.145,9.895,14.645].forEach((z,pierIndex)=>{
+  [2.25,4.55,6.85,9.15,11.45,13.75].forEach((y,jointIndex)=>{
+    if((pierIndex+jointIndex)%2) return;
+    const joint=new THREE.Mesh(
+      new THREE.PlaneGeometry(.28,.014),
+      refHeroJointMat
+    );
+    joint.position.set(7.235,y,z);
+    joint.rotation.y=-Math.PI/2;
+    joint.renderOrder=4;
+    refHeroFacade.add(joint);
+  });
+});
 
 // Upper glass bays get only sparse mullions; big panes make the building read
 // much more like a photographed commercial facade.
