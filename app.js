@@ -1,6 +1,6 @@
 const canvas = document.querySelector('#game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
@@ -9667,17 +9667,39 @@ function normalizeCarAsset(root,targetLength=3.85){
 const realSkinLoader=new THREE.TextureLoader();
 realSkinLoader.setCrossOrigin('anonymous');
 
-function loadRuntimeSkin(url,{srgb=false,repeatX=1,repeatY=1}={}){
-  const texture=realSkinLoader.load(
-    url,
-    loaded=>{ loaded.needsUpdate=true; },
-    undefined,
-    error=>console.warn('Scanned skin texture failed; keeping fallback surface.',url,error)
-  );
-  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
-  texture.repeat.set(repeatX,repeatY);
-  texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy?.()||1,8);
-  if(srgb) texture.colorSpace=THREE.SRGBColorSpace;
+function loadRuntimeSkin(url,{srgb=false,repeatX=1,repeatY=1,deferMs=0}={}){
+  const configure=texture=>{
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+    texture.repeat.set(repeatX,repeatY);
+    texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy?.()||1,8);
+    if(srgb) texture.colorSpace=THREE.SRGBColorSpace;
+    return texture;
+  };
+
+  if(!deferMs){
+    return configure(realSkinLoader.load(
+      url,
+      loaded=>{ loaded.needsUpdate=true; },
+      undefined,
+      error=>console.warn('Scanned skin texture failed; keeping fallback surface.',url,error)
+    ));
+  }
+
+  // A blank texture uses Three's neutral placeholder until the photo normal
+  // arrives, so diffuse color and interaction are never blocked by this request.
+  const texture=configure(new THREE.Texture());
+  window.setTimeout(()=>{
+    realSkinLoader.load(
+      url,
+      loaded=>{
+        texture.image=loaded.image;
+        texture.needsUpdate=true;
+        loaded.dispose?.();
+      },
+      undefined,
+      error=>console.warn('Deferred scanned texture failed.',url,error)
+    );
+  },deferMs);
   return texture;
 }
 
@@ -9687,7 +9709,7 @@ const realStuccoColor=loadRuntimeSkin(
 );
 const realStuccoNormal=loadRuntimeSkin(
   'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_wall_009/concrete_wall_009_nor_gl_1k.jpg',
-  {repeatX:1.55,repeatY:3.10}
+  {repeatX:1.55,repeatY:3.10,deferMs:1150}
 );
 const realStuccoRough=facadeSurface.roughness;
 
@@ -9697,7 +9719,7 @@ const realAsphaltColor=loadRuntimeSkin(
 );
 const realAsphaltNormal=loadRuntimeSkin(
   'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_01/asphalt_01_nor_gl_1k.jpg',
-  {repeatX:5.2,repeatY:31}
+  {repeatX:5.2,repeatY:31,deferMs:850}
 );
 const realAsphaltRough=asphaltRoughness;
 
@@ -9707,7 +9729,7 @@ const realPavingColor=loadRuntimeSkin(
 );
 const realPavingNormal=loadRuntimeSkin(
   'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement_02/concrete_pavement_02_nor_gl_1k.jpg',
-  {repeatX:4.6,repeatY:33}
+  {repeatX:4.6,repeatY:33,deferMs:700}
 );
 const realPavingRough=pavementRoughness;
 
@@ -9717,7 +9739,7 @@ const realBarkColor=loadRuntimeSkin(
 );
 const realBarkNormal=loadRuntimeSkin(
   'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/tree_bark_03/tree_bark_03_nor_gl_1k.jpg',
-  {repeatX:1.0,repeatY:3.7}
+  {repeatX:1.0,repeatY:3.7,deferMs:1250}
 );
 const realBarkRough=barkSurface.roughness;
 
@@ -10566,6 +10588,13 @@ function initWorldGLBAssets(){
   scheduleWorldStream(()=>{
     loadPhotographicLeafCards();
   },1050);
+  scheduleWorldStream(()=>{
+    const targetPixelRatio=Math.min(window.devicePixelRatio,1.75);
+    if(Math.abs(renderer.getPixelRatio()-targetPixelRatio)>.05){
+      renderer.setPixelRatio(targetPixelRatio);
+      renderer.setSize(window.innerWidth,window.innerHeight);
+    }
+  },2100);
   scheduleWorldStream(()=>{
     loadPhotographicEnvironment();
   },2800);
