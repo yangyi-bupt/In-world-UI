@@ -8005,19 +8005,71 @@ refHeroFacade.add(refHeroFrameHead);
 const refHeroEntryInterior=new THREE.Mesh(
   new THREE.BoxGeometry(1.28,5.16,3.40),
   new THREE.MeshStandardMaterial({
-    color:0x343b3b,
-    roughness:.90,
+    color:0x4d4b45,
+    roughness:.92,
     metalness:.01,
-    envMapIntensity:.02
+    envMapIntensity:.025
   })
 );
 refHeroEntryInterior.position.set(8.18,2.60,2.77);
 refHeroFacade.add(refHeroEntryInterior);
 
+// A few large, quiet interior planes make the lobby readable through the glass
+// without turning it into a prop-filled game room.
+const refHeroLobbyFloor=new THREE.Mesh(
+  new THREE.BoxGeometry(1.14,.045,3.10),
+  new THREE.MeshStandardMaterial({
+    color:0xb7aa98,
+    roughness:.78,
+    metalness:0,
+    envMapIntensity:.035
+  })
+);
+refHeroLobbyFloor.position.set(7.96,.11,2.77);
+refHeroFacade.add(refHeroLobbyFloor);
+
+const refHeroLobbyBackWall=new THREE.Mesh(
+  new THREE.PlaneGeometry(3.02,4.20),
+  new THREE.MeshStandardMaterial({
+    color:0x8a8175,
+    roughness:.93,
+    metalness:0,
+    envMapIntensity:.018
+  })
+);
+refHeroLobbyBackWall.position.set(8.80,2.55,2.77);
+refHeroLobbyBackWall.rotation.y=-Math.PI/2;
+refHeroFacade.add(refHeroLobbyBackWall);
+
+const refHeroLobbyDesk=new THREE.Mesh(
+  new THREE.BoxGeometry(.54,.74,1.36),
+  refHeroInteriorWoodMat
+);
+refHeroLobbyDesk.position.set(8.20,.47,3.16);
+refHeroLobbyDesk.castShadow=true;
+refHeroFacade.add(refHeroLobbyDesk);
+
+const refHeroLobbyLightMat=new THREE.MeshBasicMaterial({
+  color:0xffe9c8,
+  transparent:true,
+  opacity:.20,
+  depthWrite:false,
+  toneMapped:true
+});
+[-.82,.82].forEach(offset=>{
+  const lightPanel=new THREE.Mesh(
+    new THREE.PlaneGeometry(.44,1.04),
+    refHeroLobbyLightMat
+  );
+  lightPanel.position.set(8.66,4.48,2.77+offset);
+  lightPanel.rotation.y=-Math.PI/2;
+  refHeroFacade.add(lightPanel);
+});
+
 const refHeroEntryGlass=refLobbyGlass.clone();
-refHeroEntryGlass.opacity=.78;
-refHeroEntryGlass.roughness=.16;
-refHeroEntryGlass.envMapIntensity=.98;
+refHeroEntryGlass.opacity=.66;
+refHeroEntryGlass.roughness=.20;
+refHeroEntryGlass.envMapIntensity=.86;
 const refHeroEntryPane=new THREE.Mesh(
   new THREE.PlaneGeometry(3.08,4.64),
   refHeroEntryGlass
@@ -12198,7 +12250,7 @@ for(let i=0;i<900;i++){
 const humanToneTexture=new THREE.CanvasTexture(humanToneCanvas);
 humanToneTexture.colorSpace=THREE.SRGBColorSpace;
 humanToneTexture.wrapS=humanToneTexture.wrapT=THREE.RepeatWrapping;
-humanToneTexture.repeat.set(2.2,2.2);
+humanToneTexture.repeat.set(1.35,1.35);
 humanToneTexture.anisotropy=8;
 
 const humanSkinRoughCanvas=document.createElement('canvas');
@@ -12225,7 +12277,7 @@ for(let i=0;i<1200;i++){
 }
 const humanSkinRoughTexture=new THREE.CanvasTexture(humanSkinRoughCanvas);
 humanSkinRoughTexture.wrapS=humanSkinRoughTexture.wrapT=THREE.RepeatWrapping;
-humanSkinRoughTexture.repeat.set(2.4,2.4);
+humanSkinRoughTexture.repeat.set(1.55,1.55);
 humanSkinRoughTexture.anisotropy=8;
 
 const humanHairRoughCanvas=document.createElement('canvas');
@@ -12282,12 +12334,12 @@ function tuneMiraAsset(root){
         }
       }else if(/skin|face|head/.test(key)){
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .72,.68,.80);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .72,.72,.84);
         }
         if(material.color){
           material.color.lerp(new THREE.Color(0xd5a28e),.028);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.13;
+        if('envMapIntensity' in material) material.envMapIntensity=.095;
         if(hasUv && 'map' in material && !material.map){
           material.map=humanToneTexture;
         }
@@ -12296,11 +12348,11 @@ function tuneMiraAsset(root){
         }
         if(hasUv && 'bumpMap' in material && !material.bumpMap){
           material.bumpMap=skinMicroBump;
-          material.bumpScale=.00030;
+          material.bumpScale=.00018;
         }
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=0;
-          if('specularIntensity' in material) material.specularIntensity=.34;
+          if('specularIntensity' in material) material.specularIntensity=.26;
           if(hasUv && 'specularIntensityMap' in material){
             material.specularIntensityMap=skinSpecularTexture;
           }
@@ -13434,14 +13486,14 @@ function animate(){
       Math.sin(t*.071+.2)*.030+
       storefrontAttention*.070
     )*(1-miraAttention);
-    const headYaw=relativePlayerYaw*miraAttention*.72+ambientHeadYaw;
+    const headYaw=relativePlayerYaw*miraAttention*.58+ambientHeadYaw;
     const headPitch=
       Math.sin(t*.16+.9)*.012*(1-miraAttention)-
-      greetingEnvelope*.045+
-      replyAttention*.018;
-    const neckYaw=headYaw*.28;
+      greetingEnvelope*.026+
+      replyAttention*.014;
+    const neckYaw=headYaw*.22;
     const chestYaw=headYaw*.025;
-    const chestRoll=weightShift*.0030-greetingEnvelope*.006;
+    const chestRoll=weightShift*.0026-greetingEnvelope*.003;
 
     // Hips and upper legs carry most of the idle weight transfer. The values
     // stay tiny so authored animation remains dominant, but the silhouette no
