@@ -2061,7 +2061,7 @@ function makeGlassSurfaceTextures(seed){
 
   // Broad reflected architecture. Edges stay soft and incomplete so panes read
   // as glass reflecting a city, not as an image pasted onto the facade.
-  for(let i=0;i<11;i++){
+  for(let i=0;i<5;i++){
     const x=rnd()*width;
     const w=28+rnd()*84;
     const top=205+rnd()*115;
@@ -4065,17 +4065,17 @@ const storefrontPavingAO=cloneTextureVariant(pavementGround.ao,.31,.17,.74,.88,.
 const storefrontPavingBand=new THREE.Mesh(
   new THREE.PlaneGeometry(.72,63.8),
   new THREE.MeshStandardMaterial({
-    color:0xd6d0c5,
+    color:0xddd7cc,
     map:storefrontPavingMap,
     roughnessMap:storefrontPavingRough,
     normalMap:storefrontPavingNormal,
-    normalScale:new THREE.Vector2(.19,.19),
+    normalScale:new THREE.Vector2(.085,.085),
     bumpMap:storefrontPavingBump,
-    bumpScale:.014,
+    bumpScale:.0055,
     aoMap:storefrontPavingAO,
-    aoMapIntensity:.20,
-    roughness:.95,
-    envMapIntensity:.035
+    aoMapIntensity:.12,
+    roughness:.90,
+    envMapIntensity:.055
   })
 );
 storefrontPavingBand.rotation.x=-Math.PI/2;
@@ -8740,15 +8740,15 @@ refNeighbor.add(refNeighborWeather);
 const refWalk=new THREE.Mesh(
   new THREE.PlaneGeometry(7.35,78),
   new THREE.MeshStandardMaterial({
-    color:0xe8e6df,
-    roughness:.94,
+    color:0xe6e1d7,
+    roughness:.90,
     map:refPavingMaps.map,
     roughnessMap:refPavingMaps.roughness,
     normalMap:refPavingMaps.normal,
-    normalScale:new THREE.Vector2(.050,.050),
+    normalScale:new THREE.Vector2(.028,.028),
     bumpMap:refPavingMaps.bump,
-    bumpScale:.004,
-    envMapIntensity:.020
+    bumpScale:.0022,
+    envMapIntensity:.042
   })
 );
 refWalk.rotation.x=-Math.PI/2;
@@ -8762,26 +8762,26 @@ refStreet.add(refWalk);
    furnishing strip.  The tonal change is restrained enough to read as paving
    specification rather than colored game tiles. */
 const refFrontagePavingMat=new THREE.MeshStandardMaterial({
-  color:0xdedbd2,
-  roughness:.95,
+  color:0xe2ddd3,
+  roughness:.91,
   map:refPavingMaps.map,
   roughnessMap:refPavingMaps.roughness,
   normalMap:refPavingMaps.normal,
-  normalScale:new THREE.Vector2(.042,.042),
+  normalScale:new THREE.Vector2(.026,.026),
   bumpMap:refPavingMaps.bump,
-  bumpScale:.0035,
-  envMapIntensity:.025
+  bumpScale:.0020,
+  envMapIntensity:.040
 });
 const refFurnishingPavingMat=new THREE.MeshStandardMaterial({
-  color:0xd2d1ca,
-  roughness:.97,
+  color:0xd7d4cc,
+  roughness:.93,
   map:refPavingMaps.map,
   roughnessMap:refPavingMaps.roughness,
   normalMap:refPavingMaps.normal,
-  normalScale:new THREE.Vector2(.048,.048),
+  normalScale:new THREE.Vector2(.030,.030),
   bumpMap:refPavingMaps.bump,
-  bumpScale:.0040,
-  envMapIntensity:.018
+  bumpScale:.0024,
+  envMapIntensity:.034
 });
 
 const refFrontageZone=new THREE.Mesh(
@@ -9065,7 +9065,7 @@ for(let i=0;i<11;i++){
     new THREE.CircleGeometry(radius,18),
     refWalkPatinaMat.clone()
   );
-  stain.material.opacity=.012+refWalkPatinaRnd()*.025;
+  stain.material.opacity=.005+refWalkPatinaRnd()*.010;
   stain.scale.set(.65+refWalkPatinaRnd()*1.9,.45+refWalkPatinaRnd()*.85,1);
   stain.rotation.x=-Math.PI/2;
   stain.rotation.z=refWalkPatinaRnd()*Math.PI;
@@ -13225,8 +13225,8 @@ function animate(){
       Math.sin(t*.16+.9)*.012*(1-miraAttention)-
       greetingEnvelope*.045+
       replyAttention*.018;
-    const neckYaw=headYaw*.28;
-    const chestYaw=headYaw*.08;
+    const neckYaw=headYaw*.22;
+    const chestYaw=headYaw*.05;
     const chestRoll=weightShift*.0030-greetingEnvelope*.006;
 
     // Hips and upper legs carry most of the idle weight transfer. The values
@@ -13245,33 +13245,36 @@ function animate(){
 
     // The non-greeting arm participates in the stance. A small opposing motion
     // keeps both shoulders alive without turning the idle into an animation loop.
-    const leftArmBreath=Math.sin(t*.43+2.1)*.010;
+    const leftArmBreath=Math.sin(t*.43+2.1)*.0045;
+    // Keep both upper arms tucked into a relaxed standing silhouette. The
+    // authored idle clip still supplies life, while this post-mixer correction
+    // removes the conspicuous "arms held out" NPC pose.
     applyMiraBoneOffset(
       miraBones.leftArm,
-      -.010+leftArmBreath,
-      .006-weightShift*.004,
-      .020+weightShift*.008
+      -.018+leftArmBreath,
+      .002-weightShift*.002,
+      .058+weightShift*.003
     );
     applyMiraBoneOffset(
       miraBones.leftForeArm,
-      -.018+slowBreath*.006,
+      -.010+slowBreath*.003,
       0,
-      -.008
+      -.004
     );
 
-    // The greeting reads as a small shoulder/forearm acknowledgement rather
-    // than a full waving animation.
+    // Greeting is now a small acknowledgement from an already relaxed arm,
+    // rather than opening the shoulder away from the body.
     applyMiraBoneOffset(
       miraBones.rightArm,
-      greetingEnvelope*.055,
-      -greetingEnvelope*.025,
-      -greetingEnvelope*.085
+      -.012+greetingEnvelope*.020,
+      -greetingEnvelope*.008,
+      -.058-greetingEnvelope*.020
     );
     applyMiraBoneOffset(
       miraBones.rightForeArm,
-      -greetingEnvelope*.16,
+      -.008-greetingEnvelope*.060,
       0,
-      greetingEnvelope*.025
+      greetingEnvelope*.008
     );
 
     const shadow=mira.userData.glbContactShadow;
