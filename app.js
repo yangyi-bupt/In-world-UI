@@ -11971,9 +11971,9 @@ function tuneMiraAsset(root){
         // Treat the remaining character materials as fabric/leather rather than
         // generic smooth plastic. Existing authored roughness maps are kept.
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .86,.84,.97);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .84,.78,.93);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.075;
+        if('envMapIntensity' in material) material.envMapIntensity=.095;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=clothRoughnessTexture;
         }
@@ -12060,6 +12060,99 @@ function loadGLB(loader,url){
   return new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
 }
 
+const vehiclePlateCanvas=document.createElement('canvas');
+vehiclePlateCanvas.width=320;
+vehiclePlateCanvas.height=96;
+const vehiclePlateCtx=vehiclePlateCanvas.getContext('2d');
+vehiclePlateCtx.fillStyle='#e9e8e1';
+vehiclePlateCtx.fillRect(0,0,320,96);
+vehiclePlateCtx.strokeStyle='rgba(54,58,58,.42)';
+vehiclePlateCtx.lineWidth=5;
+vehiclePlateCtx.strokeRect(5,5,310,86);
+vehiclePlateCtx.fillStyle='#34393a';
+vehiclePlateCtx.font='600 45px system-ui, -apple-system, sans-serif';
+vehiclePlateCtx.textAlign='center';
+vehiclePlateCtx.textBaseline='middle';
+vehiclePlateCtx.fillText('NOVA 418',160,50);
+const vehiclePlateTexture=new THREE.CanvasTexture(vehiclePlateCanvas);
+vehiclePlateTexture.colorSpace=THREE.SRGBColorSpace;
+vehiclePlateTexture.anisotropy=8;
+
+const vehiclePlateMat=new THREE.MeshStandardMaterial({
+  color:0xffffff,
+  map:vehiclePlateTexture,
+  roughness:.55,
+  metalness:.04,
+  envMapIntensity:.14
+});
+const vehiclePlateFrameMat=new THREE.MeshStandardMaterial({
+  color:0x393e3e,
+  roughness:.48,
+  metalness:.48,
+  envMapIntensity:.52
+});
+
+function addVehicleStreetDetails(entry,root,targetLength){
+  root.updateMatrixWorld(true);
+  const localBox=new THREE.Box3().setFromObject(root);
+  const size=localBox.getSize(new THREE.Vector3());
+  const width=Math.max(1.48,Math.min(1.95,size.x));
+  const height=Math.max(1.20,Math.min(1.70,size.y));
+
+  // Plates sit on both ends because source assets do not expose a reliable
+  // semantic "front" axis after normalization. One will naturally read as rear.
+  [-1,1].forEach((side,index)=>{
+    const frame=new THREE.Mesh(
+      new THREE.BoxGeometry(width*.31,.19,.035),
+      vehiclePlateFrameMat
+    );
+    frame.position.set(
+      0,
+      Math.max(.34,height*.27),
+      side*(targetLength*.505)
+    );
+    entry.group.add(frame);
+
+    const plate=new THREE.Mesh(
+      new THREE.PlaneGeometry(width*.27,.145),
+      vehiclePlateMat
+    );
+    plate.position.set(
+      0,
+      frame.position.y,
+      side*(targetLength*.524)
+    );
+    plate.rotation.y=side<0?Math.PI:0;
+    entry.group.add(plate);
+  });
+
+  // A low dark mass inside the cabin stops transparent windows showing an
+  // unnaturally empty bright shell when the camera passes close by.
+  const cabinShade=new THREE.Mesh(
+    new THREE.BoxGeometry(width*.66,height*.32,targetLength*.34),
+    new THREE.MeshStandardMaterial({
+      color:0x252a2a,
+      roughness:.96,
+      metalness:0,
+      transparent:true,
+      opacity:.50,
+      depthWrite:false,
+      envMapIntensity:.01
+    })
+  );
+  cabinShade.position.set(0,height*.60,-targetLength*.035);
+  entry.group.add(cabinShade);
+
+  if(!entry.userGroundShadow){
+    entry.userGroundShadow=createAttachedContactShadow(
+      entry.group,
+      width*1.08,
+      targetLength*.94,
+      entry.baseSpeed===undefined?.085:.065
+    );
+  }
+}
+
 function attachCarAsset(entry,source,index=0,targetLength=3.85){
   const root=source.clone(true);
   prepareImportedModel(root,.72);
@@ -12070,7 +12163,8 @@ function attachCarAsset(entry,source,index=0,targetLength=3.85){
   entry.group.add(root);
   entry.assetRoot=root;
   entry.assetBaseY=root.position.y;
-  if(entry.baseSpeed!==undefined && !entry.contactShadow){
+  addVehicleStreetDetails(entry,root,targetLength);
+  if(entry.baseSpeed!==undefined && !entry.contactShadow && !entry.userGroundShadow){
     entry.contactShadow=createAttachedContactShadow(entry.group,1.82,targetLength*.96,.075);
   }
 }
@@ -12162,7 +12256,7 @@ function attachMiraAsset(source,animations){
   miraGLBBasePosition=root.position.clone();
   captureMiraBones(root);
   if(!mira.userData.glbContactShadow){
-    mira.userData.glbContactShadow=createAttachedContactShadow(mira,.60,.42,.060);
+    mira.userData.glbContactShadow=createAttachedContactShadow(mira,.62,.46,.072);
   }
 
   // Only play an explicitly named idle animation. Keep it slower than the
@@ -12224,13 +12318,16 @@ function initWorldGLBAssets(){
       miraRig.visible=true;
     });
 
-  // Priority 2: one sedan source is reused for all traffic slots. Re-tinting in
-  // tuneVehicleAsset keeps visual variation while avoiding a second large GLB.
+  // Priority 2: load two genuinely different body shapes. Reusing one sedan for
+  // every slot was a strong "game population" tell even after paint tuning.
+  let primaryVehicleSource=null;
+
   scheduleWorldStream(async()=>{
     try{
       const result=await loadGLB(loader,WORLD_GLB_ASSETS.carPrimary);
+      primaryVehicleSource=result.scene;
       vehicleEntries.forEach((entry,index)=>{
-        if(!entry.assetRoot){
+        if(entry.assetVariant!=='secondary' && !entry.assetRoot){
           attachCarAsset(entry,result.scene,index,carTargetLength(entry));
         }
       });
@@ -12238,16 +12335,51 @@ function initWorldGLBAssets(){
       console.warn('Primary vehicle GLB failed; trying compact fallback.',error);
       try{
         const fallback=await loadGLB(loader,WORLD_GLB_ASSETS.carFallback);
+        primaryVehicleSource=fallback.scene;
         vehicleEntries.forEach((entry,index)=>{
-          if(!entry.assetRoot){
+          if(entry.assetVariant!=='secondary' && !entry.assetRoot){
             attachCarAsset(entry,fallback.scene,index,carTargetLength(entry));
           }
         });
       }catch(fallbackError){
-        console.warn('Vehicle fallback failed.',fallbackError);
+        console.warn('Primary vehicle fallback failed.',fallbackError);
       }
     }
   },180);
+
+  scheduleWorldStream(async()=>{
+    const secondaryEntries=vehicleEntries.filter(entry=>entry.assetVariant==='secondary');
+    if(!secondaryEntries.length) return;
+
+    try{
+      const result=await loadGLB(loader,WORLD_GLB_ASSETS.carSecondary);
+      secondaryEntries.forEach((entry,index)=>{
+        if(!entry.assetRoot){
+          attachCarAsset(entry,result.scene,index+7,carTargetLength(entry));
+        }
+      });
+    }catch(error){
+      console.warn('Secondary vehicle GLB failed; reusing primary shape.',error);
+      if(primaryVehicleSource){
+        secondaryEntries.forEach((entry,index)=>{
+          if(!entry.assetRoot){
+            attachCarAsset(entry,primaryVehicleSource,index+7,carTargetLength(entry));
+          }
+        });
+      }else{
+        try{
+          const fallback=await loadGLB(loader,WORLD_GLB_ASSETS.carFallback);
+          secondaryEntries.forEach((entry,index)=>{
+            if(!entry.assetRoot){
+              attachCarAsset(entry,fallback.scene,index+7,carTargetLength(entry));
+            }
+          });
+        }catch(fallbackError){
+          console.warn('Secondary vehicle fallback failed.',fallbackError);
+        }
+      }
+    }
+  },520);
 
   // Background pedestrians are deliberately not streamed. The focal character
   // carries the scene, while distant photographic detail supplies human scale.
