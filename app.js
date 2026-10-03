@@ -4041,16 +4041,18 @@ scene.add(corniceLip);
 
 const facadeBaseBand=new THREE.Mesh(
   new THREE.BoxGeometry(.36,.20,64.8),
-  new THREE.MeshStandardMaterial({
+  new THREE.MeshPhysicalMaterial({
     color:0xb8aea1,
-    roughness:.94,
+    roughness:.95,
+    metalness:0,
     map:concreteSurface.map,
     roughnessMap:concreteSurface.roughness,
     normalMap:concreteSurface.normal,
-    normalScale:new THREE.Vector2(.070,.070),
-    bumpMap:concreteSurface.bump,
-    bumpScale:.0032,
-    envMapIntensity:.028
+    normalScale:new THREE.Vector2(.050,.050),
+    envMapIntensity:.020,
+    ior:1.44,
+    specularIntensity:.34,
+    clearcoat:0
   })
 );
 facadeBaseBand.position.set(8.36,.20,-5);
@@ -4065,18 +4067,20 @@ const storefrontPavingBump=cloneTextureVariant(pavementGround.bump,.31,.17,.42,.
 const storefrontPavingAO=cloneTextureVariant(pavementGround.ao,.31,.17,.42,.54,.006);
 const storefrontPavingBand=new THREE.Mesh(
   new THREE.PlaneGeometry(.72,63.8),
-  new THREE.MeshStandardMaterial({
+  new THREE.MeshPhysicalMaterial({
     color:0xddd7cc,
+    metalness:0,
     map:storefrontPavingMap,
     roughnessMap:storefrontPavingRough,
     normalMap:storefrontPavingNormal,
-    normalScale:new THREE.Vector2(.026,.026),
-    bumpMap:storefrontPavingBump,
-    bumpScale:.0014,
+    normalScale:new THREE.Vector2(.020,.020),
     aoMap:storefrontPavingAO,
-    aoMapIntensity:.065,
-    roughness:.92,
-    envMapIntensity:.040
+    aoMapIntensity:.055,
+    roughness:.94,
+    envMapIntensity:.026,
+    ior:1.45,
+    specularIntensity:.30,
+    clearcoat:0
   })
 );
 storefrontPavingBand.rotation.x=-Math.PI/2;
@@ -4227,16 +4231,14 @@ const lobbyGlassMat=new THREE.MeshPhysicalMaterial({
   side:THREE.DoubleSide
 });
 const lobbyFrameMat=new THREE.MeshStandardMaterial({
-  color:0x2f3333,
-  roughness:.40,
-  metalness:.46,
+  color:0x59605f,
+  roughness:.48,
+  metalness:1,
   map:metalSurface.map,
   roughnessMap:metalSurface.roughness,
   normalMap:metalSurface.normal,
-  normalScale:new THREE.Vector2(.08,.08),
-  bumpMap:metalSurface.bump,
-  bumpScale:.002,
-  envMapIntensity:.90
+  normalScale:new THREE.Vector2(.040,.040),
+  envMapIntensity:.60
 });
 const lobbyGlass=new THREE.Mesh(new THREE.PlaneGeometry(55.5,3.72),lobbyGlassMat);
 lobbyGlass.position.set(7.56,1.93,-3.0);
@@ -4334,28 +4336,31 @@ const heroGlassMat=new THREE.MeshPhysicalMaterial({
   envMapIntensity:1.12,
   side:THREE.DoubleSide
 });
-const heroPierMat=new THREE.MeshStandardMaterial({
+const heroPierMap=cloneTextureVariant(fineConcreteSurface.map,.17,.09,.22,.18,.004);
+const heroPierRough=cloneTextureVariant(fineConcreteSurface.roughness,.17,.09,.22,.18,.004);
+const heroPierNormal=cloneTextureVariant(fineConcreteSurface.normal,.17,.09,.22,.18,.004);
+const heroPierMat=new THREE.MeshPhysicalMaterial({
   color:0xc0b5a6,
-  roughness:.86,
-  map:fineConcreteSurface.map,
-  roughnessMap:fineConcreteSurface.roughness,
-  normalMap:fineConcreteSurface.normal,
-  normalScale:new THREE.Vector2(.055,.055),
-  bumpMap:fineConcreteSurface.bump,
-  bumpScale:.0028,
-  envMapIntensity:.055
+  roughness:.90,
+  metalness:0,
+  map:heroPierMap,
+  roughnessMap:heroPierRough,
+  normalMap:heroPierNormal,
+  normalScale:new THREE.Vector2(.040,.040),
+  envMapIntensity:.034,
+  ior:1.45,
+  specularIntensity:.38,
+  clearcoat:0
 });
 const heroFrameMat=new THREE.MeshStandardMaterial({
-  color:0x292d2e,
-  roughness:.34,
-  metalness:.54,
+  color:0x59605f,
+  roughness:.46,
+  metalness:1,
   map:metalSurface.map,
   roughnessMap:metalSurface.roughness,
   normalMap:metalSurface.normal,
-  normalScale:new THREE.Vector2(.07,.07),
-  bumpMap:metalSurface.bump,
-  bumpScale:.002,
-  envMapIntensity:.98
+  normalScale:new THREE.Vector2(.036,.036),
+  envMapIntensity:.62
 });
 
 [-23.5,-11.5,.8,13.1].forEach((z,bayIndex)=>{
@@ -5378,16 +5383,14 @@ const cafeDoorSealMat=new THREE.MeshStandardMaterial({
 const cafeThreshold=new THREE.Mesh(
   new THREE.BoxGeometry(.34,.045,1.02),
   new THREE.MeshStandardMaterial({
-    color:0x999188,
-    roughness:.66,
-    metalness:.16,
+    color:0xb0aaa2,
+    roughness:.68,
+    metalness:1,
     map:metalSurface.map,
     roughnessMap:metalSurface.roughness,
     normalMap:metalSurface.normal,
-    normalScale:new THREE.Vector2(.045,.045),
-    bumpMap:metalSurface.bump,
-    bumpScale:.0015,
-    envMapIntensity:.38
+    normalScale:new THREE.Vector2(.030,.030),
+    envMapIntensity:.42
   })
 );
 cafeThreshold.position.set(7.73,.075,2.20);
@@ -5415,16 +5418,14 @@ const cafeDoorRevealMat=new THREE.MeshStandardMaterial({
 const cafeDoorHandle=new THREE.Mesh(
   new THREE.CylinderGeometry(.018,.018,.42,10),
   new THREE.MeshStandardMaterial({
-    color:0x9ba29f,
-    roughness:.24,
-    metalness:.72,
+    color:0xb8bfbd,
+    roughness:.38,
+    metalness:1,
     map:metalSurface.map,
     roughnessMap:metalTouchRoughness,
     normalMap:metalSurface.normal,
-    normalScale:new THREE.Vector2(.10,.10),
-    bumpMap:metalSurface.bump,
-    bumpScale:.0025,
-    envMapIntensity:1.05
+    normalScale:new THREE.Vector2(.032,.032),
+    envMapIntensity:.66
   })
 );
 cafeDoorHandle.rotation.z=Math.PI/2;
@@ -7481,12 +7482,19 @@ const refHeroFacade=new THREE.Group();
 refHeroFacade.name='reference-hero-facade';
 refStreet.add(refHeroFacade);
 
-const refHeroStone=refStone.clone();
-refHeroStone.color=new THREE.Color(0xd9d5cc);
-refHeroStone.roughness=.87;
-refHeroStone.envMapIntensity=.09;
-refHeroStone.normalScale=new THREE.Vector2(.030,.030);
-refHeroStone.bumpScale=.0021;
+const refHeroStone=new THREE.MeshPhysicalMaterial({
+  color:0xd9d5cc,
+  roughness:.91,
+  metalness:0,
+  map:refStoneMaps.map,
+  roughnessMap:refStoneMaps.roughness,
+  normalMap:refStoneMaps.normal,
+  normalScale:new THREE.Vector2(.022,.022),
+  envMapIntensity:.032,
+  ior:1.45,
+  specularIntensity:.38,
+  clearcoat:0
+});
 
 // Near-camera stone needs a different texel scale from the seventy-metre wall.
 // Clone every map so changing repeat/offset here cannot alter the distant facade.
@@ -7520,10 +7528,11 @@ if(refHeroStone.bumpMap){
 }
 
 const refHeroMetal=refMetal.clone();
-refHeroMetal.color=new THREE.Color(0x454b4b);
-refHeroMetal.roughness=.34;
-refHeroMetal.metalness=.56;
-refHeroMetal.envMapIntensity=.88;
+refHeroMetal.color=new THREE.Color(0x626966);
+refHeroMetal.roughness=.46;
+refHeroMetal.metalness=1;
+refHeroMetal.envMapIntensity=.58;
+refHeroMetal.normalScale=new THREE.Vector2(.030,.030);
 
 const refHeroRevealMat=new THREE.MeshStandardMaterial({
   color:0x42494a,
@@ -7555,18 +7564,18 @@ const refHeroBlindMat=new THREE.MeshStandardMaterial({
   envMapIntensity:.03
 });
 const refHeroShopFrameMat=new THREE.MeshStandardMaterial({
-  color:0x4a4640,
-  roughness:.36,
-  metalness:.52,
+  color:0x6a675f,
+  roughness:.48,
+  metalness:1,
   map:metalSurface.map,
   roughnessMap:metalSurface.roughness,
-  envMapIntensity:.72
+  envMapIntensity:.52
 });
 const refHeroDoorThresholdMat=new THREE.MeshStandardMaterial({
-  color:0x9c978d,
-  roughness:.58,
-  metalness:.22,
-  envMapIntensity:.30
+  color:0xb2aea4,
+  roughness:.64,
+  metalness:1,
+  envMapIntensity:.40
 });
 const refHeroDoorGasketMat=new THREE.MeshStandardMaterial({
   color:0x2f3332,
@@ -7582,9 +7591,9 @@ const refHeroShopInteriorMat=new THREE.MeshStandardMaterial({
 });
 const refHeroInteriorWoodMat=new THREE.MeshStandardMaterial({
   color:0x796b5b,
-  roughness:.82,
-  metalness:.01,
-  envMapIntensity:.045
+  roughness:.86,
+  metalness:0,
+  envMapIntensity:.030
 });
 const refHeroInteriorLightMat=new THREE.MeshBasicMaterial({
   color:0xe9d9c1,
@@ -8947,14 +8956,14 @@ const refLongJointMat=new THREE.MeshBasicMaterial({
 // Small utility covers sit in the furnishing zone rather than randomly in the
 // walking path.
 const refUtilityCoverMat=new THREE.MeshStandardMaterial({
-  color:0x6f7572,
-  roughness:.74,
-  metalness:.22,
+  color:0x777d79,
+  roughness:.78,
+  metalness:1,
   map:metalSurface.map,
   roughnessMap:metalSurface.roughness,
   normalMap:metalSurface.normal,
-  normalScale:new THREE.Vector2(.042,.042),
-  envMapIntensity:.32
+  normalScale:new THREE.Vector2(.030,.030),
+  envMapIntensity:.30
 });
 [
   {z:-1.05,w:.48,d:.66,r:.04},
@@ -9016,12 +9025,12 @@ refStreet.add(refGutterBand);
 
 // Two storm drains sit at believable low points near the parked cars / trees.
 const refStormDrainMat=new THREE.MeshStandardMaterial({
-  color:0x4d5653,
-  roughness:.62,
-  metalness:.42,
+  color:0x69716e,
+  roughness:.72,
+  metalness:1,
   map:metalSurface.map,
   roughnessMap:metalSurface.roughness,
-  envMapIntensity:.46
+  envMapIntensity:.38
 });
 [-5.55,8.75].forEach((z,drainIndex)=>{
   const frame=new THREE.Mesh(
@@ -12234,14 +12243,14 @@ function tuneMiraAsset(root){
           material.clearcoatRoughness=.30;
           if('specularIntensity' in material) material.specularIntensity=.50;
         }
-      }else if(/skin|face|head|body/.test(key)){
+      }else if(/skin|face|head/.test(key)){
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .68,.62,.76);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .72,.68,.80);
         }
         if(material.color){
           material.color.lerp(new THREE.Color(0xd5a28e),.028);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.20;
+        if('envMapIntensity' in material) material.envMapIntensity=.13;
         if(hasUv && 'map' in material && !material.map){
           material.map=humanToneTexture;
         }
@@ -12254,7 +12263,7 @@ function tuneMiraAsset(root){
         }
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=0;
-          if('specularIntensity' in material) material.specularIntensity=.42;
+          if('specularIntensity' in material) material.specularIntensity=.34;
           if(hasUv && 'specularIntensityMap' in material){
             material.specularIntensityMap=skinSpecularTexture;
           }
@@ -12280,9 +12289,9 @@ function tuneMiraAsset(root){
         // Treat the remaining character materials as fabric/leather rather than
         // generic smooth plastic. Existing authored roughness maps are kept.
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .84,.78,.93);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .88,.84,.96);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.095;
+        if('envMapIntensity' in material) material.envMapIntensity=.060;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=clothRoughnessTexture;
         }
@@ -12297,7 +12306,7 @@ function tuneMiraAsset(root){
           if(material.sheenColor && material.color){
             material.sheenColor.copy(material.color).lerp(new THREE.Color(0xd8d1c8),.12);
           }
-          if('specularIntensity' in material) material.specularIntensity=.28;
+          if('specularIntensity' in material) material.specularIntensity=.20;
         }
       }
 
