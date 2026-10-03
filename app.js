@@ -2017,128 +2017,189 @@ function makeFoliageMaterial(color,roughness=.91,bumpScale=.009,lightness=.020){
   });
 }
 
-const glassReflectionCanvas=document.createElement('canvas');
-glassReflectionCanvas.width=128;
-glassReflectionCanvas.height=256;
-const glassReflectionCtx=glassReflectionCanvas.getContext('2d');
-const glassReflectionGradient=glassReflectionCtx.createLinearGradient(0,0,0,256);
-glassReflectionGradient.addColorStop(0,'rgba(226,244,250,.72)');
-glassReflectionGradient.addColorStop(.18,'rgba(192,222,232,.38)');
-glassReflectionGradient.addColorStop(.43,'rgba(159,190,195,.20)');
-glassReflectionGradient.addColorStop(.62,'rgba(205,211,196,.18)');
-glassReflectionGradient.addColorStop(.78,'rgba(178,166,145,.19)');
-glassReflectionGradient.addColorStop(1,'rgba(112,126,122,.20)');
-glassReflectionCtx.fillStyle=glassReflectionGradient;
-glassReflectionCtx.fillRect(0,0,128,256);
+function makeGlassSurfaceTextures(seed){
+  const width=512;
+  const height=512;
+  const colorCanvas=document.createElement('canvas');
+  const roughCanvas=document.createElement('canvas');
+  colorCanvas.width=roughCanvas.width=width;
+  colorCanvas.height=roughCanvas.height=height;
+  const g=colorCanvas.getContext('2d');
+  const r=roughCanvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
 
-// Soft vertical reflections hint at nearby facade bays rather than a uniform tint.
-for(let i=0;i<9;i++){
-  const x=6+i*15;
-  glassReflectionCtx.fillStyle='rgba(255,255,255,'+(.018+(i%3)*.008).toFixed(3)+')';
-  glassReflectionCtx.fillRect(x,0,1+(i%2),256);
-}
-glassReflectionCtx.fillStyle='rgba(255,247,230,.035)';
-glassReflectionCtx.fillRect(0,174,128,26);
-glassReflectionCtx.fillStyle='rgba(91,111,107,.040)';
-glassReflectionCtx.fillRect(0,205,128,51);
+  // Reflection tint is deliberately low contrast. The environment map supplies
+  // the actual specular response; this texture only adds the large-scale urban
+  // color variation that prevents perfectly uniform blue glass.
+  const sky=g.createLinearGradient(0,0,0,height);
+  sky.addColorStop(0,'#d9e8eb');
+  sky.addColorStop(.28,'#b9d0d5');
+  sky.addColorStop(.55,'#aebfc0');
+  sky.addColorStop(.73,'#b5b7aa');
+  sky.addColorStop(1,'#8c9690');
+  g.fillStyle=sky;
+  g.fillRect(0,0,width,height);
 
-const glassTintRnd=makeSeededRandom(0x184bd7a1);
-for(let i=0;i<11;i++){
-  const x=glassTintRnd()*128;
-  const y=glassTintRnd()*256;
-  const radius=18+glassTintRnd()*54;
-  const cool=glassTintRnd()>.46;
-  const grad=glassReflectionCtx.createRadialGradient(x,y,0,x,y,radius);
-  grad.addColorStop(
-    0,
-    cool
-      ? 'rgba(128,177,184,'+(.012+glassTintRnd()*.022).toFixed(3)+')'
-      : 'rgba(187,169,143,'+(.010+glassTintRnd()*.020).toFixed(3)+')'
-  );
-  grad.addColorStop(1,'rgba(0,0,0,0)');
-  glassReflectionCtx.fillStyle=grad;
-  glassReflectionCtx.fillRect(x-radius,y-radius,radius*2,radius*2);
-}
-
-const glassReflectionTexture=new THREE.CanvasTexture(glassReflectionCanvas);
-glassReflectionTexture.colorSpace=THREE.SRGBColorSpace;
-glassReflectionTexture.wrapS=THREE.RepeatWrapping;
-glassReflectionTexture.wrapT=THREE.ClampToEdgeWrapping;
-glassReflectionTexture.repeat.set(2.2,1);
-glassReflectionTexture.anisotropy=8;
-
-const glassRoughnessCanvas=document.createElement('canvas');
-glassRoughnessCanvas.width=128;
-glassRoughnessCanvas.height=256;
-const glassRoughnessCtx=glassRoughnessCanvas.getContext('2d');
-glassRoughnessCtx.fillStyle='#3d3d3d';
-glassRoughnessCtx.fillRect(0,0,128,256);
-const glassRoughRnd=makeSeededRandom(0x7e5a1c93);
-for(let i=0;i<240;i++){
-  const a=.02+glassRoughRnd()*.08;
-  const v=74+Math.floor(glassRoughRnd()*42);
-  glassRoughnessCtx.fillStyle='rgba('+v+','+v+','+v+','+a.toFixed(3)+')';
-  glassRoughnessCtx.beginPath();
-  glassRoughnessCtx.arc(
-    glassRoughRnd()*128,
-    glassRoughRnd()*256,
-    .4+glassRoughRnd()*1.8,
-    0,Math.PI*2
-  );
-  glassRoughnessCtx.fill();
-}
-for(let i=0;i<8;i++){
-  const y=30+glassRoughRnd()*205;
-  const grad=glassRoughnessCtx.createLinearGradient(0,y,128,y+8);
-  grad.addColorStop(0,'rgba(110,110,110,0)');
-  grad.addColorStop(.45,'rgba(110,110,110,.055)');
-  grad.addColorStop(.55,'rgba(110,110,110,.025)');
-  grad.addColorStop(1,'rgba(110,110,110,0)');
-  glassRoughnessCtx.fillStyle=grad;
-  glassRoughnessCtx.fillRect(0,y-10,128,26);
-}
-
-for(let i=0;i<11;i++){
-  const cx=12+glassRoughRnd()*104;
-  const cy=38+glassRoughRnd()*182;
-  const rx=4+glassRoughRnd()*7;
-  const ry=6+glassRoughRnd()*10;
-  for(let ring=0;ring<4;ring++){
-    glassRoughnessCtx.strokeStyle='rgba(150,150,150,'+(.018+glassRoughRnd()*.025).toFixed(3)+')';
-    glassRoughnessCtx.lineWidth=.45+.12*ring;
-    glassRoughnessCtx.beginPath();
-    glassRoughnessCtx.ellipse(
-      cx,
-      cy,
-      rx+ring*1.35,
-      ry+ring*1.55,
-      (glassRoughRnd()-.5)*.30,
-      Math.PI*.12,
-      Math.PI*1.58
-    );
-    glassRoughnessCtx.stroke();
+  // Broad reflected architecture. Edges stay soft and incomplete so panes read
+  // as glass reflecting a city, not as an image pasted onto the facade.
+  for(let i=0;i<11;i++){
+    const x=rnd()*width;
+    const w=28+rnd()*84;
+    const top=205+rnd()*115;
+    const shade=92+Math.floor(rnd()*54);
+    const alpha=.018+rnd()*.045;
+    const grad=g.createLinearGradient(x,0,x+w,0);
+    grad.addColorStop(0,'rgba('+shade+','+(shade+7)+','+(shade+5)+',0)');
+    grad.addColorStop(.18,'rgba('+shade+','+(shade+7)+','+(shade+5)+','+alpha.toFixed(3)+')');
+    grad.addColorStop(.82,'rgba('+shade+','+(shade+7)+','+(shade+5)+','+(alpha*.76).toFixed(3)+')');
+    grad.addColorStop(1,'rgba('+shade+','+(shade+7)+','+(shade+5)+',0)');
+    g.fillStyle=grad;
+    g.fillRect(x,top,w,height-top);
   }
+
+  // Soft tree masses and warm street tones near the horizon.
+  for(let i=0;i<17;i++){
+    const x=rnd()*width;
+    const y=325+rnd()*78;
+    const rx=18+rnd()*70;
+    const ry=9+rnd()*28;
+    const green=rnd()>.35;
+    const grad=g.createRadialGradient(x,y,2,x,y,rx);
+    grad.addColorStop(
+      0,
+      green
+        ? 'rgba(72,92,76,'+(.025+rnd()*.052).toFixed(3)+')'
+        : 'rgba(157,132,104,'+(.018+rnd()*.038).toFixed(3)+')'
+    );
+    grad.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=grad;
+    g.save();
+    g.translate(x,y);
+    g.scale(1,ry/rx);
+    g.beginPath();
+    g.arc(0,0,rx,0,Math.PI*2);
+    g.fill();
+    g.restore();
+  }
+
+  // Broken cloud bands create natural low-frequency reflection variation.
+  for(let i=0;i<13;i++){
+    const x=rnd()*width;
+    const y=45+rnd()*210;
+    const rx=36+rnd()*105;
+    const ry=8+rnd()*22;
+    const grad=g.createRadialGradient(x,y,3,x,y,rx);
+    grad.addColorStop(0,'rgba(250,252,250,'+(.020+rnd()*.045).toFixed(3)+')');
+    grad.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=grad;
+    g.save();
+    g.translate(x,y);
+    g.scale(1,ry/rx);
+    g.beginPath();
+    g.arc(0,0,rx,0,Math.PI*2);
+    g.fill();
+    g.restore();
+  }
+
+  // Glass roughness starts mostly smooth, then receives the same real-world
+  // causes that affect appearance: hand cleaning arcs, rain trails and dust.
+  r.fillStyle='#444444';
+  r.fillRect(0,0,width,height);
+
+  for(let i=0;i<82;i++){
+    const x=rnd()*width;
+    const y=20+rnd()*(height-40);
+    const rx=8+rnd()*42;
+    const ry=6+rnd()*26;
+    const v=70+Math.floor(rnd()*54);
+    const grad=r.createRadialGradient(x,y,1,x,y,Math.max(rx,ry));
+    grad.addColorStop(0,'rgba('+v+','+v+','+v+','+(.035+rnd()*.090).toFixed(3)+')');
+    grad.addColorStop(1,'rgba('+v+','+v+','+v+',0)');
+    r.fillStyle=grad;
+    r.fillRect(x-rx,y-ry,rx*2,ry*2);
+  }
+
+  // Vertical rain/mineral traces affect roughness and are barely visible in
+  // albedo; keeping both channels aligned is what makes them feel physical.
+  for(let i=0;i<38;i++){
+    const x=rnd()*width;
+    const y=35+rnd()*350;
+    const len=28+rnd()*120;
+    const drift=(rnd()-.5)*5;
+    const a=.012+rnd()*.024;
+    const cg=g.createLinearGradient(x,y,x+drift,y+len);
+    cg.addColorStop(0,'rgba(235,239,233,'+a.toFixed(3)+')');
+    cg.addColorStop(1,'rgba(235,239,233,0)');
+    g.strokeStyle=cg;
+    g.lineWidth=.45+rnd()*.90;
+    g.beginPath();
+    g.moveTo(x,y);
+    g.lineTo(x+drift,y+len);
+    g.stroke();
+
+    const rg=r.createLinearGradient(x,y,x+drift,y+len);
+    rg.addColorStop(0,'rgba(146,146,146,'+(.055+rnd()*.085).toFixed(3)+')');
+    rg.addColorStop(1,'rgba(146,146,146,0)');
+    r.strokeStyle=rg;
+    r.lineWidth=1.0+rnd()*1.8;
+    r.beginPath();
+    r.moveTo(x,y);
+    r.lineTo(x+drift,y+len);
+    r.stroke();
+  }
+
+  // Partial wipe marks, kept sparse and low contrast.
+  for(let i=0;i<14;i++){
+    const cx=30+rnd()*(width-60);
+    const cy=75+rnd()*(height-130);
+    const rx=18+rnd()*36;
+    const ry=10+rnd()*28;
+    const start=.12+rnd()*.4;
+    const finish=1.15+rnd()*.75;
+    g.strokeStyle='rgba(246,248,244,'+(.008+rnd()*.015).toFixed(3)+')';
+    g.lineWidth=.8+rnd()*1.2;
+    g.beginPath();
+    g.ellipse(cx,cy,rx,ry,(rnd()-.5)*.35,start*Math.PI,finish*Math.PI);
+    g.stroke();
+
+    r.strokeStyle='rgba(126,126,126,'+(.040+rnd()*.070).toFixed(3)+')';
+    r.lineWidth=1.2+rnd()*2.2;
+    r.beginPath();
+    r.ellipse(cx,cy,rx,ry,(rnd()-.5)*.35,start*Math.PI,finish*Math.PI);
+    r.stroke();
+  }
+
+  // Dust accumulates softly toward the lower pane edge.
+  const dust=g.createLinearGradient(0,height*.70,0,height);
+  dust.addColorStop(0,'rgba(118,112,100,0)');
+  dust.addColorStop(1,'rgba(118,112,100,.032)');
+  g.fillStyle=dust;
+  g.fillRect(0,height*.70,width,height*.30);
+  const roughDust=r.createLinearGradient(0,height*.72,0,height);
+  roughDust.addColorStop(0,'rgba(134,134,134,0)');
+  roughDust.addColorStop(1,'rgba(134,134,134,.11)');
+  r.fillStyle=roughDust;
+  r.fillRect(0,height*.72,width,height*.28);
+
+  const map=new THREE.CanvasTexture(colorCanvas);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.wrapS=THREE.RepeatWrapping;
+  map.wrapT=THREE.ClampToEdgeWrapping;
+  map.repeat.set(1,1);
+  map.anisotropy=8;
+
+  const roughness=new THREE.CanvasTexture(roughCanvas);
+  roughness.wrapS=THREE.RepeatWrapping;
+  roughness.wrapT=THREE.ClampToEdgeWrapping;
+  roughness.repeat.set(1,1);
+  roughness.anisotropy=8;
+
+  return {map,roughness};
 }
 
-for(let i=0;i<18;i++){
-  const x=glassRoughRnd()*128;
-  const y=16+glassRoughRnd()*205;
-  const len=12+glassRoughRnd()*44;
-  const grad=glassRoughnessCtx.createLinearGradient(x,y,x,y+len);
-  grad.addColorStop(0,'rgba(158,158,158,'+(.018+glassRoughRnd()*.030).toFixed(3)+')');
-  grad.addColorStop(1,'rgba(158,158,158,0)');
-  glassRoughnessCtx.strokeStyle=grad;
-  glassRoughnessCtx.lineWidth=.35+glassRoughRnd()*.65;
-  glassRoughnessCtx.beginPath();
-  glassRoughnessCtx.moveTo(x,y);
-  glassRoughnessCtx.lineTo(x+(glassRoughRnd()-.5)*1.8,y+len);
-  glassRoughnessCtx.stroke();
-}
-const glassRoughnessTexture=new THREE.CanvasTexture(glassRoughnessCanvas);
-glassRoughnessTexture.wrapS=THREE.RepeatWrapping;
-glassRoughnessTexture.wrapT=THREE.ClampToEdgeWrapping;
-glassRoughnessTexture.repeat.set(2.2,1);
-glassRoughnessTexture.anisotropy=8;
+const glassSurfaceTextures=makeGlassSurfaceTextures(0x184bd7a1);
+const glassReflectionTexture=glassSurfaceTextures.map;
+const glassRoughnessTexture=glassSurfaceTextures.roughness;
 
 const streetBannerCanvas=document.createElement('canvas');
 streetBannerCanvas.width=256;
@@ -3783,7 +3844,7 @@ scene.add(facadeSoftShade);
 const facadeWeatherMat=new THREE.MeshBasicMaterial({
   map:facadeWeatherTexture,
   transparent:true,
-  opacity:.58,
+  opacity:.44,
   depthWrite:false,
   toneMapped:false,
   side:THREE.DoubleSide
@@ -3822,7 +3883,7 @@ const facadeJointOverlay=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     map:facadeJointTexture,
     transparent:true,
-    opacity:.62,
+    opacity:.48,
     depthWrite:false,
     toneMapped:false,
     side:THREE.DoubleSide
@@ -3863,16 +3924,16 @@ const lobbyGlassMat=new THREE.MeshPhysicalMaterial({
   color:0xa9bec1,
   map:glassReflectionTexture,
   roughnessMap:glassRoughnessTexture,
-  roughness:.16,
-  metalness:.015,
+  roughness:.18,
+  metalness:.008,
   transparent:true,
-  opacity:.44,
-  transmission:.14,
+  opacity:.40,
+  transmission:.18,
   ior:1.50,
   thickness:.012,
   clearcoat:.04,
   clearcoatRoughness:.34,
-  envMapIntensity:.92,
+  envMapIntensity:1.08,
   side:THREE.DoubleSide
 });
 const lobbyFrameMat=new THREE.MeshStandardMaterial({
@@ -3971,16 +4032,16 @@ const heroGlassMat=new THREE.MeshPhysicalMaterial({
   color:0x9fb9bf,
   map:glassReflectionTexture,
   roughnessMap:glassRoughnessTexture,
-  roughness:.14,
-  metalness:.015,
+  roughness:.17,
+  metalness:.008,
   transparent:true,
-  opacity:.46,
-  transmission:.14,
+  opacity:.41,
+  transmission:.18,
   ior:1.49,
   thickness:.016,
   clearcoat:.08,
   clearcoatRoughness:.24,
-  envMapIntensity:1.02,
+  envMapIntensity:1.12,
   side:THREE.DoubleSide
 });
 const heroPierMat=new THREE.MeshStandardMaterial({
