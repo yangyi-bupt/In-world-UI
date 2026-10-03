@@ -6172,6 +6172,125 @@ refGlassWall.rotation.y=-Math.PI/2;
 refGlassWall.receiveShadow=true;
 refStreet.add(refGlassWall);
 
+
+const refInteriorGroup=new THREE.Group();
+refInteriorGroup.name='reference-office-interior';
+refStreet.add(refInteriorGroup);
+
+const refInteriorRnd=makeSeededRandom(0x6a4d9b31);
+const refInteriorBackMaterials=[
+  new THREE.MeshStandardMaterial({color:0x596264,roughness:.94,metalness:0,envMapIntensity:.015}),
+  new THREE.MeshStandardMaterial({color:0x626866,roughness:.95,metalness:0,envMapIntensity:.012}),
+  new THREE.MeshStandardMaterial({color:0x4e5759,roughness:.93,metalness:0,envMapIntensity:.018}),
+  new THREE.MeshStandardMaterial({color:0x686861,roughness:.96,metalness:0,envMapIntensity:.010})
+];
+const refInteriorWarmMaterials=[
+  new THREE.MeshBasicMaterial({color:0xd7c6aa,toneMapped:true,transparent:true,opacity:.075}),
+  new THREE.MeshBasicMaterial({color:0xc9d1cf,toneMapped:true,transparent:true,opacity:.050}),
+  new THREE.MeshBasicMaterial({color:0xe1c8a8,toneMapped:true,transparent:true,opacity:.060})
+];
+const refInteriorShadowMat=new THREE.MeshBasicMaterial({
+  color:0x20282a,
+  transparent:true,
+  opacity:.18,
+  depthWrite:false
+});
+const refInteriorColumnMat=new THREE.MeshStandardMaterial({
+  color:0x777d7a,
+  roughness:.76,
+  metalness:.04,
+  envMapIntensity:.06
+});
+
+for(let bay=0;bay<15;bay++){
+  const z=-37.6+bay*4.75+2.37;
+  const bayWidth=4.28;
+  [4.92,8.08,11.22,14.12].forEach((y,floorIndex)=>{
+    const shadeIndex=(bay+floorIndex*2)%refInteriorBackMaterials.length;
+    const back=new THREE.Mesh(
+      new THREE.PlaneGeometry(bayWidth,2.62),
+      refInteriorBackMaterials[shadeIndex]
+    );
+    back.position.set(8.23,y,z);
+    back.rotation.y=-Math.PI/2;
+    refInteriorGroup.add(back);
+
+    if(refInteriorRnd()>.34){
+      const wash=new THREE.Mesh(
+        new THREE.PlaneGeometry(bayWidth*.88,2.22),
+        refInteriorWarmMaterials[(bay+floorIndex)%refInteriorWarmMaterials.length]
+      );
+      wash.position.set(8.215,y+.02,z+(refInteriorRnd()-.5)*.08);
+      wash.rotation.y=-Math.PI/2;
+      refInteriorGroup.add(wash);
+    }
+
+    const ceilingShadow=new THREE.Mesh(
+      new THREE.PlaneGeometry(bayWidth,.18),
+      refInteriorShadowMat
+    );
+    ceilingShadow.position.set(8.205,y+1.25,z);
+    ceilingShadow.rotation.y=-Math.PI/2;
+    refInteriorGroup.add(ceilingShadow);
+
+    const lowerShadow=ceilingShadow.clone();
+    lowerShadow.position.y=y-1.24;
+    refInteriorGroup.add(lowerShadow);
+
+    if((bay+floorIndex)%3===0){
+      const column=new THREE.Mesh(
+        new THREE.BoxGeometry(.16,2.52,.16),
+        refInteriorColumnMat
+      );
+      column.position.set(8.08,y,z+(refInteriorRnd()-.5)*1.75);
+      refInteriorGroup.add(column);
+    }
+  });
+}
+
+const refDeskMat=new THREE.MeshStandardMaterial({
+  color:0x5c5a55,
+  roughness:.82,
+  metalness:.02,
+  envMapIntensity:.02
+});
+const refPartitionMat=new THREE.MeshStandardMaterial({
+  color:0x858983,
+  roughness:.90,
+  metalness:0,
+  transparent:true,
+  opacity:.72
+});
+[-10.4,-5.8,-.4,4.6,10.2].forEach((z,index)=>{
+  const floorY=[4.15,7.32,10.46][index%3];
+  const desk=new THREE.Mesh(new THREE.BoxGeometry(.52,.055,1.35),refDeskMat);
+  desk.position.set(8.02,floorY,z);
+  refInteriorGroup.add(desk);
+
+  const partition=new THREE.Mesh(new THREE.BoxGeometry(.055,.88,1.20),refPartitionMat);
+  partition.position.set(8.00,floorY+.46,z+.52);
+  refInteriorGroup.add(partition);
+});
+
+const refFacadeRecessMat=new THREE.MeshBasicMaterial({
+  color:0x273032,
+  transparent:true,
+  opacity:.20,
+  depthWrite:false
+});
+for(let z=-40;z<=27;z+=4.75){
+  const recess=new THREE.Mesh(new THREE.PlaneGeometry(.16,13.65),refFacadeRecessMat);
+  recess.position.set(7.785,8.02,z+.18);
+  recess.rotation.y=-Math.PI/2;
+  refStreet.add(recess);
+}
+[3.30,6.45,9.60,12.75].forEach(y=>{
+  const recess=new THREE.Mesh(new THREE.PlaneGeometry(71.2,.09),refFacadeRecessMat);
+  recess.position.set(7.79,y-.09,-7);
+  recess.rotation.y=-Math.PI/2;
+  refStreet.add(recess);
+});
+
 // Recessed dark ground floor reads as a real office lobby / retail base.
 const refLobbyBand=new THREE.Mesh(
   new THREE.PlaneGeometry(70,3.05),
@@ -6241,6 +6360,52 @@ const refLobbyInset=new THREE.Mesh(
 refLobbyInset.position.set(7.04,1.77,-2.0);
 refLobbyInset.rotation.y=-Math.PI/2;
 refStreet.add(refLobbyInset);
+
+
+const refLobbyInterior=new THREE.Mesh(
+  new THREE.BoxGeometry(1.18,2.72,5.25),
+  new THREE.MeshStandardMaterial({
+    color:0x3f4746,
+    roughness:.84,
+    metalness:.01,
+    envMapIntensity:.03
+  })
+);
+refLobbyInterior.position.set(7.72,1.70,-2.0);
+refStreet.add(refLobbyInterior);
+
+const refLobbyRearGlow=new THREE.Mesh(
+  new THREE.PlaneGeometry(4.70,2.25),
+  new THREE.MeshBasicMaterial({
+    color:0xd8c7aa,
+    transparent:true,
+    opacity:.11,
+    toneMapped:true
+  })
+);
+refLobbyRearGlow.position.set(8.33,1.72,-2.0);
+refLobbyRearGlow.rotation.y=-Math.PI/2;
+refStreet.add(refLobbyRearGlow);
+
+const refLobbyCeiling=new THREE.Mesh(
+  new THREE.BoxGeometry(1.08,.08,5.15),
+  new THREE.MeshStandardMaterial({color:0xb8b7b0,roughness:.88})
+);
+refLobbyCeiling.position.set(7.78,2.88,-2.0);
+refStreet.add(refLobbyCeiling);
+
+const refLobbyLightMat=new THREE.MeshBasicMaterial({
+  color:0xffe5bd,
+  transparent:true,
+  opacity:.72,
+  toneMapped:false
+});
+[-3.55,-2.5,-1.45,-.42].forEach(z=>{
+  const lightSlot=new THREE.Mesh(new THREE.PlaneGeometry(.58,.035),refLobbyLightMat);
+  lightSlot.position.set(7.20,2.82,z);
+  lightSlot.rotation.y=-Math.PI/2;
+  refStreet.add(lightSlot);
+});
 
 const refCanopy=new THREE.Mesh(
   new THREE.BoxGeometry(1.55,.15,6.7),
