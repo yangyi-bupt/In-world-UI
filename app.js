@@ -4245,19 +4245,18 @@ createFacadeZone(18.1,15.0,0xa6a098,.28);
 // cafe/shop geometry stays behind the glass as interior depth instead of
 // dominating the streetscape.
 const lobbyGlassMat=new THREE.MeshPhysicalMaterial({
-  color:0x879494,
+  color:0xa3afad,
   map:glassReflectionTexture,
   roughnessMap:glassRoughnessTexture,
-  roughness:.18,
-  metalness:.008,
+  roughness:.24,
+  metalness:0,
   transparent:true,
-  opacity:.40,
-  transmission:.18,
+  opacity:.34,
+  transmission:.22,
   ior:1.50,
-  thickness:.012,
-  clearcoat:.04,
-  clearcoatRoughness:.34,
-  envMapIntensity:.76,
+  thickness:.010,
+  clearcoat:0,
+  envMapIntensity:.60,
   side:THREE.DoubleSide
 });
 const lobbyFrameMat=new THREE.MeshStandardMaterial({
@@ -4351,19 +4350,18 @@ scene.add(lobbyCanopy);
 // earlier mixed facade so the first read is clean glass, stone piers and deep
 // recessed entries rather than many small storefront objects.
 const heroGlassMat=new THREE.MeshPhysicalMaterial({
-  color:0x8b9999,
+  color:0xa4b0ae,
   map:glassReflectionTexture,
   roughnessMap:glassRoughnessTexture,
-  roughness:.17,
-  metalness:.008,
+  roughness:.23,
+  metalness:0,
   transparent:true,
-  opacity:.41,
-  transmission:.18,
-  ior:1.49,
-  thickness:.016,
-  clearcoat:.08,
-  clearcoatRoughness:.24,
-  envMapIntensity:1.12,
+  opacity:.35,
+  transmission:.22,
+  ior:1.50,
+  thickness:.012,
+  clearcoat:0,
+  envMapIntensity:.72,
   side:THREE.DoubleSide
 });
 const heroPierMap=cloneTextureVariant(fineConcreteSurface.map,.17,.09,.22,.18,.004);
@@ -4404,8 +4402,7 @@ const heroFrameMat=new THREE.MeshStandardMaterial({
     glass.material.opacity=.36;
     glass.material.roughness=.21;
     glass.material.envMapIntensity=.82;
-    glass.material.clearcoat=.045;
-    glass.material.clearcoatRoughness=.38;
+    glass.material.clearcoat=0;
   }
   glass.position.set(7.34,5.60,z);
   glass.rotation.y=-Math.PI/2;
@@ -7092,28 +7089,30 @@ const refGlass=new THREE.MeshPhysicalMaterial({
   color:0xc5d6d8,
   map:refGlassMaps.map,
   roughnessMap:refGlassMaps.roughness,
-  roughness:.18,
-  metalness:.015,
+  roughness:.23,
+  metalness:0,
   transparent:true,
-  opacity:.72,
-  transmission:.025,
-  clearcoat:.14,
-  clearcoatRoughness:.28,
-  envMapIntensity:.78,
+  opacity:.66,
+  transmission:.055,
+  ior:1.50,
+  thickness:.008,
+  clearcoat:0,
+  envMapIntensity:.60,
   depthWrite:true
 });
 const refLobbyGlass=new THREE.MeshPhysicalMaterial({
-  color:0xaebfc0,
+  color:0xb5c1bf,
   map:refGlassMaps.map,
   roughnessMap:refGlassMaps.roughness,
-  roughness:.20,
-  metalness:.025,
+  roughness:.24,
+  metalness:0,
   transparent:true,
-  opacity:.76,
-  transmission:.012,
-  clearcoat:.12,
-  clearcoatRoughness:.30,
-  envMapIntensity:1.08
+  opacity:.68,
+  transmission:.045,
+  ior:1.50,
+  thickness:.008,
+  clearcoat:0,
+  envMapIntensity:.64
 });
 
 // Large backing mass hides the former low-rise silhouette and gives the street
@@ -7767,8 +7766,7 @@ const refHeroShopGlass=refLobbyGlass.clone();
 refHeroShopGlass.opacity=.70;
 refHeroShopGlass.roughness=.21;
 refHeroShopGlass.envMapIntensity=.88;
-refHeroShopGlass.clearcoat=.12;
-refHeroShopGlass.clearcoatRoughness=.30;
+refHeroShopGlass.clearcoat=0;
 refHeroShopGlass.transmission=.020;
 refHeroShopGlass.ior=1.48;
 
