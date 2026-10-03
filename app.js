@@ -2322,7 +2322,7 @@ function glassPanel(w,h,x,y,z,ry=-Math.PI/2,tint=0x929e9e){
       ior:1.50,
       thickness:.006,
       clearcoat:0,
-      envMapIntensity:.48,
+      envMapIntensity:.32,
       depthWrite:false,
       side:THREE.DoubleSide
     })
@@ -3802,7 +3802,7 @@ const roadDustLayer=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     map:roadDustTexture,
     transparent:true,
-    opacity:.62,
+    opacity:.46,
     depthWrite:false,
     toneMapped:false
   })
@@ -4011,10 +4011,10 @@ const corniceUnder=new THREE.Mesh(
     map:concreteSurface.map,
     roughnessMap:concreteSurface.roughness,
     normalMap:concreteSurface.normal,
-    normalScale:new THREE.Vector2(.22,.22),
+    normalScale:new THREE.Vector2(.12,.12),
     bumpMap:concreteSurface.bump,
-    bumpScale:.008,
-    envMapIntensity:.055
+    bumpScale:.0040,
+    envMapIntensity:.0455
   })
 );
 corniceUnder.position.set(8.40,7.31,-5);
@@ -4120,9 +4120,9 @@ const facadeWeatherMat=new THREE.MeshStandardMaterial({
   roughness:.92,
   metalness:0,
   transparent:true,
-  opacity:.58,
+  opacity:.36,
   depthWrite:false,
-  envMapIntensity:.025,
+  envMapIntensity:.020,
   side:THREE.DoubleSide
 });
 const facadeWeather=new THREE.Mesh(
@@ -4141,9 +4141,9 @@ const facadeBasePatinaMat=new THREE.MeshStandardMaterial({
   roughness:.96,
   metalness:0,
   transparent:true,
-  opacity:.78,
+  opacity:.44,
   depthWrite:false,
-  envMapIntensity:.035,
+  envMapIntensity:.025,
   side:THREE.DoubleSide
 });
 const facadeBasePatina=new THREE.Mesh(
@@ -4160,7 +4160,7 @@ const facadeJointOverlay=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     map:facadeJointTexture,
     transparent:true,
-    opacity:.48,
+    opacity:.28,
     depthWrite:false,
     toneMapped:false,
     side:THREE.DoubleSide
@@ -4185,10 +4185,10 @@ function createFacadeZone(z,width,color,opacity=.34){
       map:zoneMap,
       roughnessMap:zoneRough,
       normalMap:zoneNormal,
-      normalScale:new THREE.Vector2(.10,.10),
+      normalScale:new THREE.Vector2(.060,.060),
       bumpMap:zoneBump,
-      bumpScale:.006,
-      roughness:.88,
+      bumpScale:.0032,
+      roughness:.90,
       transparent:true,
       opacity,
       envMapIntensity:.055,
@@ -5375,9 +5375,9 @@ const cafeDoorRevealMat=new THREE.MeshStandardMaterial({
   map:fineConcreteSurface.map,
   roughnessMap:fineConcreteSurface.roughness,
   normalMap:fineConcreteSurface.normal,
-  normalScale:new THREE.Vector2(.13,.13),
+  normalScale:new THREE.Vector2(.075,.075),
   bumpMap:fineConcreteSurface.bump,
-  bumpScale:.006,
+  bumpScale:.0035,
   envMapIntensity:.04
 });
 [1.64,2.76].forEach(z=>{
@@ -5427,10 +5427,10 @@ const cafeInteriorShellMat=new THREE.MeshStandardMaterial({
   map:concreteSurface.map,
   roughnessMap:concreteSurface.roughness,
   normalMap:concreteSurface.normal,
-  normalScale:new THREE.Vector2(.22,.22),
+  normalScale:new THREE.Vector2(.11,.11),
   bumpMap:concreteSurface.bump,
-  bumpScale:.006,
-  envMapIntensity:.04
+  bumpScale:.0032,
+  envMapIntensity:.035
 });
 const cafeBackWall=new THREE.Mesh(
   new THREE.PlaneGeometry(7.34,2.25),
@@ -5726,9 +5726,9 @@ const cafeBenchMat=new THREE.MeshPhysicalMaterial({
   map:woodSurface.map,
   roughnessMap:cafeWoodFinishRoughness,
   normalMap:woodSurface.normal,
-  normalScale:new THREE.Vector2(.20,.20),
+  normalScale:new THREE.Vector2(.12,.12),
   bumpMap:woodSurface.bump,
-  bumpScale:.017,
+  bumpScale:.008,
   clearcoat:.045,
   clearcoatMap:cafeWoodClearcoatWear,
   clearcoatRoughness:.80,
@@ -6437,7 +6437,7 @@ function createDistantTrafficCue(x,z,direction,color){
   const lightMat=new THREE.MeshBasicMaterial({
     color:direction>0?0xe8e0c9:0x9b5a54,
     transparent:true,
-    opacity:.52,
+    opacity:.38,
     toneMapped:false
   });
   [-.32,.32].forEach(side=>{
@@ -6938,7 +6938,7 @@ function makeReferencePavingMaps(seed){
     g.fillRect(x-radius,y-radius,radius*2,radius*2);
   }
 
-  for(let i=0;i<2800;i++){
+  for(let i=0;i<1500;i++){
     const x=rnd()*size;
     const y=rnd()*size;
     const rr=.20+rnd()*.95;
@@ -6952,7 +6952,7 @@ function makeReferencePavingMaps(seed){
   }
 
   // Rare darker use/water marks around the pedestrian path.
-  for(let i=0;i<16;i++){
+  for(let i=0;i<8;i++){
     const x=rnd()*size;
     const y=rnd()*size;
     const rx=8+rnd()*38;
@@ -6967,7 +6967,7 @@ function makeReferencePavingMaps(seed){
   const map=new THREE.CanvasTexture(color);
   map.colorSpace=THREE.SRGBColorSpace;
   map.wrapS=map.wrapT=THREE.RepeatWrapping;
-  map.repeat.set(2.15,14.5);
+  map.repeat.set(1.30,8.25);
   map.anisotropy=8;
 
   const bump=new THREE.CanvasTexture(height);
@@ -7147,7 +7147,7 @@ for(let bay=0;bay<15;bay++){
 const refInteriorShadeMat=new THREE.MeshBasicMaterial({
   color:0x3d4848,
   transparent:true,
-  opacity:.16,
+  opacity:.11,
   depthWrite:false,
   toneMapped:true,
   side:THREE.DoubleSide
@@ -7460,8 +7460,8 @@ const refHeroStone=refStone.clone();
 refHeroStone.color=new THREE.Color(0xd9d5cc);
 refHeroStone.roughness=.87;
 refHeroStone.envMapIntensity=.09;
-refHeroStone.normalScale=new THREE.Vector2(.045,.045);
-refHeroStone.bumpScale=.0038;
+refHeroStone.normalScale=new THREE.Vector2(.030,.030);
+refHeroStone.bumpScale=.0021;
 
 // Near-camera stone needs a different texel scale from the seventy-metre wall.
 // Clone every map so changing repeat/offset here cannot alter the distant facade.
@@ -7679,11 +7679,11 @@ refHeroBayCenters.forEach((z,bayIndex)=>{
 // modules replace the single uninterrupted dark strip with doors, transoms,
 // display zones and deep stone jambs.
 const refHeroShopGlass=refLobbyGlass.clone();
-refHeroShopGlass.opacity=.79;
-refHeroShopGlass.roughness=.17;
-refHeroShopGlass.envMapIntensity=1.08;
-refHeroShopGlass.clearcoat=.18;
-refHeroShopGlass.clearcoatRoughness=.22;
+refHeroShopGlass.opacity=.70;
+refHeroShopGlass.roughness=.21;
+refHeroShopGlass.envMapIntensity=.88;
+refHeroShopGlass.clearcoat=.12;
+refHeroShopGlass.clearcoatRoughness=.30;
 refHeroShopGlass.transmission=.020;
 refHeroShopGlass.ior=1.48;
 
@@ -8854,7 +8854,7 @@ refStreet.add(refFurnishingZone);
 const refLongJointMat=new THREE.MeshBasicMaterial({
   color:0x959792,
   transparent:true,
-  opacity:.17,
+  opacity:.115,
   depthWrite:false,
   toneMapped:true
 });
@@ -8872,8 +8872,8 @@ const refLongJointMat=new THREE.MeshBasicMaterial({
 // walking path.
 const refUtilityCoverMat=new THREE.MeshStandardMaterial({
   color:0x6f7572,
-  roughness:.66,
-  metalness:.34,
+  roughness:.74,
+  metalness:.22,
   map:metalSurface.map,
   roughnessMap:metalSurface.roughness,
   normalMap:metalSurface.normal,
@@ -8904,10 +8904,10 @@ const refEntryApron=new THREE.Mesh(
     map:refPavingMaps.map,
     roughnessMap:refPavingMaps.roughness,
     normalMap:refPavingMaps.normal,
-    normalScale:new THREE.Vector2(.034,.034),
+    normalScale:new THREE.Vector2(.018,.018),
     bumpMap:refPavingMaps.bump,
-    bumpScale:.0028,
-    envMapIntensity:.030
+    bumpScale:.0012,
+    envMapIntensity:.044
   })
 );
 refEntryApron.rotation.x=-Math.PI/2;
@@ -8924,10 +8924,10 @@ const refGutterMat=new THREE.MeshStandardMaterial({
   map:asphaltGround.map,
   roughnessMap:asphaltGround.roughness,
   normalMap:asphaltGround.normal,
-  normalScale:new THREE.Vector2(.075,.075),
+  normalScale:new THREE.Vector2(.048,.048),
   bumpMap:asphaltGround.bump,
-  bumpScale:.006,
-  envMapIntensity:.025
+  bumpScale:.0034,
+  envMapIntensity:.020
 });
 const refGutterBand=new THREE.Mesh(
   new THREE.PlaneGeometry(.62,43.8),
@@ -8941,11 +8941,11 @@ refStreet.add(refGutterBand);
 // Two storm drains sit at believable low points near the parked cars / trees.
 const refStormDrainMat=new THREE.MeshStandardMaterial({
   color:0x4d5653,
-  roughness:.52,
-  metalness:.52,
+  roughness:.62,
+  metalness:.42,
   map:metalSurface.map,
   roughnessMap:metalSurface.roughness,
-  envMapIntensity:.62
+  envMapIntensity:.46
 });
 [-5.55,8.75].forEach((z,drainIndex)=>{
   const frame=new THREE.Mesh(
@@ -8995,9 +8995,9 @@ refContactCanvas.width=256;
 refContactCanvas.height=32;
 const refContactCtx=refContactCanvas.getContext('2d');
 const refContactGrad=refContactCtx.createLinearGradient(0,0,256,0);
-refContactGrad.addColorStop(0,'rgba(22,27,27,.34)');
-refContactGrad.addColorStop(.18,'rgba(30,34,34,.18)');
-refContactGrad.addColorStop(.52,'rgba(38,41,40,.065)');
+refContactGrad.addColorStop(0,'rgba(22,27,27,.23)');
+refContactGrad.addColorStop(.18,'rgba(30,34,34,.12)');
+refContactGrad.addColorStop(.52,'rgba(38,41,40,.040)');
 refContactGrad.addColorStop(1,'rgba(38,41,40,0)');
 refContactCtx.fillStyle=refContactGrad;
 refContactCtx.fillRect(0,0,256,32);
@@ -9082,8 +9082,8 @@ let refJointZ=-42.0;
 let refJointIndex=0;
 while(refJointZ<31){
   const jointMat=refJointMat.clone();
-  jointMat.opacity=.105+refJointRnd()*.075;
-  const jointWidth=.011+refJointRnd()*.014;
+  jointMat.opacity=.062+refJointRnd()*.050;
+  const jointWidth=.009+refJointRnd()*.010;
   const joint=new THREE.Mesh(new THREE.PlaneGeometry(6.92,jointWidth),jointMat);
   joint.rotation.x=-Math.PI/2;
   joint.rotation.z=(refJointRnd()-.5)*.0035;
@@ -11125,7 +11125,7 @@ const storefrontShade=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     color:0x806f61,
     transparent:true,
-    opacity:.055,
+    opacity:.032,
     depthWrite:false
   })
 );
@@ -11140,8 +11140,8 @@ storefrontContactCanvas.width=128;
 storefrontContactCanvas.height=16;
 const storefrontContactCtx=storefrontContactCanvas.getContext('2d');
 const storefrontContactGradient=storefrontContactCtx.createLinearGradient(0,0,128,0);
-storefrontContactGradient.addColorStop(0,'rgba(61,54,48,.14)');
-storefrontContactGradient.addColorStop(.38,'rgba(71,63,56,.07)');
+storefrontContactGradient.addColorStop(0,'rgba(61,54,48,.095)');
+storefrontContactGradient.addColorStop(.38,'rgba(71,63,56,.045)');
 storefrontContactGradient.addColorStop(1,'rgba(71,63,56,0)');
 storefrontContactCtx.fillStyle=storefrontContactGradient;
 storefrontContactCtx.fillRect(0,0,128,16);
@@ -11152,7 +11152,7 @@ const storefrontContactShade=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     map:storefrontContactTexture,
     transparent:true,
-    opacity:.82,
+    opacity:.60,
     depthWrite:false,
     toneMapped:false
   })
