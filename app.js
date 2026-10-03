@@ -7624,9 +7624,13 @@ refHeroBayCenters.forEach((z,bayIndex)=>{
 // modules replace the single uninterrupted dark strip with doors, transoms,
 // display zones and deep stone jambs.
 const refHeroShopGlass=refLobbyGlass.clone();
-refHeroShopGlass.opacity=.82;
-refHeroShopGlass.roughness=.15;
-refHeroShopGlass.envMapIntensity=1.02;
+refHeroShopGlass.opacity=.79;
+refHeroShopGlass.roughness=.17;
+refHeroShopGlass.envMapIntensity=1.08;
+refHeroShopGlass.clearcoat=.18;
+refHeroShopGlass.clearcoatRoughness=.22;
+refHeroShopGlass.transmission=.020;
+refHeroShopGlass.ior=1.48;
 
 function addHeroStorefront(z,width,doorOffset,variant=0){
   const jambDepth=.76;
@@ -8101,6 +8105,251 @@ for(let y=2.05;y<14.6;y+=2.72){
   joint.renderOrder=5;
   refHeroFacade.add(joint);
 }
+
+/* ---------- occupied storefront pass ----------
+   Daylight storefronts are rarely empty black boxes. A small amount of signage,
+   ceiling light, glass edge haze and planting does more for realism than filling
+   every square metre with props. */
+function makeFacadeLabelTexture(lines,options={}){
+  const canvas=document.createElement('canvas');
+  canvas.width=512;
+  canvas.height=192;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const fg=options.fg || '#d9d7cf';
+  const accent=options.accent || '#a9aaa4';
+
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillStyle=fg;
+  ctx.font=(options.weight || 500)+' 46px Arial, sans-serif';
+  ctx.letterSpacing='2px';
+  ctx.fillText(lines[0] || '',256,74);
+
+  if(lines[1]){
+    ctx.fillStyle=accent;
+    ctx.font='400 21px Arial, sans-serif';
+    ctx.fillText(lines[1],256,126);
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.anisotropy=8;
+  return texture;
+}
+
+const refHeroSignMatA=new THREE.MeshBasicMaterial({
+  map:makeFacadeLabelTexture(['ALDER','COFFEE · BAKERY'],{
+    fg:'#e2ddd2',
+    accent:'#a8a49b',
+    weight:600
+  }),
+  transparent:true,
+  opacity:.88,
+  depthWrite:false,
+  toneMapped:true
+});
+const refHeroSignA=new THREE.Mesh(
+  new THREE.PlaneGeometry(2.72,.88),
+  refHeroSignMatA
+);
+refHeroSignA.position.set(6.335,2.36,5.18);
+refHeroSignA.rotation.y=-Math.PI/2;
+refHeroSignA.renderOrder=6;
+refHeroFacade.add(refHeroSignA);
+
+const refHeroSignMatB=new THREE.MeshBasicMaterial({
+  map:makeFacadeLabelTexture(['STUDIO 17','DESIGN OFFICE'],{
+    fg:'#d7d9d3',
+    accent:'#929994',
+    weight:500
+  }),
+  transparent:true,
+  opacity:.76,
+  depthWrite:false,
+  toneMapped:true
+});
+const refHeroSignB=new THREE.Mesh(
+  new THREE.PlaneGeometry(2.45,.78),
+  refHeroSignMatB
+);
+refHeroSignB.position.set(6.285,2.35,9.90);
+refHeroSignB.rotation.y=-Math.PI/2;
+refHeroSignB.renderOrder=6;
+refHeroFacade.add(refHeroSignB);
+
+// Small building-number plaque beside the double-height entrance.
+const refHeroNumberCanvas=document.createElement('canvas');
+refHeroNumberCanvas.width=256;
+refHeroNumberCanvas.height=256;
+const refHeroNumberCtx=refHeroNumberCanvas.getContext('2d');
+refHeroNumberCtx.clearRect(0,0,256,256);
+refHeroNumberCtx.fillStyle='#bab7ad';
+refHeroNumberCtx.textAlign='center';
+refHeroNumberCtx.textBaseline='middle';
+refHeroNumberCtx.font='300 112px Arial, sans-serif';
+refHeroNumberCtx.fillText('17',128,132);
+const refHeroNumberTexture=new THREE.CanvasTexture(refHeroNumberCanvas);
+refHeroNumberTexture.colorSpace=THREE.SRGBColorSpace;
+const refHeroNumber=new THREE.Mesh(
+  new THREE.PlaneGeometry(.42,.42),
+  new THREE.MeshBasicMaterial({
+    map:refHeroNumberTexture,
+    transparent:true,
+    opacity:.78,
+    depthWrite:false,
+    toneMapped:true
+  })
+);
+refHeroNumber.position.set(6.685,2.14,4.20);
+refHeroNumber.rotation.y=-Math.PI/2;
+refHeroNumber.renderOrder=7;
+refHeroFacade.add(refHeroNumber);
+
+// Daytime interior luminance should be visible but never glow like a game sign.
+// Two broad ceiling cards and one soft wall wash supply depth behind the glass.
+const refHeroInteriorCeilingGlowMat=new THREE.MeshBasicMaterial({
+  color:0xe3d4bd,
+  transparent:true,
+  opacity:.095,
+  depthWrite:false,
+  toneMapped:true
+});
+[
+  {z:5.22,w:3.15,x:8.12},
+  {z:9.82,w:2.88,x:8.15}
+].forEach((spec,index)=>{
+  const panel=new THREE.Mesh(
+    new THREE.PlaneGeometry(.62,spec.w),
+    refHeroInteriorCeilingGlowMat
+  );
+  panel.position.set(spec.x,2.61,spec.z);
+  panel.rotation.x=-Math.PI/2;
+  panel.renderOrder=2;
+  refHeroFacade.add(panel);
+
+  if(index===0){
+    const wallWash=new THREE.Mesh(
+      new THREE.PlaneGeometry(2.34,1.10),
+      new THREE.MeshBasicMaterial({
+        color:0xd6c2a4,
+        transparent:true,
+        opacity:.075,
+        depthWrite:false,
+        toneMapped:true
+      })
+    );
+    wallWash.position.set(8.63,1.58,spec.z-.14);
+    wallWash.rotation.y=-Math.PI/2;
+    refHeroFacade.add(wallWash);
+  }
+});
+
+// Very faint lower-edge glass haze / cleaning marks. Kept as two overlays so
+// the whole window remains reflective and readable from a distance.
+function makeGlassUseTexture(seed){
+  const canvas=document.createElement('canvas');
+  canvas.width=512;
+  canvas.height=256;
+  const ctx=canvas.getContext('2d');
+  const rnd=makeSeededRandom(seed);
+  ctx.clearRect(0,0,512,256);
+
+  const bottom=ctx.createLinearGradient(0,256,0,120);
+  bottom.addColorStop(0,'rgba(192,197,190,.14)');
+  bottom.addColorStop(.35,'rgba(199,203,197,.055)');
+  bottom.addColorStop(1,'rgba(210,214,209,0)');
+  ctx.fillStyle=bottom;
+  ctx.fillRect(0,110,512,146);
+
+  for(let i=0;i<12;i++){
+    const x=20+rnd()*472;
+    const y=105+rnd()*122;
+    const rx=12+rnd()*30;
+    const ry=5+rnd()*12;
+    const grad=ctx.createRadialGradient(x,y,1,x,y,rx);
+    grad.addColorStop(0,'rgba(221,224,217,'+(.016+rnd()*.025).toFixed(3)+')');
+    grad.addColorStop(1,'rgba(221,224,217,0)');
+    ctx.fillStyle=grad;
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.scale(1,ry/rx);
+    ctx.beginPath();
+    ctx.arc(0,0,rx,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.anisotropy=8;
+  return texture;
+}
+[
+  {z:5.15,seed:0x72ac1131},
+  {z:9.90,seed:0x91bd4aa2}
+].forEach(spec=>{
+  const haze=new THREE.Mesh(
+    new THREE.PlaneGeometry(3.80,2.36),
+    new THREE.MeshBasicMaterial({
+      map:makeGlassUseTexture(spec.seed),
+      transparent:true,
+      opacity:.46,
+      depthWrite:false,
+      toneMapped:true
+    })
+  );
+  haze.position.set(7.685,1.58,spec.z);
+  haze.rotation.y=-Math.PI/2;
+  haze.renderOrder=7;
+  refHeroFacade.add(haze);
+});
+
+// Two restrained planters link the architecture to the sidewalk and break the
+// hard CAD-like line between glazing, stone and empty paving.
+const refHeroPlanterMat=new THREE.MeshStandardMaterial({
+  color:0x777a73,
+  roughness:.88,
+  metalness:.03,
+  map:concreteSurface.map,
+  roughnessMap:concreteSurface.roughness,
+  bumpMap:concreteSurface.bump,
+  bumpScale:.005,
+  envMapIntensity:.04
+});
+const refHeroPlanterLeafMats=[
+  makeFoliageMaterial(0x667b61,.94,.008,.018),
+  makeFoliageMaterial(0x75896b,.92,.010,.022)
+];
+[
+  {z:4.47,w:.88},
+  {z:10.72,w:1.02}
+].forEach((spec,index)=>{
+  const planter=new THREE.Mesh(
+    new THREE.BoxGeometry(.74,.36,spec.w),
+    refHeroPlanterMat
+  );
+  planter.position.set(6.20,.25,spec.z);
+  planter.castShadow=true;
+  planter.receiveShadow=true;
+  refHeroFacade.add(planter);
+
+  for(let i=0;i<5;i++){
+    const leaf=new THREE.Mesh(
+      new THREE.IcosahedronGeometry(.16+(i%2)*.025,1),
+      refHeroPlanterLeafMats[(i+index)%2]
+    );
+    leaf.scale.set(.88,1.25,.72);
+    leaf.position.set(
+      6.18+(i%2-.5)*.12,
+      .52+(i%3)*.035,
+      spec.z-spec.w*.32+i*(spec.w*.64/4)
+    );
+    leaf.rotation.set((i%2?.10:-.08),i*.63,(i%3-1)*.12);
+    leaf.castShadow=false;
+    refHeroFacade.add(leaf);
+  }
+});
 
 // A narrow stone base and sparse panel joints make the scale legible at walking
 // distance without drawing a noisy checkerboard over the whole building.
