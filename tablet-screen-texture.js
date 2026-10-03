@@ -41,10 +41,10 @@
     };
 
     const apps=[
-      {id:'messages',label:'Messages',short:'Mira · nearby',accent:'#7fd6ff',rgb:'127,214,255'},
-      {id:'tasks',label:'Tasks',short:'3 things to notice',accent:'#9effc4',rgb:'158,255,196'},
-      {id:'map',label:'Map',short:'Nova Walk · Block 01',accent:'#cdb7ff',rgb:'205,183,255'},
-      {id:'scanner',label:'Scanner',short:'Nearby world signals',accent:'#ffc98a',rgb:'255,201,138'}
+      {id:'messages',label:'Messages',short:'Mira · nearby',accent:'#2f87b5',rgb:'127,214,255'},
+      {id:'tasks',label:'Tasks',short:'3 things to notice',accent:'#3f8a63',rgb:'158,255,196'},
+      {id:'map',label:'Map',short:'Nova Walk · Block 01',accent:'#7561b2',rgb:'205,183,255'},
+      {id:'scanner',label:'Scanner',short:'Nearby world signals',accent:'#b7772f',rgb:'255,201,138'}
     ];
 
     const appRects=[];
@@ -63,13 +63,13 @@
       if(fill) ctx.fill();
     }
 
-    function text(txt,x,y,size,weight='normal',color='#fff'){
+    function text(txt,x,y,size,weight='normal',color='#202830'){
       ctx.fillStyle=color;
       ctx.font=weight+' '+size+'px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       ctx.fillText(txt,x,y);
     }
 
-    function strokeRoundRect(x,y,w,h,r,color='rgba(255,255,255,.08)',lineWidth=1){
+    function strokeRoundRect(x,y,w,h,r,color='rgba(38,47,56,.10)',lineWidth=1){
       roundedRect(x,y,w,h,r,false);
       ctx.strokeStyle=color;
       ctx.lineWidth=lineWidth;
@@ -202,8 +202,8 @@
         label=args[0];
         x=args[1];
         y=args[2];
-        accent=args[3] || 'rgba(255,255,255,.10)';
-        fg=args[4] || '#b9c7db';
+        accent=args[3] || 'rgba(55,67,79,.10)';
+        fg=args[4] || '#536171';
 
         ctx.save();
         ctx.font='700 11px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
@@ -216,17 +216,17 @@
         w=args[2];
         h=args[3];
         label=args[4];
-        accent=args[5] || '#8fc5ff';
+        accent=args[5] || '#397fa7';
         active=Boolean(args[6]);
-        fg=active?'#081018':accent;
+        fg=active?'#ffffff':accent;
       }
 
       ctx.save();
-      ctx.fillStyle=active?accent:'rgba(255,255,255,.040)';
+      ctx.fillStyle=active?accent:'rgba(255,255,255,.78)';
       roundedRect(x,y,w,h,h/2,true);
       strokeRoundRect(
         x,y,w,h,h/2,
-        active?'rgba(255,255,255,.18)':accent,
+        active?'rgba(255,255,255,.28)':accent,
         active?1.2:.8
       );
 
@@ -237,10 +237,10 @@
       return w;
     }
 
-    function appShell(accent='#8fc5ff',rgb='127,214,255'){
-      ctx.fillStyle='rgba(7,11,18,.60)';
+    function appShell(accent='#397fa7',rgb='127,214,255'){
+      ctx.fillStyle='rgba(255,255,255,.88)';
       roundedRect(44,194,936,468,34,true);
-      strokeRoundRect(44,194,936,468,34,'rgba(255,255,255,.055)',1);
+      strokeRoundRect(44,194,936,468,34,'rgba(37,47,57,.10)',1);
 
       // A very faint pointer-driven light stays under the content hierarchy.
       // It reads as light moving inside cover glass without washing out text.
@@ -270,7 +270,7 @@
       // Recessed lower edge gives the large app surface a little physical depth.
       const lower=ctx.createLinearGradient(0,614,0,662);
       lower.addColorStop(0,'rgba(0,0,0,0)');
-      lower.addColorStop(1,'rgba(0,0,0,.16)');
+      lower.addColorStop(1,'rgba(32,40,48,.045)');
       ctx.fillStyle=lower;
       roundedRect(45,594,934,67,0,true);
 
@@ -292,7 +292,7 @@
       if(state.appDepthX>=0) roundedRect(45,238,2,356,1,true);
       else roundedRect(977,238,2,356,1,true);
 
-      ctx.fillStyle='rgba(0,0,0,'+(.08+Math.abs(state.appDepthX)*.05).toFixed(3)+')';
+      ctx.fillStyle='rgba(35,44,53,'+(.035+Math.abs(state.appDepthX)*.025).toFixed(3)+')';
       if(state.appDepthX>=0) roundedRect(976,238,3,356,1,true);
       else roundedRect(45,238,3,356,1,true);
     }
@@ -358,42 +358,42 @@
     }
 
     function drawSystemFooter(context='HOME'){
-      text(context.toUpperCase(),62,684,10,'800','#56667d');
+      text(context.toUpperCase(),62,684,10,'800','#66727f');
 
-      ctx.fillStyle='rgba(255,255,255,.050)';
+      ctx.fillStyle='rgba(38,47,56,.10)';
       roundedRect(438,681,148,4,2,true);
 
       const phase=(state.uiTime*.42)%1;
       ctx.fillStyle='rgba(127,214,255,.18)';
       roundedRect(438+phase*118,681,30,4,2,true);
 
-      text('POINTER',864,684,10,'650','#56667d');
+      text('POINTER',864,684,10,'650','#66727f');
       ctx.fillStyle='rgba(127,214,255,.30)';
       ctx.beginPath();
       ctx.arc(945,680,3,0,Math.PI*2);
       ctx.fill();
     }
 
-    function appHeader(title,subtitle,accent='#8fc5ff',appId=null){
+    function appHeader(title,subtitle,accent='#397fa7',appId=null){
       text(title.toUpperCase(),70,220,11,'800',accent);
-      text(subtitle,70,246,14,'520','#70809a');
-      text(title,70,289,40,'690','#f5f8ff');
+      text(subtitle,70,246,14,'520','#687583');
+      text(title,70,289,40,'690','#1f2933');
 
-      ctx.fillStyle='rgba(255,255,255,.050)';
+      ctx.fillStyle='rgba(36,45,54,.085)';
       roundedRect(70,308,884,1,1,true);
 
       if(appId){
         const puckX=812-state.appDepthX*2.4;
         const puckY=210-state.appDepthY*1.4;
-        ctx.fillStyle='rgba(255,255,255,.030)';
+        ctx.fillStyle='rgba(255,255,255,.82)';
         roundedRect(puckX,puckY,42,42,14,true);
-        strokeRoundRect(puckX,puckY,42,42,14,'rgba(255,255,255,.055)',1);
+        strokeRoundRect(puckX,puckY,42,42,14,'rgba(38,47,56,.09)',1);
         appIcon(appId,puckX+21,puckY+21,21,accent,.14);
       }
 
-      ctx.fillStyle='rgba(255,255,255,.035)';
+      ctx.fillStyle='rgba(255,255,255,.84)';
       roundedRect(866,214,88,30,15,true);
-      strokeRoundRect(866,214,88,30,15,'rgba(255,255,255,.060)',1);
+      strokeRoundRect(866,214,88,30,15,'rgba(38,47,56,.09)',1);
 
       const readyPulse=.62+.38*((Math.sin(state.uiTime*2.4)+1)*.5);
       ctx.save();
@@ -404,13 +404,13 @@
       ctx.fill();
       ctx.restore();
 
-      text('READY',894,233,10,'800','#8192aa');
+      text('READY',894,233,10,'800','#667483');
     }
 
     function isHover(key){return state.hoverKey===key;}
     function isPressed(key){return state.pressedKey===key;}
 
-    function card(x,y,w,h,r,key,base='rgba(255,255,255,.055)'){
+    function card(x,y,w,h,r,key,base='rgba(255,255,255,.84)'){
       const hovered=isHover(key);
       const pressed=isPressed(key);
 
@@ -423,8 +423,8 @@
       }
 
       ctx.fillStyle=pressed
-        ? 'rgba(125,190,255,.15)'
-        : (hovered?'rgba(255,255,255,.095)':base);
+        ? 'rgba(70,143,183,.15)'
+        : (hovered?'rgba(255,255,255,.98)':base);
       roundedRect(x,y,w,h,r,true);
 
       ctx.shadowColor='transparent';
@@ -433,7 +433,7 @@
 
       strokeRoundRect(
         x,y,w,h,r,
-        pressed?'rgba(178,224,255,.55)':(hovered?'rgba(178,224,255,.28)':'rgba(255,255,255,.075)'),
+        pressed?'rgba(55,135,180,.34)':(hovered?'rgba(55,135,180,.18)':'rgba(38,47,56,.10)'),
         pressed?1.6:1
       );
 
@@ -471,31 +471,31 @@
     function base(){
       ctx.clearRect(0,0,width,height);
       const screenBase=ctx.createLinearGradient(0,0,0,height);
-      screenBase.addColorStop(0,'#071011');
-      screenBase.addColorStop(.48,'#05090d');
-      screenBase.addColorStop(1,'#030609');
+      screenBase.addColorStop(0,'#fbfbf8');
+      screenBase.addColorStop(.48,'#f7f7f3');
+      screenBase.addColorStop(1,'#f1f2ef');
       ctx.fillStyle=screenBase;
       ctx.fillRect(0,0,width,height);
 
       // Cool daylight at the top and a restrained warm street reflection at the
       // lower edge tie the device visually to the world around it.
       const ambientA=ctx.createRadialGradient(148,48,12,148,48,560);
-      ambientA.addColorStop(0,'rgba(104,177,190,.18)');
-      ambientA.addColorStop(.42,'rgba(50,98,111,.060)');
+      ambientA.addColorStop(0,'rgba(93,151,170,.085)');
+      ambientA.addColorStop(.42,'rgba(80,121,136,.030)');
       ambientA.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=ambientA;
       ctx.fillRect(0,0,width,height);
 
       const ambientB=ctx.createRadialGradient(860,720,20,860,720,520);
-      ambientB.addColorStop(0,'rgba(190,139,98,.085)');
-      ambientB.addColorStop(.55,'rgba(104,76,60,.026)');
+      ambientB.addColorStop(0,'rgba(201,163,126,.060)');
+      ambientB.addColorStop(.55,'rgba(132,104,82,.020)');
       ambientB.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=ambientB;
       ctx.fillRect(0,0,width,height);
 
       // Sparse micro-grid gives the display texture without looking like a
       // website background. It remains under 3% alpha for text clarity.
-      ctx.fillStyle='rgba(255,255,255,.018)';
+      ctx.fillStyle='rgba(46,55,63,.018)';
       for(let y=118;y<height-42;y+=54){
         for(let x=52+(Math.floor(y/54)%2)*27;x<width-42;x+=54){
           ctx.beginPath();
@@ -508,34 +508,34 @@
       const time=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 
       // Minimal system rail rather than a large floating web-style navbar.
-      text(time,62,61,21,'650','#eaf0f9');
-      text('NOVA',486,59,12,'800','#a8b9d1');
+      text(time,62,61,21,'650','#25303a');
+      text('NOVA',486,59,12,'800','#5e6a76');
 
       ctx.fillStyle='#83dcff';
       ctx.beginPath();
       ctx.arc(860,54,3.2,0,Math.PI*2);
       ctx.fill();
-      text('LIVE',871,59,11,'750','#94a7c1');
+      text('LIVE',871,59,11,'750','#63707d');
 
-      ctx.strokeStyle='rgba(255,255,255,.32)';
+      ctx.strokeStyle='rgba(42,52,61,.24)';
       ctx.lineWidth=1.4;
       roundedRect(920,48,27,13,4,false);
       ctx.stroke();
       ctx.fillStyle='#a4f0c2';
       roundedRect(923,51,19,7,2,true);
-      ctx.fillStyle='rgba(255,255,255,.26)';
+      ctx.fillStyle='rgba(42,52,61,.22)';
       roundedRect(948,52,3,5,1.5,true);
 
-      ctx.fillStyle='rgba(255,255,255,.05)';
+      ctx.fillStyle='rgba(42,52,61,.08)';
       roundedRect(52,87,920,1,1,true);
     }
 
     function drawHome(){
       // Flagship home: one calm world-status surface above a compact app deck.
       // The hierarchy is intentionally OS-like rather than a grid of web cards.
-      ctx.fillStyle='rgba(7,11,18,.62)';
+      ctx.fillStyle='rgba(255,255,255,.82)';
       roundedRect(52,112,920,136,32,true);
-      strokeRoundRect(52,112,920,136,32,'rgba(255,255,255,.060)',1);
+      strokeRoundRect(52,112,920,136,32,'rgba(38,47,56,.10)',1);
 
       const heroGlow=ctx.createRadialGradient(860,174,10,860,174,210);
       heroGlow.addColorStop(0,'rgba(127,214,255,.11)');
@@ -544,9 +544,9 @@
       ctx.fillStyle=heroGlow;
       roundedRect(53,113,918,134,31,true);
 
-      text('NOVA CITY · STREET 01',76,144,11,'800','#8ad9d7');
-      text('Your world is live',76,187,37,'690','#f7f6f1');
-      text('Mira is nearby · café open · street activity normal',78,214,14,'520','#7c8e95');
+      text('NOVA CITY · STREET 01',76,144,11,'800','#3b8b8a');
+      text('Your world is live',76,187,37,'690','#1f2933');
+      text('Mira is nearby · café open · street activity normal',78,214,14,'520','#67737e');
 
       // Right-side world telemetry gives the home screen a distinctive
       // "device dashboard" identity without adding another fake navigation bar.
@@ -567,7 +567,7 @@
 
       const dotX=orbitX+Math.cos(phase)*50;
       const dotY=orbitY+Math.sin(phase)*50;
-      ctx.fillStyle='#7fd6ff';
+      ctx.fillStyle='#2f87b5';
       ctx.beginPath();
       ctx.arc(dotX,dotY,3.2,0,Math.PI*2);
       ctx.fill();
@@ -583,20 +583,20 @@
       text('01',orbitX-9,orbitY+5,13,'800','#bdeaff');
 
       const statusItems=[
-        ['MIRA','NEARBY','#7fd6ff'],
-        ['STREET','LIVE','#9effc4'],
-        ['PAD','READY','#cdb7ff']
+        ['MIRA','NEARBY','#2f87b5'],
+        ['STREET','LIVE','#3f8a63'],
+        ['PAD','READY','#7561b2']
       ];
       statusItems.forEach((item,i)=>{
         const sy=142+i*29;
-        ctx.fillStyle='rgba(255,255,255,.030)';
+        ctx.fillStyle='rgba(255,255,255,.78)';
         roundedRect(894,sy,60,22,11,true);
         ctx.fillStyle=item[2];
         ctx.beginPath();
         ctx.arc(905,sy+11,2.5,0,Math.PI*2);
         ctx.fill();
         text(item[0],914,sy+9,8,'800','#5f7088');
-        text(item[1],914,sy+18,9,'720','#c8d3e4');
+        text(item[1],914,sy+18,9,'720','#44515e');
       });
 
       text('APPLICATION DECK',62,280,11,'800','#60718a');
@@ -633,8 +633,8 @@
         }
 
         const surface=ctx.createLinearGradient(x,y,x+420,y+126);
-        surface.addColorStop(0,'rgba('+(11+7*hoverMix).toFixed(1)+','+(17+9*hoverMix).toFixed(1)+','+(26+13*hoverMix).toFixed(1)+','+(.88+.06*hoverMix).toFixed(3)+')');
-        surface.addColorStop(1,'rgba('+(8+3*hoverMix).toFixed(1)+','+(13+5*hoverMix).toFixed(1)+','+(22+7*hoverMix).toFixed(1)+','+(.90+.06*hoverMix).toFixed(3)+')');
+        surface.addColorStop(0,'rgba(255,255,255,'+(.88+.08*hoverMix).toFixed(3)+')');
+        surface.addColorStop(1,'rgba(245,247,248,'+(.92+.06*hoverMix).toFixed(3)+')');
         ctx.fillStyle=surface;
         roundedRect(x,y,420,126,28,true);
 
@@ -646,7 +646,7 @@
           x,y,420,126,28,
           hoverMix>.01
             ? 'rgba('+app.rgb+','+(.065+.215*hoverMix).toFixed(3)+')'
-            : 'rgba(255,255,255,.065)',
+            : 'rgba(38,47,56,.10)',
           1+.3*hoverMix
         );
 
@@ -695,8 +695,8 @@
         appIcon(app.id,x+55,y+55,38,app.accent,hoverMix);
         ctx.restore();
 
-        text(app.label,x+112+magnetX*.35,y+49+magnetY*.22,23,'690','#f4f7fc');
-        text(app.short,x+112+magnetX*.22,y+72+magnetY*.16,13,'520','#72829a');
+        text(app.label,x+112+magnetX*.35,y+49+magnetY*.22,23,'690','#25303a');
+        text(app.short,x+112+magnetX*.22,y+72+magnetY*.16,13,'520','#6d7985');
 
         // System state on every tile makes the deck feel coherent and alive.
         ctx.fillStyle='rgba(255,255,255,.035)';
@@ -747,14 +747,14 @@
       const by=backRect.y+(pressed?1:0)+(hovered?state.appDepthY*.8:0);
       ctx.fillStyle=pressed
         ? 'rgba(127,214,255,.13)'
-        : (hovered?'rgba(127,214,255,.09)':'rgba(255,255,255,.035)');
+        : (hovered?'rgba(47,135,181,.10)':'rgba(255,255,255,.82)');
       roundedRect(bx,by,backRect.w,backRect.h,18,true);
       strokeRoundRect(
         bx,by,backRect.w,backRect.h,18,
-        hovered?'rgba(127,214,255,.24)':'rgba(255,255,255,.06)',1
+        hovered?'rgba(47,135,181,.25)':'rgba(38,47,56,.10)',1
       );
-      text('‹',82+(bx-backRect.x),160+(by-backRect.y),27,'500',hovered?'#dff4ff':'#91a1b8');
-      text('HOME',108+(bx-backRect.x),156+(by-backRect.y),12,'800',hovered?'#dff4ff':'#91a1b8');
+      text('‹',82+(bx-backRect.x),160+(by-backRect.y),27,'500',hovered?'#2f87b5':'#667586');
+      text('HOME',108+(bx-backRect.x),156+(by-backRect.y),12,'800',hovered?'#2f87b5':'#667586');
     }
 
     function drawMessages(){
@@ -762,38 +762,38 @@
         ctx.fillStyle='rgba(127,214,255,'+(state.actionPulse*.035).toFixed(3)+')';
         roundedRect(48,204,928,438,30,true);
       }
-      appHeader('Messages','Mira · online','#7fd6ff','messages');
+      appHeader('Messages','Mira · online','#2f87b5','messages');
 
       ctx.fillStyle='rgba(127,214,255,.09)';
       roundedRect(70,306,44,44,22,true);
       strokeRoundRect(70,306,44,44,22,'rgba(127,214,255,.22)',1);
       text('M',84,335,18,'750','#aee8ff');
-      text('Mira',128,323,14,'700','#dfe8f6');
+      text('Mira',128,323,14,'700','#25303a');
       text('just now',128,344,12,'500','#65758f');
 
       const incoming=ctx.createLinearGradient(70,366,610,430);
-      incoming.addColorStop(0,'rgba(255,255,255,.085)');
-      incoming.addColorStop(1,'rgba(255,255,255,.035)');
+      incoming.addColorStop(0,'rgba(255,255,255,.94)');
+      incoming.addColorStop(1,'rgba(246,248,249,.88)');
       ctx.fillStyle=incoming;
       roundedRect(70,366,590,68,24,true);
-      strokeRoundRect(70,366,590,68,24,'rgba(255,255,255,.075)',1);
-      text('I’m by the café. Come find me.',96,407,20,'550','#eaf0f9');
+      strokeRoundRect(70,366,590,68,24,'rgba(38,47,56,.10)',1);
+      text('I’m by the café. Come find me.',96,407,20,'550','#27323d');
 
       const outgoing=ctx.createLinearGradient(364,448,954,516);
-      outgoing.addColorStop(0,'rgba(89,158,255,.20)');
-      outgoing.addColorStop(1,'rgba(89,158,255,.08)');
+      outgoing.addColorStop(0,'rgba(77,149,190,.18)');
+      outgoing.addColorStop(1,'rgba(77,149,190,.10)');
       ctx.fillStyle=outgoing;
       roundedRect(364,448,590,68,24,true);
       strokeRoundRect(364,448,590,68,24,'rgba(127,214,255,.17)',1);
-      text('I can see the street from here.',390,489,20,'550','#dceaff');
+      text('I can see the street from here.',390,489,20,'550','#24465a');
 
       if(state.messageChoice===null){
         text('QUICK REPLY',72,550,12,'750','#667995');
         messageRects.forEach((rect,i)=>{
           const selected=isHover(rect.key)||isPressed(rect.key);
-          card(rect.x,rect.y,rect.w,rect.h,18,rect.key,'rgba(255,255,255,.045)');
-          text(rect.label,rect.x+22,rect.y+35,17,'600',selected?'#eef8ff':'#b7c5d9');
-          text('↗',rect.x+rect.w-38,rect.y+35,16,'600',selected?'#7fd6ff':'#596980');
+          card(rect.x,rect.y,rect.w,rect.h,18,rect.key,'rgba(255,255,255,.86)');
+          text(rect.label,rect.x+22,rect.y+35,17,'600',selected?'#244d66':'#4f5d6b');
+          text('↗',rect.x+rect.w-38,rect.y+35,16,'600',selected?'#2f87b5':'#596980');
         });
       }else{
         const selected=messageRects[state.messageChoice];
@@ -803,13 +803,13 @@
         text(selected.label,436,581,17,'550','#e2ecff');
 
         if(state.messageReplyPending){
-          ctx.fillStyle='rgba(255,255,255,.050)';
+          ctx.fillStyle='rgba(255,255,255,.88)';
           roundedRect(70,616,260,40,16,true);
           text('Mira is typing'+'.'.repeat(1+Math.floor(state.uiTime*3)%3),92,642,14,'550','#8193ad');
         }else if(state.messageReply){
-          ctx.fillStyle='rgba(255,255,255,.060)';
+          ctx.fillStyle='rgba(255,255,255,.90)';
           roundedRect(70,616,630,40,16,true);
-          text(state.messageReply,94,642,15,'550','#d9e2ef');
+          text(state.messageReply,94,642,15,'550','#33404c');
         }
       }
     }
@@ -819,7 +819,7 @@
         ctx.fillStyle='rgba(158,255,196,'+(state.actionPulse*.032).toFixed(3)+')';
         roundedRect(48,204,928,438,30,true);
       }
-      appHeader('Tasks','Today · focused mode','#9effc4','tasks');
+      appHeader('Tasks','Today · focused mode','#3f8a63','tasks');
 
       const doneCount=state.completedTasks.filter(Boolean).length;
       ctx.fillStyle='rgba(158,255,196,.055)';
@@ -827,15 +827,15 @@
       strokeRoundRect(70,304,884,64,22,'rgba(158,255,196,.11)',1);
       text(doneCount+' / 3',94,337,24,'720','#dcffe9');
       text('completed',160,337,13,'650','#708a7b');
-      ctx.fillStyle='rgba(255,255,255,.055)';
+      ctx.fillStyle='rgba(38,47,56,.10)';
       roundedRect(300,331,620,6,3,true);
-      ctx.fillStyle='#9effc4';
+      ctx.fillStyle='#3f8a63';
       roundedRect(300,331,Math.max(10,620*(doneCount/3)),6,3,true);
 
       const rows=[
-        ['Walk the block','ACTIVE','#7fd6ff'],
-        ['Talk with Mira','NEXT','#9effc4'],
-        ['Check the café','OPTIONAL','#cdb7ff']
+        ['Walk the block','ACTIVE','#2f87b5'],
+        ['Talk with Mira','NEXT','#3f8a63'],
+        ['Check the café','OPTIONAL','#7561b2']
       ];
 
       taskRects.length=0;
@@ -846,9 +846,9 @@
         taskRects.push(rect);
 
         const done=state.completedTasks[i];
-        card(70,y,884,64,20,key,done?'rgba(158,255,196,.035)':'rgba(255,255,255,.045)');
+        card(70,y,884,64,20,key,done?'rgba(63,138,99,.075)':'rgba(255,255,255,.86)');
 
-        ctx.fillStyle=done?'#9effc4':'rgba(255,255,255,.035)';
+        ctx.fillStyle=done?'#3f8a63':'rgba(255,255,255,.92)';
         ctx.beginPath();
         ctx.arc(105,y+32,13,0,Math.PI*2);
         ctx.fill();
@@ -858,8 +858,8 @@
 
         if(done) text('✓',98,y+38,16,'800','#10251a');
 
-        text(row[0],136,y+39,19,done?'550':'650',done?'#75857f':'#e9eef7');
-        pill(790,y+18,132,28,done?'DONE':row[1],done?'#9effc4':row[2],done);
+        text(row[0],136,y+39,19,done?'550':'650',done?'#6e7b75':'#26313b');
+        pill(790,y+18,132,28,done?'DONE':row[1],done?'#3f8a63':row[2],done);
 
         if(done){
           ctx.strokeStyle='rgba(158,255,196,.18)';
@@ -877,11 +877,11 @@
         ctx.fillStyle='rgba(205,183,255,'+(state.actionPulse*.028).toFixed(3)+')';
         roundedRect(48,204,928,438,30,true);
       }
-      appHeader('Map','Nova Walk · Block 01','#cdb7ff','map');
+      appHeader('Map','Nova Walk · Block 01','#7561b2','map');
 
-      ctx.fillStyle='rgba(255,255,255,.026)';
+      ctx.fillStyle='rgba(255,255,255,.86)';
       roundedRect(70,306,884,316,28,true);
-      strokeRoundRect(70,306,884,316,28,'rgba(255,255,255,.065)',1);
+      strokeRoundRect(70,306,884,316,28,'rgba(38,47,56,.10)',1);
 
       // Street-first map: road, curb, pedestrian zone and storefronts mirror
       // the actual world rather than the old apartment floor plan.
@@ -912,9 +912,9 @@
         [mapX+635,mapY+94,144,48,'NOVA CAFÉ'],
         [mapX+635,mapY+154,144,48,'ATELIER']
       ].forEach(([x,y,w,h,label],i)=>{
-        ctx.fillStyle=i===1?'rgba(255,201,138,.090)':'rgba(255,255,255,.035)';
+        ctx.fillStyle=i===1?'rgba(183,119,47,.10)':'rgba(255,255,255,.76)';
         roundedRect(x,y,w,h,14,true);
-        strokeRoundRect(x,y,w,h,14,i===1?'rgba(255,201,138,.16)':'rgba(255,255,255,.055)',1);
+        strokeRoundRect(x,y,w,h,14,i===1?'rgba(183,119,47,.18)':'rgba(38,47,56,.09)',1);
         text(label,x+16,y+29,10,'760',i===1?'#d9b98e':'#71808f');
       });
 
@@ -955,7 +955,7 @@
         text('MIRA',632,627,14,'750','#ffc0ca');
         text('3.8 m · near the café',700,627,13,'550','#8f7890');
       }else{
-        pill(94,594,250,34,'TAP MIRA TO MARK','#cdb7ff',false);
+        pill(94,594,250,34,'TAP MIRA TO MARK','#7561b2',false);
       }
     }
 
@@ -967,13 +967,13 @@
       const status=state.scanning
         ? 'SCANNING '+Math.round(state.scannerProgress*100)+'%'
         : (state.scannerComplete?'SCAN COMPLETE':'LIVE OBJECT ANALYSIS');
-      appHeader('Scanner',status,state.scannerComplete?'#9effc4':'#ffc98a','scanner');
+      appHeader('Scanner',status,state.scannerComplete?'#3f8a63':'#b7772f','scanner');
 
-      ctx.fillStyle='rgba(255,255,255,.026)';
+      ctx.fillStyle='rgba(255,255,255,.88)';
       roundedRect(184,304,656,258,30,true);
-      strokeRoundRect(184,304,656,258,30,'rgba(255,255,255,.065)',1);
+      strokeRoundRect(184,304,656,258,30,'rgba(38,47,56,.10)',1);
 
-      const accent=state.scannerComplete?'#9effc4':'#ffc98a';
+      const accent=state.scannerComplete?'#3f8a63':'#b7772f';
       const corner=42;
       const left=218,right=806,top=330,bottom=536;
       ctx.strokeStyle=accent;
@@ -986,7 +986,7 @@
         ctx.stroke();
       });
 
-      ctx.strokeStyle='rgba(255,255,255,.08)';
+      ctx.strokeStyle='rgba(38,47,56,.10)';
       ctx.lineWidth=1;
       ctx.beginPath();
       ctx.moveTo(512,348);ctx.lineTo(512,518);
@@ -1011,17 +1011,17 @@
         ctx.fillStyle='rgba(158,255,196,.065)';
         roundedRect(360,372,304,128,24,true);
         strokeRoundRect(360,372,304,128,24,'rgba(158,255,196,.14)',1);
-        text('MIRA',454,413,27,'720','#d9ffe8');
+        text('MIRA',454,413,27,'720','#28583f');
         text('HUMAN · FRIENDLY',430,447,12,'750','#719281');
-        pill(430,462,164,28,'CONFIDENCE 98%','#9effc4',true);
+        pill(430,462,164,28,'CONFIDENCE 98%','#3f8a63',true);
       }else{
-        pill(434,402,156,30,'TARGET READY','#ffc98a',false);
+        pill(434,402,156,30,'TARGET READY','#b7772f',false);
       }
 
       card(scannerRect.x,scannerRect.y,scannerRect.w,scannerRect.h,22,scannerRect.key,'rgba(255,201,138,.065)');
       const buttonLabel=state.scanning?'SCANNING…':(state.scannerComplete?'SCAN AGAIN':'RUN SCAN');
       const buttonX=state.scanning?431:(state.scannerComplete?438:448);
-      text(buttonLabel,buttonX,621,18,'750',state.scannerComplete?'#bfffd7':'#ffd7aa');
+      text(buttonLabel,buttonX,621,18,'750',state.scannerComplete?'#2f7650':'#8a5622');
     }
 
     function drawApp(appId=state.activeApp){
