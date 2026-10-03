@@ -7695,6 +7695,200 @@ function addHeroStorefront(z,width,doorOffset,variant=0){
 addHeroStorefront(5.15,4.34,.82,0);
 addHeroStorefront(9.90,4.34,-.72,1);
 
+/* ---------- near-building massing ----------
+   The detail pass above fixes wall thickness; this pass fixes the silhouette.
+   Only the focal zone receives these pieces so the rest of the block remains
+   cheap. The goal is a real corner, a recessed double-height entrance,
+   pedestrian-scale canopies and a roof setback rather than one endless wall. */
+const refHeroMassingShadowMat=new THREE.MeshBasicMaterial({
+  color:0x171c1d,
+  transparent:true,
+  opacity:.26,
+  depthWrite:false,
+  toneMapped:true
+});
+
+// Terminate the hero facade with a solid return wall. From the spawn side this
+// exposes an actual side surface and stops the curtain wall reading as infinite.
+const refHeroCornerReturn=new THREE.Mesh(
+  new THREE.BoxGeometry(2.80,15.30,.58),
+  refHeroStone
+);
+refHeroCornerReturn.position.set(8.72,7.66,14.84);
+refHeroCornerReturn.castShadow=true;
+refHeroCornerReturn.receiveShadow=true;
+refHeroFacade.add(refHeroCornerReturn);
+
+const refHeroCornerReveal=new THREE.Mesh(
+  new THREE.BoxGeometry(.05,14.68,.66),
+  refHeroMassingShadowMat
+);
+refHeroCornerReveal.position.set(7.27,7.55,14.49);
+refHeroFacade.add(refHeroCornerReveal);
+
+// Two projected blades form a deliberately asymmetric frame around the closest
+// commercial frontage. Their extra depth creates strong changing parallax while
+// walking past the building.
+[
+  {z:5.04,h:9.48,y:7.78},
+  {z:9.98,h:8.78,y:7.58}
+].forEach((spec,index)=>{
+  const blade=new THREE.Mesh(
+    new THREE.BoxGeometry(.90,spec.h,.46),
+    refHeroStone
+  );
+  blade.position.set(7.12,spec.y,spec.z);
+  blade.castShadow=true;
+  blade.receiveShadow=true;
+  refHeroFacade.add(blade);
+
+  const gap=new THREE.Mesh(
+    new THREE.BoxGeometry(.045,spec.h-.28,.50),
+    refHeroMassingShadowMat
+  );
+  gap.position.set(6.65,spec.y,spec.z+(index?.25:-.24));
+  refHeroFacade.add(gap);
+});
+
+const refHeroFrameHead=new THREE.Mesh(
+  new THREE.BoxGeometry(.92,.50,5.35),
+  refHeroStone
+);
+refHeroFrameHead.position.set(7.12,12.48,7.52);
+refHeroFrameHead.castShadow=true;
+refHeroFacade.add(refHeroFrameHead);
+
+// Convert the bay between the lobby and shops into a double-height entry. The
+// dark volume sits behind the glass, so it reads as a vestibule rather than a
+// painted rectangle on the facade.
+const refHeroEntryInterior=new THREE.Mesh(
+  new THREE.BoxGeometry(1.28,5.16,3.40),
+  new THREE.MeshStandardMaterial({
+    color:0x343b3b,
+    roughness:.90,
+    metalness:.01,
+    envMapIntensity:.02
+  })
+);
+refHeroEntryInterior.position.set(8.18,2.60,2.77);
+refHeroFacade.add(refHeroEntryInterior);
+
+const refHeroEntryGlass=refLobbyGlass.clone();
+refHeroEntryGlass.opacity=.78;
+refHeroEntryGlass.roughness=.16;
+refHeroEntryGlass.envMapIntensity=.98;
+const refHeroEntryPane=new THREE.Mesh(
+  new THREE.PlaneGeometry(3.08,4.64),
+  refHeroEntryGlass
+);
+refHeroEntryPane.position.set(7.72,2.62,2.77);
+refHeroEntryPane.rotation.y=-Math.PI/2;
+refHeroFacade.add(refHeroEntryPane);
+
+[1.10,4.44].forEach(z=>{
+  const jamb=new THREE.Mesh(
+    new THREE.BoxGeometry(.94,5.46,.42),
+    refHeroStone
+  );
+  jamb.position.set(7.17,2.75,z);
+  jamb.castShadow=true;
+  jamb.receiveShadow=true;
+  refHeroFacade.add(jamb);
+});
+
+const refHeroEntryHead=new THREE.Mesh(
+  new THREE.BoxGeometry(.94,.44,3.74),
+  refHeroStone
+);
+refHeroEntryHead.position.set(7.17,5.26,2.77);
+refHeroEntryHead.castShadow=true;
+refHeroFacade.add(refHeroEntryHead);
+
+const refHeroEntryDivider=new THREE.Mesh(
+  new THREE.BoxGeometry(.26,4.46,.07),
+  refHeroShopFrameMat
+);
+refHeroEntryDivider.position.set(7.53,2.54,2.77);
+refHeroFacade.add(refHeroEntryDivider);
+
+const refHeroEntryHandleMat=new THREE.MeshStandardMaterial({
+  color:0xbdb6a7,
+  roughness:.24,
+  metalness:.74,
+  envMapIntensity:.92
+});
+[-.29,.29].forEach((offset,index)=>{
+  const handle=new THREE.Mesh(
+    new THREE.BoxGeometry(.045,.58,.032),
+    refHeroEntryHandleMat
+  );
+  handle.position.set(7.38,1.52,2.77+offset);
+  refHeroFacade.add(handle);
+});
+
+// Independent canopies give the shops a human-scale datum and cast useful
+// near-field shadows. Different depths avoid another exact repetition.
+[
+  {z:5.18,depth:1.06,width:3.66},
+  {z:9.90,depth:1.30,width:3.48}
+].forEach((spec,index)=>{
+  const canopy=new THREE.Mesh(
+    new THREE.BoxGeometry(spec.depth,.105,spec.width),
+    refHeroMetal
+  );
+  canopy.position.set(6.94-spec.depth*.18,2.77,spec.z);
+  canopy.castShadow=true;
+  canopy.receiveShadow=true;
+  refHeroFacade.add(canopy);
+
+  const fascia=new THREE.Mesh(
+    new THREE.BoxGeometry(.055,.18,spec.width-.10),
+    refHeroShopFrameMat
+  );
+  fascia.position.set(6.39-spec.depth*.06,2.70,spec.z);
+  refHeroFacade.add(fascia);
+
+  const soffit=new THREE.Mesh(
+    new THREE.BoxGeometry(spec.depth*.82,.018,spec.width*.86),
+    new THREE.MeshBasicMaterial({
+      color:index?0xd8cbb7:0xd2c8b9,
+      transparent:true,
+      opacity:.15,
+      toneMapped:true
+    })
+  );
+  soffit.position.set(6.92,2.71,spec.z);
+  refHeroFacade.add(soffit);
+});
+
+// The existing parapet now hides a smaller roof setback instead of terminating
+// against empty sky. This produces a second roof line without loading a new GLB.
+const refHeroRoofMass=new THREE.Mesh(
+  new THREE.BoxGeometry(2.30,1.16,14.0),
+  new THREE.MeshStandardMaterial({
+    color:0x8f9692,
+    roughness:.64,
+    metalness:.16,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
+    envMapIntensity:.34
+  })
+);
+refHeroRoofMass.position.set(9.16,16.35,4.28);
+refHeroRoofMass.castShadow=true;
+refHeroRoofMass.receiveShadow=true;
+refHeroFacade.add(refHeroRoofMass);
+
+[-1.25,1.45,4.20,6.95,9.72].forEach((z,index)=>{
+  const fin=new THREE.Mesh(
+    new THREE.BoxGeometry(.08,.78,1.46),
+    refHeroMetal
+  );
+  fin.position.set(7.98,16.28,z);
+  fin.rotation.x=index%2?.010:-.008;
+  refHeroFacade.add(fin);
+});
+
 // A narrow stone base and sparse panel joints make the scale legible at walking
 // distance without drawing a noisy checkerboard over the whole building.
 const refHeroBase=new THREE.Mesh(
