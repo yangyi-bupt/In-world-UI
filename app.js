@@ -7702,7 +7702,7 @@ addHeroStorefront(9.90,4.34,-.72,1);
 // distance without drawing a noisy checkerboard over the whole building.
 const refHeroBase=new THREE.Mesh(
   new THREE.BoxGeometry(.66,.44,24.1),
-  refHeroStoneDark || refStoneDark
+  refStoneDark
 );
 refHeroBase.position.set(7.52,.25,2.75);
 refHeroBase.castShadow=true;
