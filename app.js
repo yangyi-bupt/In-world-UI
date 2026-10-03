@@ -2654,6 +2654,95 @@ road.material.roughness=1.0;
 road.material.envMapIntensity=.018;
 road.material.needsUpdate=true;
 
+
+const roadMacroWearCanvas=document.createElement('canvas');
+roadMacroWearCanvas.width=512;
+roadMacroWearCanvas.height=1024;
+const roadMacroWearCtx=roadMacroWearCanvas.getContext('2d');
+const roadMacroWearRnd=makeSeededRandom(0x4bd319af);
+roadMacroWearCtx.clearRect(0,0,512,1024);
+
+[
+  [132,.050,16],
+  [197,.033,12],
+  [315,.043,15],
+  [380,.028,11]
+].forEach(([x,a,w])=>{
+  const grad=roadMacroWearCtx.createLinearGradient(x-w,0,x+w,0);
+  grad.addColorStop(0,'rgba(28,32,31,0)');
+  grad.addColorStop(.50,'rgba(25,29,28,'+a.toFixed(3)+')');
+  grad.addColorStop(1,'rgba(28,32,31,0)');
+  roadMacroWearCtx.fillStyle=grad;
+  roadMacroWearCtx.fillRect(x-w,0,w*2,1024);
+});
+
+for(let i=0;i<14;i++){
+  const x=42+roadMacroWearRnd()*420;
+  const y=roadMacroWearRnd()*1024;
+  const w=28+roadMacroWearRnd()*78;
+  const h=16+roadMacroWearRnd()*70;
+  const radius=4+roadMacroWearRnd()*9;
+  roadMacroWearCtx.fillStyle='rgba(40,45,44,'+(.035+roadMacroWearRnd()*.040).toFixed(3)+')';
+  roadMacroWearCtx.beginPath();
+  roadMacroWearCtx.roundRect(x-w*.5,y-h*.5,w,h,radius);
+  roadMacroWearCtx.fill();
+  roadMacroWearCtx.strokeStyle='rgba(25,29,29,'+(.040+roadMacroWearRnd()*.045).toFixed(3)+')';
+  roadMacroWearCtx.lineWidth=.7+roadMacroWearRnd()*1.1;
+  roadMacroWearCtx.stroke();
+}
+
+for(let i=0;i<23;i++){
+  let x=roadMacroWearRnd()*512;
+  let y=roadMacroWearRnd()*1024;
+  roadMacroWearCtx.strokeStyle='rgba(22,26,26,'+(.045+roadMacroWearRnd()*.055).toFixed(3)+')';
+  roadMacroWearCtx.lineWidth=.45+roadMacroWearRnd()*.70;
+  roadMacroWearCtx.beginPath();
+  roadMacroWearCtx.moveTo(x,y);
+  const segments=2+Math.floor(roadMacroWearRnd()*4);
+  for(let s=0;s<segments;s++){
+    x+=(roadMacroWearRnd()-.5)*28;
+    y+=10+roadMacroWearRnd()*34;
+    roadMacroWearCtx.lineTo(x,y);
+  }
+  roadMacroWearCtx.stroke();
+}
+
+for(let i=0;i<9;i++){
+  const x=70+roadMacroWearRnd()*360;
+  const y=roadMacroWearRnd()*1024;
+  const rx=18+roadMacroWearRnd()*55;
+  const ry=8+roadMacroWearRnd()*25;
+  const grad=roadMacroWearCtx.createRadialGradient(x,y,1,x,y,rx);
+  grad.addColorStop(0,'rgba(118,119,112,'+(.020+roadMacroWearRnd()*.030).toFixed(3)+')');
+  grad.addColorStop(1,'rgba(118,119,112,0)');
+  roadMacroWearCtx.fillStyle=grad;
+  roadMacroWearCtx.save();
+  roadMacroWearCtx.translate(x,y);
+  roadMacroWearCtx.scale(1,ry/rx);
+  roadMacroWearCtx.beginPath();
+  roadMacroWearCtx.arc(0,0,rx,0,Math.PI*2);
+  roadMacroWearCtx.fill();
+  roadMacroWearCtx.restore();
+}
+
+const roadMacroWearTexture=new THREE.CanvasTexture(roadMacroWearCanvas);
+roadMacroWearTexture.colorSpace=THREE.SRGBColorSpace;
+roadMacroWearTexture.anisotropy=8;
+const roadMacroWearOverlay=new THREE.Mesh(
+  new THREE.PlaneGeometry(14.7,90.5),
+  new THREE.MeshBasicMaterial({
+    map:roadMacroWearTexture,
+    transparent:true,
+    opacity:.92,
+    depthWrite:false,
+    toneMapped:true
+  })
+);
+roadMacroWearOverlay.rotation.x=-Math.PI/2;
+roadMacroWearOverlay.position.set(-6.7,.018,-4);
+roadMacroWearOverlay.renderOrder=2;
+scene.add(roadMacroWearOverlay);
+
 // Visual-only continuation beyond the playable bounds. Extending the surface
 // removes the "map edge" at the end of the boulevard while keeping collision
 // and player limits unchanged.
@@ -6681,6 +6770,118 @@ refLeafTexture.wrapS=refLeafTexture.wrapT=THREE.RepeatWrapping;
 refLeafTexture.repeat.set(1.8,1.8);
 refLeafTexture.anisotropy=8;
 
+
+const refLeafClusterCanvas=document.createElement('canvas');
+refLeafClusterCanvas.width=refLeafClusterCanvas.height=256;
+const refLeafClusterCtx=refLeafClusterCanvas.getContext('2d');
+const refLeafClusterRnd=makeSeededRandom(0xb73184d2);
+refLeafClusterCtx.clearRect(0,0,256,256);
+
+for(let i=0;i<58;i++){
+  const angle=refLeafClusterRnd()*Math.PI*2;
+  const radius=Math.pow(refLeafClusterRnd(),.7)*76;
+  const cx=128+Math.cos(angle)*radius;
+  const cy=132+Math.sin(angle)*radius*.70;
+  const rx=7+refLeafClusterRnd()*20;
+  const ry=4+refLeafClusterRnd()*12;
+  const rot=(refLeafClusterRnd()-.5)*1.8;
+  const light=refLeafClusterRnd()>.58;
+  refLeafClusterCtx.fillStyle=light
+    ? 'rgba(137,154,122,'+(.55+refLeafClusterRnd()*.28).toFixed(3)+')'
+    : 'rgba(72,101,70,'+(.55+refLeafClusterRnd()*.30).toFixed(3)+')';
+  refLeafClusterCtx.save();
+  refLeafClusterCtx.translate(cx,cy);
+  refLeafClusterCtx.rotate(rot);
+  refLeafClusterCtx.beginPath();
+  refLeafClusterCtx.ellipse(0,0,rx,ry,0,0,Math.PI*2);
+  refLeafClusterCtx.fill();
+  refLeafClusterCtx.restore();
+}
+
+refLeafClusterCtx.globalCompositeOperation='destination-out';
+for(let i=0;i<19;i++){
+  const x=76+refLeafClusterRnd()*104;
+  const y=72+refLeafClusterRnd()*112;
+  const rr=3+refLeafClusterRnd()*10;
+  refLeafClusterCtx.beginPath();
+  refLeafClusterCtx.arc(x,y,rr,0,Math.PI*2);
+  refLeafClusterCtx.fill();
+}
+refLeafClusterCtx.globalCompositeOperation='source-over';
+
+const refLeafClusterTexture=new THREE.CanvasTexture(refLeafClusterCanvas);
+refLeafClusterTexture.colorSpace=THREE.SRGBColorSpace;
+refLeafClusterTexture.anisotropy=8;
+
+const refLeafCardMaterials=[
+  new THREE.MeshStandardMaterial({
+    color:0x8d9b82,
+    map:refLeafClusterTexture,
+    transparent:true,
+    alphaTest:.16,
+    roughness:.96,
+    metalness:0,
+    envMapIntensity:.015,
+    side:THREE.DoubleSide,
+    depthWrite:true
+  }),
+  new THREE.MeshStandardMaterial({
+    color:0x788b73,
+    map:refLeafClusterTexture,
+    transparent:true,
+    alphaTest:.18,
+    roughness:.97,
+    metalness:0,
+    envMapIntensity:.012,
+    side:THREE.DoubleSide,
+    depthWrite:true
+  }),
+  new THREE.MeshStandardMaterial({
+    color:0x9ba18a,
+    map:refLeafClusterTexture,
+    transparent:true,
+    alphaTest:.17,
+    roughness:.97,
+    metalness:0,
+    envMapIntensity:.012,
+    side:THREE.DoubleSide,
+    depthWrite:true
+  })
+];
+
+function addLeafCardCloud(parent,scale=1,seed=1,count=18){
+  const rnd=makeSeededRandom(seed);
+  for(let i=0;i<count;i++){
+    const angle=rnd()*Math.PI*2;
+    const radius=Math.pow(rnd(),.72)*.82;
+    const y=.05+rnd()*1.45;
+    const size=(.52+rnd()*.72)*scale;
+    const card=new THREE.Mesh(
+      new THREE.PlaneGeometry(size,size*.76),
+      refLeafCardMaterials[i%refLeafCardMaterials.length]
+    );
+    card.position.set(
+      Math.cos(angle)*radius*scale,
+      y*scale,
+      Math.sin(angle)*radius*.68*scale
+    );
+    card.rotation.set(
+      (rnd()-.5)*.36,
+      rnd()*Math.PI,
+      (rnd()-.5)*.28
+    );
+    card.castShadow=true;
+    card.receiveShadow=true;
+    parent.add(card);
+    if(i%3===0){
+      const cross=card.clone();
+      cross.rotation.y+=Math.PI*.52;
+      cross.scale.set(.86,.90,.86);
+      parent.add(cross);
+    }
+  }
+}
+
 function createReferenceTree(x,z,scale=1){
   const tree=new THREE.Group();
   const trunkMat=new THREE.MeshStandardMaterial({
@@ -6698,41 +6899,15 @@ function createReferenceTree(x,z,scale=1){
   trunk.castShadow=true;
   tree.add(trunk);
 
-  // Leaf clusters use more restrained albedo variation; strong saturated green
-  // was another source of the stylised / asset-pack look.
-  const leafMats=[
-    new THREE.MeshStandardMaterial({
-      color:0x87917e,
-      map:refLeafTexture,
-      roughness:.98,
-      metalness:0,
-      envMapIntensity:.012
-    }),
-    new THREE.MeshStandardMaterial({
-      color:0x939a86,
-      map:refLeafTexture,
-      roughness:.98,
-      metalness:0,
-      envMapIntensity:.012
-    }),
-    new THREE.MeshStandardMaterial({
-      color:0x74806f,
-      map:refLeafTexture,
-      roughness:.99,
-      metalness:0,
-      envMapIntensity:.010
-    })
-  ];
-  [[0,0,0,.98],[.38,.08,-.05,.66],[-.38,.05,.03,.70],[.05,.54,0,.72]].forEach((v,i)=>{
-    const crown=new THREE.Mesh(
-      new THREE.IcosahedronGeometry(v[3]*scale,2),
-      leafMats[i%leafMats.length]
-    );
-    crown.position.set(v[0]*scale,(3.65+v[1])*scale,v[2]*scale);
-    crown.scale.set(.92,1.18,.90);
-    crown.castShadow=true;
-    tree.add(crown);
-  });
+  const crown=new THREE.Group();
+  crown.position.set(0,2.92*scale,0);
+  addLeafCardCloud(
+    crown,
+    .96*scale,
+    Math.floor((z+80)*317+(x+20)*109),
+    22
+  );
+  tree.add(crown);
   tree.position.set(x,0,z);
   refStreet.add(tree);
 }
@@ -6860,55 +7035,14 @@ function createStreetTree(x,z,scale=1){
   });
 
   const crown=new THREE.Group();
-  const leafMats=[
-    makeFoliageMaterial(0x6d9166,.94,.010,.012),
-    makeFoliageMaterial(0x7d9f70,.92,.009,.016),
-    makeFoliageMaterial(0x5f825b,.95,.011,.009),
-    makeFoliageMaterial(0x8cab7c,.91,.008,.019)
-  ];
-  const crownRnd=makeSeededRandom(Math.floor((z+50)*977+(x+24)*191));
-  for(let i=0;i<34;i++){
-    const angle=crownRnd()*Math.PI*2;
-    const radius=Math.pow(crownRnd(),.62)*(.72+.16*crownRnd());
-    const ox=Math.cos(angle)*radius;
-    const oz=Math.sin(angle)*radius*.62;
-    const oy=-.06+crownRnd()*1.42;
-    const r=.12+crownRnd()*.20;
-    const cluster=new THREE.Mesh(
-      new THREE.IcosahedronGeometry(r*scale,1),
-      leafMats[i%leafMats.length]
-    );
-    cluster.position.set(ox*scale,oy*scale,oz*scale);
-    cluster.scale.set(
-      .58+crownRnd()*.44,
-      .76+crownRnd()*.72,
-      .56+crownRnd()*.40
-    );
-    cluster.rotation.set(
-      (crownRnd()-.5)*.36,
-      crownRnd()*Math.PI,
-      (crownRnd()-.5)*.38
-    );
-    cluster.castShadow=true;
-    cluster.receiveShadow=true;
-    crown.add(cluster);
-  }
-  for(let i=0;i<5;i++){
-    const inner=new THREE.Mesh(
-      new THREE.IcosahedronGeometry((.17+crownRnd()*.12)*scale,1),
-      leafMats[2]
-    );
-    inner.position.set(
-      (crownRnd()-.5)*.38*scale,
-      (.15+crownRnd()*.80)*scale,
-      (crownRnd()-.5)*.30*scale
-    );
-    inner.scale.set(.72,1.12,.70);
-    inner.castShadow=true;
-    crown.add(inner);
-  }
-  crown.position.set(x,3.34*scale,z);
-  crown.scale.set(.78,1.13,.78);
+  crown.position.set(x,2.88*scale,z);
+  addLeafCardCloud(
+    crown,
+    .92*scale,
+    Math.floor((z+50)*977+(x+24)*191),
+    24
+  );
+  crown.scale.set(.90,1.06,.90);
   scene.add(crown);
   streetTreeCrowns.push(crown);
 }
@@ -8038,10 +8172,11 @@ function createAttachedContactShadow(parent,w,d,opacity=.08){
   c.width=96;
   c.height=96;
   const g=c.getContext('2d');
-  const gradient=g.createRadialGradient(48,48,8,48,48,46);
-  gradient.addColorStop(0,'rgba(0,0,0,'+opacity.toFixed(3)+')');
-  gradient.addColorStop(.52,'rgba(0,0,0,'+(opacity*.44).toFixed(3)+')');
-  gradient.addColorStop(1,'rgba(0,0,0,0)');
+  const gradient=g.createRadialGradient(48,48,5,48,48,46);
+  gradient.addColorStop(0,'rgba(24,27,26,'+(opacity*.78).toFixed(3)+')');
+  gradient.addColorStop(.30,'rgba(24,27,26,'+(opacity*.46).toFixed(3)+')');
+  gradient.addColorStop(.68,'rgba(24,27,26,'+(opacity*.13).toFixed(3)+')');
+  gradient.addColorStop(1,'rgba(24,27,26,0)');
   g.fillStyle=gradient;
   g.fillRect(0,0,96,96);
 
@@ -8052,7 +8187,7 @@ function createAttachedContactShadow(parent,w,d,opacity=.08){
       map:texture,
       transparent:true,
       depthWrite:false,
-      toneMapped:false
+      toneMapped:true
     })
   );
   shadow.rotation.x=-Math.PI/2;
