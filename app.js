@@ -11027,13 +11027,11 @@ createAmbientWalker(5.45,13.5,-1,0x8d9a73,.50,'tertiary');
 createAmbientWalker(4.72,-24.8,1,0x8c8580,.55,'quaternary');
 createAmbientWalker(6.38,24.6,-1,0x7e8982,.48,'quinary');
 
-// The reference image is a photographic street with one focal character, not a
-// game plaza full of equally readable NPCs. Keep only two distant walkers.
-ambientWalkers.forEach(walker=>{
-  // Keep the street composition focused on Mira. These legacy pedestrians are
-  // intentionally disabled instead of streamed because their low-detail meshes
-  // hurt both realism and frame time.
-  walker.group.visible=false;
+// Keep exactly two background pedestrians, and keep them outside Mira's focal
+// zone. Their procedural placeholders stay hidden; only authored GLBs can appear.
+ambientWalkers.forEach((walker,index)=>{
+  walker.backgroundOnly=index<2;
+  walker.group.visible=index<2;
 });
 
 const movingTraffic=[];
@@ -12788,8 +12786,24 @@ function initWorldGLBAssets(){
     }
   },520);
 
-  // Background pedestrians are deliberately not streamed. The focal character
-  // carries the scene, while distant photographic detail supplies human scale.
+  // Two authored walkers arrive late and remain confined to the far ends of
+  // the block. This adds life without creating an NPC crowd around Mira.
+  const backgroundPedestrianEntries=ambientWalkers.slice(0,2);
+  [
+    [WORLD_GLB_ASSETS.pedestrianPrimary,backgroundPedestrianEntries[0],0,1650],
+    [WORLD_GLB_ASSETS.pedestrianSecondary,backgroundPedestrianEntries[1],1,2250]
+  ].forEach(([url,entry,index,delay])=>{
+    if(!entry) return;
+    scheduleWorldStream(async()=>{
+      try{
+        const result=await loadGLB(loader,url);
+        attachWalkerAsset(entry,result.scene,result.animations,index);
+      }catch(error){
+        entry.group.visible=false;
+        console.warn('Background pedestrian GLB failed; keeping the slot empty.',error);
+      }
+    },delay);
+  });
 
   // CPU-side PMREM and the HDR download are pushed behind the focal assets so
   // they cannot delay the first interaction. Reflections upgrade seamlessly.
@@ -13179,15 +13193,30 @@ function animate(){
       walker.group.rotation.z=Math.sin(walker.phase)*.012;
     }
 
-    if(walker.direction>0 && walker.group.position.z>31){
-      walker.group.position.z=-31-index*1.25;
-      walker.speed=walker.baseSpeed;
-      setWalkerMotionState(walker,'walk');
-    }
-    if(walker.direction<0 && walker.group.position.z<-30){
-      walker.group.position.z=32+index*1.25;
-      walker.speed=walker.baseSpeed;
-      setWalkerMotionState(walker,'walk');
+    if(walker.backgroundOnly){
+      // Background figures never cross the focal 20m around Mira. They appear
+      // and disappear at natural street depth instead of walking through the shot.
+      if(walker.direction>0 && walker.group.position.z>-8.5){
+        walker.group.position.z=-30-index*1.4;
+        walker.speed=walker.baseSpeed;
+        setWalkerMotionState(walker,'walk');
+      }
+      if(walker.direction<0 && walker.group.position.z<12.5){
+        walker.group.position.z=31+index*1.4;
+        walker.speed=walker.baseSpeed;
+        setWalkerMotionState(walker,'walk');
+      }
+    }else{
+      if(walker.direction>0 && walker.group.position.z>31){
+        walker.group.position.z=-31-index*1.25;
+        walker.speed=walker.baseSpeed;
+        setWalkerMotionState(walker,'walk');
+      }
+      if(walker.direction<0 && walker.group.position.z<-30){
+        walker.group.position.z=32+index*1.25;
+        walker.speed=walker.baseSpeed;
+        setWalkerMotionState(walker,'walk');
+      }
     }
   });
 
