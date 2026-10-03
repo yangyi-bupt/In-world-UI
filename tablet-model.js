@@ -186,9 +186,9 @@
     fingerRoughness.repeat.set(3.2,3.2);
 
     const aluminum=new THREE.MeshPhysicalMaterial({
-      color:0xe8e6df,
-      metalness:.38,
-      roughness:.34,
+      color:0xf2f1ed,
+      metalness:.32,
+      roughness:.30,
       roughnessMap:scannedMetalRough,
       normalMap:scannedMetalNormal,
       normalScale:new THREE.Vector2(.055,.055),
@@ -197,9 +197,9 @@
       envMapIntensity:.60
     });
     const edgeMetal=new THREE.MeshPhysicalMaterial({
-      color:0xd8d5ce,
-      metalness:.58,
-      roughness:.29,
+      color:0xe3e1db,
+      metalness:.52,
+      roughness:.27,
       roughnessMap:scannedMetalRough,
       normalMap:scannedMetalNormal,
       normalScale:new THREE.Vector2(.040,.040),
@@ -239,9 +239,9 @@
     const rearShell=new THREE.Mesh(
       extrudedRounded(2.77,1.95,.042,.162,.010),
       new THREE.MeshPhysicalMaterial({
-        color:0xe2e0da,
-        metalness:.32,
-        roughness:.38,
+        color:0xeceae5,
+        metalness:.27,
+        roughness:.34,
         roughnessMap:scannedMetalRough,
         normalMap:scannedMetalNormal,
         normalScale:new THREE.Vector2(.050,.050),
@@ -362,7 +362,7 @@
     // A subtle edge strip creates a readable side profile when the device tilts.
     const sideShade=new THREE.Mesh(
       new THREE.BoxGeometry(2.47,.018,.152),
-      new THREE.MeshStandardMaterial({color:0xc9c6bf,metalness:.62,roughness:.30})
+      new THREE.MeshStandardMaterial({color:0xd8d5ce,metalness:.54,roughness:.28})
     );
     sideShade.position.set(0,-1.004,0);
     rig.add(sideShade);
@@ -371,7 +371,7 @@
     // the front face. As the tablet tilts they reveal the near/far rail and
     // make the body read as a solid object instead of a flat card.
     const railMaterial=()=>new THREE.MeshBasicMaterial({
-      color:0xfffbf2,
+      color:0xffffff,
       transparent:true,
       opacity:0,
       depthWrite:false,
