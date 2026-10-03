@@ -1,6 +1,6 @@
 const canvas = document.querySelector('#game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.20));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
@@ -159,7 +159,7 @@ const sun = new THREE.DirectionalLight(0xfff0d7, 2.92);
 // opposite-Z setup made highlights and cast shadows disagree with the sun disc.
 sun.position.set(-17.5, 19.0, -23.5);
 sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.left = -18;
 sun.shadow.camera.right = 18;
 sun.shadow.camera.top = 22;
@@ -167,7 +167,7 @@ sun.shadow.camera.bottom = -18;
 sun.shadow.camera.near = 1;
 sun.shadow.camera.far = 52;
 sun.shadow.bias = -0.00028;
-sun.shadow.normalBias = .022;
+sun.shadow.normalBias = .016;
 sun.shadow.radius = 1.15;
 scene.add(sun);
 
@@ -3144,11 +3144,11 @@ const road=plane(15,92,0xffffff,-6.7,.004,-4);
 road.material.map=asphaltTexture;
 road.material.roughnessMap=asphaltRoughness;
 road.material.normalMap=asphaltGround.normal;
-road.material.normalScale.set(.26,.26);
+road.material.normalScale.set(.16,.16);
 road.material.aoMap=asphaltGround.ao;
-road.material.aoMapIntensity=.18;
+road.material.aoMapIntensity=.14;
 road.material.bumpMap=asphaltGround.bump;
-road.material.bumpScale=.022;
+road.material.bumpScale=.010;
 road.material.roughness=.96;
 road.material.envMapIntensity=.018;
 road.material.needsUpdate=true;
@@ -3314,11 +3314,11 @@ const sidewalk=plane(10.8,92,0xffffff,4.2,.014,-4);
 sidewalk.material.map=pavementTexture;
 sidewalk.material.roughnessMap=pavementRoughness;
 sidewalk.material.normalMap=pavementGround.normal;
-sidewalk.material.normalScale.set(.23,.23);
+sidewalk.material.normalScale.set(.10,.10);
 sidewalk.material.aoMap=pavementGround.ao;
-sidewalk.material.aoMapIntensity=.24;
+sidewalk.material.aoMapIntensity=.16;
 sidewalk.material.bumpMap=pavementGround.bump;
-sidewalk.material.bumpScale=.018;
+sidewalk.material.bumpScale=.007;
 sidewalk.material.roughness=.96;
 sidewalk.material.envMapIntensity=.030;
 sidewalk.material.needsUpdate=true;
@@ -3330,7 +3330,7 @@ const curbsidePaving=new THREE.Mesh(
     roughness:.97,
     map:concreteSurface.map,
     bumpMap:pavementMicroBump,
-    bumpScale:.010
+    bumpScale:.005
   })
 );
 curbsidePaving.rotation.x=-Math.PI/2;
@@ -3371,11 +3371,11 @@ scene.add(boulevardEdgeLine);
 curb.material.map=concreteSurface.map;
 curb.material.roughnessMap=concreteSurface.roughness;
 curb.material.normalMap=concreteSurface.normal;
-curb.material.normalScale.set(.20,.20);
+curb.material.normalScale.set(.11,.11);
 curb.material.aoMap=concreteSurface.ao;
-curb.material.aoMapIntensity=.20;
+curb.material.aoMapIntensity=.14;
 curb.material.bumpMap=concreteSurface.bump;
-curb.material.bumpScale=.012;
+curb.material.bumpScale=.006;
 curb.material.needsUpdate=true;
 
 
@@ -3430,7 +3430,7 @@ const curbGrimeLayer=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     map:curbGrimeTexture,
     transparent:true,
-    opacity:.30,
+    opacity:.20,
     depthWrite:false,
     toneMapped:true
   })
@@ -3470,7 +3470,7 @@ const gutterDirt=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     map:gutterDirtTexture,
     transparent:true,
-    opacity:.28,
+    opacity:.18,
     depthWrite:false,
     toneMapped:true
   })
@@ -12811,27 +12811,17 @@ function attachMiraAsset(source,animations){
   miraGLBBasePosition=root.position.clone();
   captureMiraBones(root);
   if(!mira.userData.glbContactShadow){
-    mira.userData.glbContactShadow=createAttachedContactShadow(mira,.54,.36,.058);
+    mira.userData.glbContactShadow=createAttachedContactShadow(mira,.50,.32,.045);
   }
 
   if(!mira.userData.footContactShadows){
-    const footShadowMat=new THREE.MeshBasicMaterial({
-      color:0x1f2423,
-      transparent:true,
-      opacity:.078,
-      depthWrite:false,
-      toneMapped:true
-    });
+    // Soft per-foot penumbrae merge into the real sun shadow instead of reading
+    // as two opaque circles glued to the pavement.
     mira.userData.footContactShadows=[-.095,.095].map((x,index)=>{
-      const shadow=new THREE.Mesh(
-        new THREE.CircleGeometry(.102,18),
-        footShadowMat.clone()
-      );
-      shadow.scale.set(.88,1.28,1);
-      shadow.rotation.x=-Math.PI/2;
-      shadow.rotation.z=index?-.08:.08;
-      shadow.position.set(x,.006,.016+(index?.010:-.006));
-      mira.add(shadow);
+      const shadow=createAttachedContactShadow(mira,.17,.27,.036);
+      shadow.position.set(x,.010,.016+(index?.010:-.006));
+      shadow.rotation.z=index?-.07:.07;
+      shadow.material.opacity=.82;
       return shadow;
     });
   }
@@ -13215,12 +13205,12 @@ function animate(){
   walkPhase += dt*(3.7+speed*4.8);
   // Real head motion is much smaller than common FPS camera bob. Keep enough
   // movement to feel embodied, but let the architecture stay visually stable.
-  const walkBob = tabletOpen ? 0 : Math.sin(walkPhase*2)*.0062*speed;
-  const walkSway = tabletOpen ? 0 : Math.sin(walkPhase)*.00145*speed;
-  const breath = Math.sin(t*1.22)*.0021;
+  const walkBob = tabletOpen ? 0 : Math.sin(walkPhase*2)*.0048*speed;
+  const walkSway = tabletOpen ? 0 : Math.sin(walkPhase)*.00105*speed;
+  const breath = Math.sin(t*1.22)*.0015;
 
   camera.rotation.y=yaw;
-  camera.rotation.x=pitch + Math.sin(walkPhase)*.00165*speed;
+  camera.rotation.x=pitch + Math.sin(walkPhase)*.00120*speed;
   camera.rotation.z=THREE.MathUtils.lerp(camera.rotation.z,-turnImpulse*.00022 + walkSway,.10);
   camera.position.y=baseEyeHeight + walkBob + breath;
 
@@ -13549,18 +13539,15 @@ function animate(){
     if(shadow){
       const settle=.985+Math.cos(t*.37+.6)*.012;
       shadow.scale.set(settle,settle,1);
-      shadow.material.opacity=.92+Math.sin(t*.37+.6)*.025;
+      shadow.material.opacity=.84+Math.sin(t*.37+.6)*.018;
     }
 
     mira.userData.footContactShadows?.forEach((footShadow,index)=>{
-      const footWeight=index===0
-        ? .104+weightShift*.020
-        : .104-weightShift*.020;
-      footShadow.material.opacity=THREE.MathUtils.clamp(footWeight,.078,.132);
       const loaded=index===0?weightShift:-weightShift;
-      footShadow.scale.x=.94+loaded*.034;
-      footShadow.scale.y=1.48+loaded*.055;
-      footShadow.position.x=(index===0?-.095:.095)+loaded*.006;
+      footShadow.material.opacity=THREE.MathUtils.clamp(.82+loaded*.08,.70,.92);
+      footShadow.scale.x=.96+loaded*.025;
+      footShadow.scale.y=1.06+loaded*.040;
+      footShadow.position.x=(index===0?-.095:.095)+loaded*.004;
     });
   }
   const idleBreath=Math.sin(t*1.55);
