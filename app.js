@@ -6452,6 +6452,106 @@ createDistantTrafficCue(-9.10,-52,1,0xc9bdae);
 
 // Layered atmospheric cards compress distant contrast before the global fog
 // takes over, approximating the pale urban air visible in real daytime streets.
+// ---------- photographic set extension ----------
+// The playable block remains fully 3D, but the last 25-30m of the view uses
+// compressed real photography. This is the same technique used on film sets:
+// nearby geometry supplies parallax and interaction, while distant detail no
+// longer exposes low-poly boxes and repeated procedural windows.
+let photographicSetExtensionStarted=false;
+const photographicSetExtensionGroup=new THREE.Group();
+photographicSetExtensionGroup.name='photographic-set-extension';
+scene.add(photographicSetExtensionGroup);
+
+function makeSetExtensionMask(width=512,height=512){
+  const canvas=document.createElement('canvas');
+  canvas.width=width;
+  canvas.height=height;
+  const g=canvas.getContext('2d');
+  const image=g.createImageData(width,height);
+  const d=image.data;
+  for(let y=0;y<height;y++){
+    const v=y/(height-1);
+    const bottom=THREE.MathUtils.smoothstep(v,.04,.22);
+    const top=1-THREE.MathUtils.smoothstep(v,.91,1);
+    for(let x=0;x<width;x++){
+      const u=x/(width-1);
+      const edge=Math.min(
+        THREE.MathUtils.smoothstep(u,.02,.15),
+        1-THREE.MathUtils.smoothstep(u,.85,.98)
+      );
+      const a=Math.max(0,Math.min(1,edge*bottom*top));
+      const i=(y*width+x)*4;
+      d[i]=d[i+1]=d[i+2]=255;
+      d[i+3]=Math.round(a*255);
+    }
+  }
+  g.putImageData(image,0,0);
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
+const photographicSetMask=makeSetExtensionMask();
+
+function installPhotographicSetExtensions(){
+  if(photographicSetExtensionStarted) return;
+  photographicSetExtensionStarted=true;
+
+  const loader=new THREE.TextureLoader();
+  loader.setCrossOrigin('anonymous');
+
+  const farUrl='https://images.pexels.com/photos/4947391/pexels-photo-4947391.jpeg?auto=compress&cs=tinysrgb&w=1260';
+  loader.load(farUrl,texture=>{
+    texture.colorSpace=THREE.SRGBColorSpace;
+    texture.minFilter=THREE.LinearMipmapLinearFilter;
+    texture.magFilter=THREE.LinearFilter;
+    texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy?.()||1,4);
+
+    const material=new THREE.MeshBasicMaterial({
+      map:texture,
+      alphaMap:photographicSetMask,
+      transparent:true,
+      opacity:.90,
+      depthWrite:false,
+      fog:false,
+      toneMapped:true,
+      side:THREE.DoubleSide
+    });
+    const backdrop=new THREE.Mesh(new THREE.PlaneGeometry(46,27),material);
+    backdrop.position.set(-2.0,11.2,-91.5);
+    backdrop.renderOrder=-2;
+    photographicSetExtensionGroup.add(backdrop);
+  },undefined,error=>{
+    console.warn('Far photographic set extension failed.',error);
+  });
+
+  // A second real photograph sits just behind the curtain wall. At low opacity
+  // it reads as reflected architecture / interior depth instead of a pasted image.
+  const facadeUrl='https://images.pexels.com/photos/20580323/pexels-photo-20580323/free-photo-of-office-block-entrance-in-perspective-and-plants-in-the-pavement.jpeg?auto=compress&cs=tinysrgb&w=1260';
+  loader.load(facadeUrl,texture=>{
+    texture.colorSpace=THREE.SRGBColorSpace;
+    texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+    texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy?.()||1,4);
+
+    const material=new THREE.MeshBasicMaterial({
+      map:texture,
+      transparent:true,
+      opacity:.115,
+      depthWrite:false,
+      toneMapped:true,
+      blending:THREE.NormalBlending,
+      side:THREE.DoubleSide
+    });
+    const reflectedCity=new THREE.Mesh(new THREE.PlaneGeometry(66,12.6),material);
+    reflectedCity.position.set(7.88,8.0,-7.2);
+    reflectedCity.rotation.y=-Math.PI/2;
+    reflectedCity.renderOrder=0;
+    photographicSetExtensionGroup.add(reflectedCity);
+  },undefined,error=>{
+    console.warn('Facade photographic set extension failed.',error);
+  });
+}
+
 const refHazeMaterialA=new THREE.MeshBasicMaterial({
   color:0xdce7e7,
   transparent:true,
@@ -10585,6 +10685,9 @@ function initWorldGLBAssets(){
   scheduleWorldStream(()=>{
     ensureWorldAssetEnvironment();
   },650);
+  scheduleWorldStream(()=>{
+    installPhotographicSetExtensions();
+  },900);
   scheduleWorldStream(()=>{
     loadPhotographicLeafCards();
   },1050);
