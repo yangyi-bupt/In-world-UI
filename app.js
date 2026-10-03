@@ -5331,32 +5331,33 @@ createWindowDisplay(13.8,'atelier');
 // Ground-floor cafe corner.
 const cafeFrame=box(.48,3.0,8.5,0x9ea5a3,8.33,1.55,4.8,.86);
 cafeFrame.castShadow=false;
-cafeFrame.material.map=cloneTextureVariant(sandstoneSurface.map,.36,.18,.92,1.02);
-cafeFrame.material.roughnessMap=sandstoneEdgeRoughness;
-cafeFrame.material.normalMap=cloneTextureVariant(sandstoneSurface.normal,.36,.18,.92,1.02);
-cafeFrame.material.normalScale.set(.15,.15);
-cafeFrame.material.bumpMap=cloneTextureVariant(sandstoneSurface.bump,.36,.18,.92,1.02);
-cafeFrame.material.bumpScale=.010;
-cafeFrame.material.roughness=.94;
-cafeFrame.material.envMapIntensity=.04;
-cafeFrame.material.needsUpdate=true;
+cafeFrame.material=new THREE.MeshPhysicalMaterial({
+  color:0xb7afa4,
+  roughness:.93,
+  metalness:0,
+  map:cloneTextureVariant(sandstoneSurface.map,.36,.18,.42,.48,.004),
+  roughnessMap:cloneTextureVariant(sandstoneSurface.roughness,.36,.18,.42,.48,.004),
+  normalMap:cloneTextureVariant(sandstoneSurface.normal,.36,.18,.42,.48,.004),
+  normalScale:new THREE.Vector2(.050,.050),
+  envMapIntensity:.026,
+  ior:1.45,
+  specularIntensity:.34,
+  clearcoat:0
+});
 const cafeGlass=glassPanel(7.75,2.55,8.05,1.62,4.8,-Math.PI/2,0xc3d8d7);
 cafeGlass.material.opacity=.48;
 cafeGlass.material.roughness=.31;
 addGlassEdgeDirt(7.75,2.55,8.044,1.62,4.8,-Math.PI/2,.36);
 
 const cafeMullionMat=new THREE.MeshStandardMaterial({
-  color:0x596365,
-  roughness:.42,
-  metalness:.72,
-  metalnessMap:coatedMetalSurface.metalness,
+  color:0x69716f,
+  roughness:.50,
+  metalness:1,
   map:coatedMetalSurface.map,
   roughnessMap:coatedMetalSurface.roughness,
   normalMap:metalSurface.normal,
-  normalScale:new THREE.Vector2(.10,.10),
-  bumpMap:metalSurface.bump,
-  bumpScale:.006,
-  envMapIntensity:.88
+  normalScale:new THREE.Vector2(.030,.030),
+  envMapIntensity:.56
 });
 [2.15,3.80,5.45,7.10].forEach(z=>{
   const mullion=new THREE.Mesh(new THREE.BoxGeometry(.055,2.42,.045),cafeMullionMat);
@@ -5366,17 +5367,14 @@ const cafeMullionMat=new THREE.MeshStandardMaterial({
 });
 
 const cafeDoorFrame=new THREE.MeshStandardMaterial({
-  color:0x555f61,
-  roughness:.46,
-  metalness:.72,
-  metalnessMap:coatedMetalSurface.metalness,
+  color:0x69716f,
+  roughness:.52,
+  metalness:1,
   map:coatedMetalSurface.map,
   roughnessMap:coatedMetalSurface.roughness,
   normalMap:metalSurface.normal,
-  normalScale:new THREE.Vector2(.10,.10),
-  bumpMap:metalSurface.bump,
-  bumpScale:.004,
-  envMapIntensity:.82
+  normalScale:new THREE.Vector2(.028,.028),
+  envMapIntensity:.52
 });
 [
   [7.88,1.58,1.73,.055,2.42,.055],
@@ -5477,16 +5475,18 @@ cafeInteriorGlow.position.set(8.13,1.55,4.8);
 cafeInteriorGlow.rotation.y=-Math.PI/2;
 scene.add(cafeInteriorGlow);
 
-const cafeInteriorShellMat=new THREE.MeshStandardMaterial({
+const cafeInteriorShellMat=new THREE.MeshPhysicalMaterial({
   color:0xd8ddda,
-  roughness:.94,
-  map:concreteSurface.map,
-  roughnessMap:concreteSurface.roughness,
-  normalMap:concreteSurface.normal,
-  normalScale:new THREE.Vector2(.11,.11),
-  bumpMap:concreteSurface.bump,
-  bumpScale:.0032,
-  envMapIntensity:.035
+  roughness:.95,
+  metalness:0,
+  map:cloneTextureVariant(concreteSurface.map,.14,.08,.26,.34,.003),
+  roughnessMap:cloneTextureVariant(concreteSurface.roughness,.14,.08,.26,.34,.003),
+  normalMap:cloneTextureVariant(concreteSurface.normal,.14,.08,.26,.34,.003),
+  normalScale:new THREE.Vector2(.042,.042),
+  envMapIntensity:.022,
+  ior:1.44,
+  specularIntensity:.30,
+  clearcoat:0
 });
 const cafeBackWall=new THREE.Mesh(
   new THREE.PlaneGeometry(7.34,2.25),
@@ -5499,16 +5499,18 @@ scene.add(cafeBackWall);
 
 const cafeInteriorFloor=new THREE.Mesh(
   new THREE.PlaneGeometry(.52,7.30),
-  new THREE.MeshStandardMaterial({
+  new THREE.MeshPhysicalMaterial({
     color:0xb7a996,
-    roughness:.91,
-    map:concreteSurface.map,
-    roughnessMap:concreteSurface.roughness,
-    normalMap:concreteSurface.normal,
-    normalScale:new THREE.Vector2(.12,.12),
-    bumpMap:concreteSurface.bump,
-    bumpScale:.0040,
-    envMapIntensity:.045
+    roughness:.93,
+    metalness:0,
+    map:cloneTextureVariant(concreteSurface.map,.21,.11,.24,.40,.004),
+    roughnessMap:cloneTextureVariant(concreteSurface.roughness,.21,.11,.24,.40,.004),
+    normalMap:cloneTextureVariant(concreteSurface.normal,.21,.11,.24,.40,.004),
+    normalScale:new THREE.Vector2(.040,.040),
+    envMapIntensity:.024,
+    ior:1.45,
+    specularIntensity:.28,
+    clearcoat:0
   })
 );
 cafeInteriorFloor.rotation.x=-Math.PI/2;
@@ -5732,15 +5734,18 @@ const cafeInteriorWood=new THREE.MeshStandardMaterial({
   bumpMap:woodSurface.bump,
   bumpScale:.018
 });
-const cafeInteriorWarm=new THREE.MeshStandardMaterial({
+const cafeInteriorWarm=new THREE.MeshPhysicalMaterial({
   color:0xe8d9c5,
-  roughness:.91,
-  map:concreteSurface.map,
-  roughnessMap:concreteSurface.roughness,
-  normalMap:concreteSurface.normal,
-  normalScale:new THREE.Vector2(.22,.22),
-  bumpMap:concreteSurface.bump,
-  bumpScale:.008
+  roughness:.93,
+  metalness:0,
+  map:cloneTextureVariant(concreteSurface.map,.29,.15,.28,.36,.003),
+  roughnessMap:cloneTextureVariant(concreteSurface.roughness,.29,.15,.28,.36,.003),
+  normalMap:cloneTextureVariant(concreteSurface.normal,.29,.15,.28,.36,.003),
+  normalScale:new THREE.Vector2(.045,.045),
+  envMapIntensity:.024,
+  ior:1.44,
+  specularIntensity:.30,
+  clearcoat:0
 });
 const cafeCounter=new THREE.Mesh(new THREE.BoxGeometry(.32,.86,5.30),cafeInteriorWood);
 cafeCounter.position.set(8.18,.72,4.85);
@@ -5749,16 +5754,19 @@ scene.add(cafeCounter);
 
 const cafeCounterTop=new THREE.Mesh(
   new THREE.BoxGeometry(.40,.055,5.42),
-  new THREE.MeshStandardMaterial({
+  new THREE.MeshPhysicalMaterial({
     color:0x735f50,
-    roughness:.70,
+    roughness:.84,
+    metalness:0,
     map:woodSurface.map,
-    roughnessMap:woodSurface.roughness,
+    roughnessMap:cafeWoodFinishRoughness,
     normalMap:woodSurface.normal,
-    normalScale:new THREE.Vector2(.20,.20),
-    bumpMap:woodSurface.bump,
-    bumpScale:.012,
-    envMapIntensity:.22
+    normalScale:new THREE.Vector2(.070,.070),
+    envMapIntensity:.060,
+    ior:1.46,
+    specularIntensity:.32,
+    clearcoat:.008,
+    clearcoatRoughness:.90
   })
 );
 cafeCounterTop.position.set(8.15,1.175,4.85);
@@ -5778,17 +5786,17 @@ scene.add(cafeCounterToe);
 
 const cafeBenchMat=new THREE.MeshPhysicalMaterial({
   color:0xb69b82,
-  roughness:.90,
+  roughness:.91,
+  metalness:0,
   map:woodSurface.map,
   roughnessMap:cafeWoodFinishRoughness,
   normalMap:woodSurface.normal,
-  normalScale:new THREE.Vector2(.12,.12),
-  bumpMap:woodSurface.bump,
-  bumpScale:.008,
-  clearcoat:.045,
-  clearcoatMap:cafeWoodClearcoatWear,
-  clearcoatRoughness:.80,
-  envMapIntensity:.09
+  normalScale:new THREE.Vector2(.060,.060),
+  clearcoat:.006,
+  clearcoatRoughness:.92,
+  envMapIntensity:.050,
+  ior:1.46,
+  specularIntensity:.30
 });
 if('anisotropy' in cafeBenchMat){
   cafeBenchMat.anisotropy=.07;
@@ -5817,11 +5825,12 @@ const cafeBenchCushion=new THREE.Mesh(
     metalness:0,
     bumpMap:fabricMicroBump,
     bumpScale:.004,
-    sheen:.24,
+    sheen:.10,
     sheenColor:new THREE.Color(0xd8c1aa),
-    sheenRoughness:.97,
+    sheenRoughness:.98,
     clearcoat:0,
-    envMapIntensity:.07
+    envMapIntensity:.045,
+    specularIntensity:.18
   })
 );
 cafeBenchCushion.position.set(8.00,.66,6.25);
@@ -5830,17 +5839,17 @@ scene.add(cafeBenchCushion);
 
 const cafeSmallTableMat=new THREE.MeshPhysicalMaterial({
   color:0xc9aa88,
-  roughness:.88,
+  roughness:.90,
+  metalness:0,
   map:woodSurface.map,
   roughnessMap:cafeWoodFinishRoughness,
   normalMap:woodSurface.normal,
-  normalScale:new THREE.Vector2(.20,.20),
-  bumpMap:woodSurface.bump,
-  bumpScale:.017,
-  clearcoat:.075,
-  clearcoatMap:cafeWoodClearcoatWear,
-  clearcoatRoughness:.68,
-  envMapIntensity:.12
+  normalScale:new THREE.Vector2(.070,.070),
+  clearcoat:.008,
+  clearcoatRoughness:.90,
+  envMapIntensity:.055,
+  ior:1.46,
+  specularIntensity:.32
 });
 if('anisotropy' in cafeSmallTableMat){
   cafeSmallTableMat.anisotropy=.10;
