@@ -1984,6 +1984,36 @@ function makeFabricColorTexture(seed){
 }
 const fabricColorTexture=makeFabricColorTexture(0x52a9ce31);
 
+function makeBeveledBoxGeometry(width,height,depth,radius=.008){
+  const r=Math.max(.001,Math.min(radius,width*.22,height*.22,depth*.22));
+  const halfW=width*.5;
+  const halfH=height*.5;
+  const shape=new THREE.Shape();
+  shape.moveTo(-halfW+r,-halfH);
+  shape.lineTo(halfW-r,-halfH);
+  shape.quadraticCurveTo(halfW,-halfH,halfW,-halfH+r);
+  shape.lineTo(halfW,halfH-r);
+  shape.quadraticCurveTo(halfW,halfH,halfW-r,halfH);
+  shape.lineTo(-halfW+r,halfH);
+  shape.quadraticCurveTo(-halfW,halfH,-halfW,halfH-r);
+  shape.lineTo(-halfW,-halfH+r);
+  shape.quadraticCurveTo(-halfW,-halfH,-halfW+r,-halfH);
+
+  const innerDepth=Math.max(.001,depth-r*2);
+  const geometry=new THREE.ExtrudeGeometry(shape,{
+    depth:innerDepth,
+    steps:1,
+    curveSegments:3,
+    bevelEnabled:true,
+    bevelSegments:2,
+    bevelSize:r,
+    bevelThickness:r
+  });
+  geometry.translate(0,0,-innerDepth*.5);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 function cloneTextureVariant(texture,offsetX,offsetY,repeatScaleX=1,repeatScaleY=1,rotation=0){
   const clone=texture.clone();
   clone.wrapS=THREE.RepeatWrapping;
@@ -5381,7 +5411,7 @@ const cafeDoorSealMat=new THREE.MeshStandardMaterial({
 });
 
 const cafeThreshold=new THREE.Mesh(
-  new THREE.BoxGeometry(.34,.045,1.02),
+  makeBeveledBoxGeometry(.34,.045,1.02,.007),
   new THREE.MeshStandardMaterial({
     color:0xb0aaa2,
     roughness:.68,
@@ -7808,7 +7838,7 @@ function addHeroStorefront(z,width,doorOffset,variant=0){
 
   const doorZ=z+doorOffset;
   const doorFrame=new THREE.Mesh(
-    new THREE.BoxGeometry(.25,2.28,.065),
+    makeBeveledBoxGeometry(.25,2.28,.065,.008),
     refHeroShopFrameMat
   );
   doorFrame.position.set(7.54,1.20,doorZ-.52);
@@ -7818,7 +7848,7 @@ function addHeroStorefront(z,width,doorOffset,variant=0){
   refHeroFacade.add(doorFrameR);
 
   const doorTop=new THREE.Mesh(
-    new THREE.BoxGeometry(.25,.065,1.10),
+    makeBeveledBoxGeometry(.25,.065,1.10,.008),
     refHeroShopFrameMat
   );
   doorTop.position.set(7.54,2.30,doorZ);
@@ -7827,7 +7857,7 @@ function addHeroStorefront(z,width,doorOffset,variant=0){
   // Door sill + compression gaskets give the opening believable construction
   // scale when the player is within a few metres.
   const threshold=new THREE.Mesh(
-    new THREE.BoxGeometry(.30,.030,1.12),
+    makeBeveledBoxGeometry(.30,.030,1.12,.005),
     refHeroDoorThresholdMat
   );
   threshold.position.set(7.50,.080,doorZ);
@@ -7864,7 +7894,7 @@ function addHeroStorefront(z,width,doorOffset,variant=0){
   refHeroFacade.add(innerJoint);
 
   const handle=new THREE.Mesh(
-    new THREE.BoxGeometry(.055,.48,.028),
+    makeBeveledBoxGeometry(.055,.48,.028,.004),
     new THREE.MeshStandardMaterial({
       color:0xb9b4a6,
       roughness:.25,
