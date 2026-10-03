@@ -2901,6 +2901,7 @@ tactile.rotation.x=-Math.PI/2;
 tactile.position.set(.78,.038,-4);
 tactile.receiveShadow=true;
 scene.add(tactile);
+tactile.visible=false;
 
 const patchMat=new THREE.MeshBasicMaterial({
   color:0xffffff,
@@ -2958,9 +2959,9 @@ const stripeMat=stripeMaterials[0];
 const edgeLine=new THREE.Mesh(
   new THREE.PlaneGeometry(.11,86),
   new THREE.MeshBasicMaterial({
-    color:0xd8c66d,
+    color:0xe2e3df,
     transparent:true,
-    opacity:.82,
+    opacity:.68,
     alphaMap:paintWearAlphaB,
     alphaTest:.035
   })
@@ -2972,9 +2973,9 @@ scene.add(edgeLine);
 const focalCurbMark=new THREE.Mesh(
   new THREE.PlaneGeometry(.13,5.4),
   new THREE.MeshBasicMaterial({
-    color:0xd8c777,
+    color:0xe3e3df,
     transparent:true,
-    opacity:.58,
+    opacity:.34,
     alphaMap:paintWearAlphaC,
     alphaTest:.035
   })
@@ -3411,6 +3412,73 @@ createFacadeZone(-20.4,24.0,0xbfc8c6,.28);
 createFacadeZone(-2.7,12.4,0xd2d2cd,.30);
 createFacadeZone(5.1,9.6,0xc5c4be,.24);
 createFacadeZone(18.1,15.0,0xc5cdcb,.28);
+
+// A continuous corporate lobby skin simplifies the ground floor. The older
+// cafe/shop geometry stays behind the glass as interior depth instead of
+// dominating the streetscape.
+const lobbyGlassMat=new THREE.MeshPhysicalMaterial({
+  color:0xa9bec1,
+  map:glassReflectionTexture,
+  roughnessMap:glassRoughnessTexture,
+  roughness:.20,
+  metalness:.01,
+  transparent:true,
+  opacity:.48,
+  transmission:.10,
+  ior:1.50,
+  thickness:.012,
+  clearcoat:.04,
+  clearcoatRoughness:.34,
+  envMapIntensity:.92,
+  side:THREE.DoubleSide
+});
+const lobbyFrameMat=new THREE.MeshStandardMaterial({
+  color:0x4e585a,
+  roughness:.40,
+  metalness:.46,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
+  normalMap:metalSurface.normal,
+  normalScale:new THREE.Vector2(.08,.08),
+  bumpMap:metalSurface.bump,
+  bumpScale:.002,
+  envMapIntensity:.90
+});
+const lobbyGlass=new THREE.Mesh(new THREE.PlaneGeometry(55.5,3.72),lobbyGlassMat);
+lobbyGlass.position.set(7.56,1.93,-3.0);
+lobbyGlass.rotation.y=-Math.PI/2;
+lobbyGlass.receiveShadow=true;
+scene.add(lobbyGlass);
+for(let z=-29.5;z<=23.5;z+=2.65){
+  const mullion=new THREE.Mesh(new THREE.BoxGeometry(.055,3.78,.050),lobbyFrameMat);
+  mullion.position.set(7.52,1.93,z);
+  mullion.castShadow=true;
+  scene.add(mullion);
+}
+[.18,3.76].forEach(y=>{
+  const rail=new THREE.Mesh(new THREE.BoxGeometry(.060,.060,55.6),lobbyFrameMat);
+  rail.position.set(7.52,y,-3.0);
+  rail.castShadow=true;
+  scene.add(rail);
+});
+const lobbyCanopy=new THREE.Mesh(
+  new THREE.BoxGeometry(1.30,.12,55.4),
+  new THREE.MeshStandardMaterial({
+    color:0xc7ccca,
+    roughness:.58,
+    metalness:.18,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
+    normalMap:metalSurface.normal,
+    normalScale:new THREE.Vector2(.08,.08),
+    bumpMap:metalSurface.bump,
+    bumpScale:.002,
+    envMapIntensity:.54
+  })
+);
+lobbyCanopy.position.set(7.10,3.86,-3.0);
+lobbyCanopy.castShadow=true;
+scene.add(lobbyCanopy);
 
 const facadeRibMat=new THREE.MeshStandardMaterial({
   color:0xb9c0be,
@@ -5564,79 +5632,54 @@ function createStreetTree(x,z,scale=1){
 
   const crown=new THREE.Group();
   const leafMats=[
-    makeFoliageMaterial(0x7ba56f,.91,.010,.020),
-    makeFoliageMaterial(0x91b77e,.89,.009,.024),
-    makeFoliageMaterial(0x6f9765,.93,.011,.016)
+    makeFoliageMaterial(0x719568,.93,.010,.014),
+    makeFoliageMaterial(0x82a475,.91,.009,.018),
+    makeFoliageMaterial(0x62865f,.95,.011,.010),
+    makeFoliageMaterial(0x93ad84,.90,.008,.020)
   ];
-  [
-    [0,.02,0,.86,1.08,.92,.04],
-    [-.42,.02,.06,.62,1.12,.88,-.12],
-    [.40,.10,-.06,.68,1.06,.90,.11],
-    [-.18,.46,-.02,.60,1.14,.86,-.08],
-    [.24,.50,.04,.57,1.12,.88,.10],
-    [0,.82,0,.49,1.16,.84,-.04]
-  ].forEach(([ox,oy,oz,r,sy,sz,rz],index)=>{
-    const leaf=new THREE.Mesh(new THREE.IcosahedronGeometry(r*scale,2),leafMats[index%leafMats.length]);
-    leaf.position.set(ox*scale,oy*scale,oz*scale);
-    leaf.scale.set(.86,sy*1.06,sz*.90);
-    leaf.rotation.z=rz;
-    leaf.rotation.y=(index-2.5)*.08;
-    leaf.castShadow=true;
-    leaf.receiveShadow=true;
-    crown.add(leaf);
-  });
-
-  // Smaller outer clusters interrupt the six-lobed "balloon" silhouette and
-  // create twig-scale depth without the cost of thousands of leaf cards.
-  [
-    [-.66,.18,.18,.25,.82,1.18,.72],
-    [.63,.26,.12,.28,.88,1.12,.76],
-    [-.49,.68,-.14,.24,.80,1.22,.70],
-    [.46,.78,-.10,.22,.84,1.20,.74],
-    [-.10,1.02,.08,.21,.78,1.24,.68],
-    [.18,-.20,.16,.27,.92,1.06,.80]
-  ].forEach(([ox,oy,oz,r,sx,sy,sz],index)=>{
+  const crownRnd=makeSeededRandom(Math.floor((z+48)*911+(x+20)*173));
+  for(let i=0;i<24;i++){
+    const angle=crownRnd()*Math.PI*2;
+    const radius=Math.sqrt(crownRnd())*(.64+.12*crownRnd());
+    const ox=Math.cos(angle)*radius;
+    const oz=Math.sin(angle)*radius*.72;
+    const oy=-.10+crownRnd()*1.25;
+    const r=.18+crownRnd()*.28;
     const cluster=new THREE.Mesh(
       new THREE.IcosahedronGeometry(r*scale,1),
-      leafMats[(index+1)%leafMats.length]
+      leafMats[i%leafMats.length]
     );
     cluster.position.set(ox*scale,oy*scale,oz*scale);
-    cluster.scale.set(sx,sy,sz);
+    cluster.scale.set(
+      .72+crownRnd()*.34,
+      .82+crownRnd()*.58,
+      .70+crownRnd()*.34
+    );
     cluster.rotation.set(
-      (index%2?.08:-.06),
-      index*.31,
-      (index%3-1)*.10
+      (crownRnd()-.5)*.24,
+      crownRnd()*Math.PI,
+      (crownRnd()-.5)*.28
     );
     cluster.castShadow=true;
     cluster.receiveShadow=true;
     crown.add(cluster);
-  });
-
-  const crownShadeMat=makeFoliageMaterial(0x63875e,.94,.010,.012);
-  [
-    [-.32,-.22,.02,.38],
-    [.28,-.16,-.08,.34]
-  ].forEach(([ox,oy,oz,r])=>{
-    const shadeLeaf=new THREE.Mesh(new THREE.IcosahedronGeometry(r*scale,1),crownShadeMat);
-    shadeLeaf.position.set(ox*scale,oy*scale,oz*scale);
-    shadeLeaf.scale.set(.90,.78,.86);
-    shadeLeaf.castShadow=true;
-    crown.add(shadeLeaf);
-  });
-
-  const highlightMat=makeFoliageMaterial(0xa8c895,.87,.008,.030);
-  [
-    [-.26,.62,.18,.28],
-    [.30,.42,.14,.24]
-  ].forEach(([ox,oy,oz,r])=>{
-    const highlight=new THREE.Mesh(new THREE.IcosahedronGeometry(r*scale,1),highlightMat);
-    highlight.position.set(ox*scale,oy*scale,oz*scale);
-    highlight.castShadow=false;
-    crown.add(highlight);
-  });
-
-  crown.position.set(x,3.18*scale,z);
-  crown.scale.set(.80,1.08,.80);
+  }
+  for(let i=0;i<7;i++){
+    const inner=new THREE.Mesh(
+      new THREE.IcosahedronGeometry((.20+crownRnd()*.17)*scale,1),
+      leafMats[2]
+    );
+    inner.position.set(
+      (crownRnd()-.5)*.55*scale,
+      (.08+crownRnd()*.72)*scale,
+      (crownRnd()-.5)*.42*scale
+    );
+    inner.scale.set(.88,1.08,.86);
+    inner.castShadow=true;
+    crown.add(inner);
+  }
+  crown.position.set(x,3.28*scale,z);
+  crown.scale.set(.84,1.10,.84);
   scene.add(crown);
   streetTreeCrowns.push(crown);
 }
@@ -5947,7 +5990,7 @@ createSunPool(5.85,6.40,3.6,5.8,.14);
 const focalPlanterBase=new THREE.Mesh(
   new THREE.BoxGeometry(1.95,.34,.58),
   new THREE.MeshStandardMaterial({
-    color:0xc3b6a3,
+    color:0xbfc3c0,
     roughness:.96,
     map:concreteSurface.map,
     roughnessMap:concreteSurface.roughness,
@@ -5993,6 +6036,7 @@ const focalBloomMats=[
   const bloom=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),focalBloomMats[i%2]);
   bloom.position.set(4.95+ox,.70,-4.72+oz);
   bloom.castShadow=true;
+  bloom.visible=false;
   scene.add(bloom);
 });
 
@@ -6172,6 +6216,10 @@ const wayfindingCap=new THREE.Mesh(
 );
 wayfindingCap.position.set(.48,2.275,-16.1);
 scene.add(wayfindingCap);
+wayfindingPole.visible=false;
+wayfindingSignFrame.visible=false;
+wayfindingSign.visible=false;
+wayfindingCap.visible=false;
 
 // A bench and bike rack near the cafe create readable points of interest for
 // future Scanner/Map interactions.
