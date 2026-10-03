@@ -131,7 +131,7 @@
     renderer.setClearColor(0x000000,0);
     renderer.outputColorSpace=THREE.SRGBColorSpace;
     renderer.toneMapping=THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure=1.16;
+    renderer.toneMappingExposure=1.08;
 
     const scene=new THREE.Scene();
     const camera=new THREE.PerspectiveCamera(31,1,.1,20);
@@ -186,26 +186,26 @@
     fingerRoughness.repeat.set(3.2,3.2);
 
     const aluminum=new THREE.MeshPhysicalMaterial({
-      color:0x343638,
-      metalness:.74,
-      roughness:.48,
+      color:0xe8e6df,
+      metalness:.38,
+      roughness:.34,
       roughnessMap:scannedMetalRough,
       normalMap:scannedMetalNormal,
       normalScale:new THREE.Vector2(.055,.055),
-      clearcoat:.010,
-      clearcoatRoughness:.74,
-      envMapIntensity:.40
+      clearcoat:.075,
+      clearcoatRoughness:.46,
+      envMapIntensity:.60
     });
     const edgeMetal=new THREE.MeshPhysicalMaterial({
-      color:0x4a4c4d,
-      metalness:.78,
-      roughness:.42,
+      color:0xd8d5ce,
+      metalness:.58,
+      roughness:.29,
       roughnessMap:scannedMetalRough,
       normalMap:scannedMetalNormal,
       normalScale:new THREE.Vector2(.040,.040),
-      clearcoat:.015,
-      clearcoatRoughness:.66,
-      envMapIntensity:.48
+      clearcoat:.085,
+      clearcoatRoughness:.38,
+      envMapIntensity:.68
     });
     const blackGlass=new THREE.MeshPhysicalMaterial({
       color:0x080808,
@@ -239,15 +239,15 @@
     const rearShell=new THREE.Mesh(
       extrudedRounded(2.77,1.95,.042,.162,.010),
       new THREE.MeshPhysicalMaterial({
-        color:0x2c2e30,
-        metalness:.70,
-        roughness:.44,
+        color:0xe2e0da,
+        metalness:.32,
+        roughness:.38,
         roughnessMap:scannedMetalRough,
         normalMap:scannedMetalNormal,
         normalScale:new THREE.Vector2(.050,.050),
-        clearcoat:.02,
-        clearcoatRoughness:.66,
-        envMapIntensity:.50
+        clearcoat:.065,
+        clearcoatRoughness:.48,
+        envMapIntensity:.60
       })
     );
     rearShell.position.z=-.088;
@@ -362,7 +362,7 @@
     // A subtle edge strip creates a readable side profile when the device tilts.
     const sideShade=new THREE.Mesh(
       new THREE.BoxGeometry(2.47,.018,.152),
-      new THREE.MeshStandardMaterial({color:0x303337,metalness:.9,roughness:.31})
+      new THREE.MeshStandardMaterial({color:0xc9c6bf,metalness:.62,roughness:.30})
     );
     sideShade.position.set(0,-1.004,0);
     rig.add(sideShade);
@@ -371,7 +371,7 @@
     // the front face. As the tablet tilts they reveal the near/far rail and
     // make the body read as a solid object instead of a flat card.
     const railMaterial=()=>new THREE.MeshBasicMaterial({
-      color:0xddd5cb,
+      color:0xfffbf2,
       transparent:true,
       opacity:0,
       depthWrite:false,
@@ -816,8 +816,8 @@
 
       // Material response: the metal gets slightly sharper at steeper pointer
       // angles, while the camera lens catches a moving pin-prick reflection.
-      aluminum.roughness=.48-Math.min(.012,Math.abs(pointerX)*.006+Math.abs(pointerY)*.004);
-      edgeMetal.roughness=.42-Math.min(.010,Math.abs(pointerX)*.005+Math.abs(pointerY)*.004);
+      aluminum.roughness=.34-Math.min(.010,Math.abs(pointerX)*.005+Math.abs(pointerY)*.003);
+      edgeMetal.roughness=.29-Math.min(.009,Math.abs(pointerX)*.004+Math.abs(pointerY)*.003);
       handPalmSkin.roughness=.72-Math.min(.012,Math.abs(pointerX)*.004+Math.max(0,pressAmount)*.008);
       handFingerSkin.roughness=.68-Math.min(.014,Math.abs(pointerY)*.005+Math.max(0,pressAmount)*.009);
       lensGlint.position.x=-.006+pointerX*.010;
