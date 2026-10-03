@@ -179,7 +179,7 @@ function makeSurfaceTexture(kind){
   const rnd=makeSeededRandom(kind==='asphalt'?0x6d2b79f5:0x1b873593);
 
   if(kind==='asphalt'){
-    g.fillStyle='#50585a';
+    g.fillStyle='#555a59';
     g.fillRect(0,0,size,size);
 
     // Low-frequency variation stops the road reading as one flat grey slab.
@@ -189,13 +189,13 @@ function makeSurfaceTexture(kind){
       const radius=12+rnd()*44;
       const grad=g.createRadialGradient(x,y,0,x,y,radius);
       const light=rnd()>.5;
-      grad.addColorStop(0,light?'rgba(118,124,124,.050)':'rgba(31,37,38,.045)');
+      grad.addColorStop(0,light?'rgba(126,128,123,.034)':'rgba(37,42,42,.032)');
       grad.addColorStop(1,'rgba(0,0,0,0)');
       g.fillStyle=grad;
       g.fillRect(x-radius,y-radius,radius*2,radius*2);
     }
 
-    for(let i=0;i<1350;i++){
+    for(let i=0;i<920;i++){
       const v=64+Math.floor(rnd()*54);
       const a=.016+rnd()*.040;
       g.fillStyle='rgba('+v+','+(v+2)+','+(v+2)+','+a.toFixed(3)+')';
@@ -823,14 +823,14 @@ function makeGroundRoughnessTexture(kind,seed){
 }
 
 const asphaltTexture=makeSurfaceTexture('asphalt');
-asphaltTexture.repeat.set(5,26);
+asphaltTexture.repeat.set(2.1,8.5);
 const pavementTexture=makeSurfaceTexture('pavement');
-pavementTexture.repeat.set(5,22);
+pavementTexture.repeat.set(2.6,10.5);
 
 const asphaltRoughness=makeGroundRoughnessTexture('asphalt',0x8a31d64f);
-asphaltRoughness.repeat.set(5,26);
+asphaltRoughness.repeat.set(2.1,8.5);
 const pavementRoughness=makeGroundRoughnessTexture('pavement',0x63b192e7);
-pavementRoughness.repeat.set(5,22);
+pavementRoughness.repeat.set(2.6,10.5);
 
 const facadeSurface=configureTexturePair(makeMaterialTexture('stone',0x51a72d31),1.8,15);
 const limestoneSurface=configureTexturePair(makeMaterialTexture('limestone',0x2cb85419),1.35,11.5);
@@ -5482,7 +5482,7 @@ for(let z=-31;z<=24;z+=3.4){
 // Low-detail buildings continue beyond the playable road. Their desaturated
 // palette and reduced contrast keep them atmospheric while giving the street a
 // real vanishing corridor rather than a visible world boundary.
-const distantBlockPalette=[0xc6cdca,0xd1d0c8,0xbfc8c6,0xd5d2ca];
+const distantBlockPalette=[0xcfd6d3,0xd8d8d2,0xcbd4d1,0xdedbd4];
 [
   [-15.2,-61,5.6,8.4,8.8],
   [-14.8,-72,6.0,7.0,11.2],
@@ -5667,6 +5667,38 @@ function createDistantTrafficCue(x,z,direction,color){
 createDistantTrafficCue(-8.95,-72,1,0xb7bbb6);
 createDistantTrafficCue(-5.70,-57,-1,0x87999d);
 createDistantTrafficCue(-9.10,-52,1,0xc9bdae);
+
+
+// Layered atmospheric cards compress distant contrast before the global fog
+// takes over, approximating the pale urban air visible in real daytime streets.
+const refHazeMaterialA=new THREE.MeshBasicMaterial({
+  color:0xdce7e7,
+  transparent:true,
+  opacity:.055,
+  depthWrite:false,
+  side:THREE.DoubleSide,
+  toneMapped:true
+});
+const refHazeMaterialB=new THREE.MeshBasicMaterial({
+  color:0xe5ecea,
+  transparent:true,
+  opacity:.085,
+  depthWrite:false,
+  side:THREE.DoubleSide,
+  toneMapped:true
+});
+[
+  [-45,22,17,refHazeMaterialA],
+  [-58,25,18,refHazeMaterialA],
+  [-72,30,20,refHazeMaterialB],
+  [-88,34,22,refHazeMaterialB]
+].forEach(([z,w,h,mat])=>{
+  const haze=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);
+  haze.position.set(-2.0,h*.48,z);
+  haze.rotation.y=0;
+  haze.renderOrder=20;
+  scene.add(haze);
+});
 
 // Soft skyline silhouettes keep the horizon bright and city-like.
 for(let i=0;i<9;i++){
@@ -6617,6 +6649,38 @@ for(let z=-42;z<31;z+=4.1){
 
 // Two slim street trees near the focal zone establish the reference-image
 // rhythm while leaving the facade visible between trunks.
+
+const refLeafCanvas=document.createElement('canvas');
+refLeafCanvas.width=refLeafCanvas.height=256;
+const refLeafCtx=refLeafCanvas.getContext('2d');
+const refLeafRnd=makeSeededRandom(0x91a53cd7);
+refLeafCtx.fillStyle='#82947b';
+refLeafCtx.fillRect(0,0,256,256);
+for(let i=0;i<110;i++){
+  const x=refLeafRnd()*256;
+  const y=refLeafRnd()*256;
+  const rx=4+refLeafRnd()*18;
+  const ry=2+refLeafRnd()*12;
+  const warm=refLeafRnd()>.60;
+  refLeafCtx.fillStyle=warm
+    ? 'rgba(154,160,124,'+(.025+refLeafRnd()*.055).toFixed(3)+')'
+    : 'rgba(67,92,68,'+(.030+refLeafRnd()*.065).toFixed(3)+')';
+  refLeafCtx.beginPath();
+  refLeafCtx.ellipse(x,y,rx,ry,refLeafRnd()*Math.PI,0,Math.PI*2);
+  refLeafCtx.fill();
+}
+for(let i=0;i<520;i++){
+  const v=95+Math.floor(refLeafRnd()*75);
+  refLeafCtx.fillStyle='rgba('+v+','+(v+16)+','+(v-5)+','+(.010+refLeafRnd()*.025).toFixed(3)+')';
+  const rr=.3+refLeafRnd()*1.0;
+  refLeafCtx.fillRect(refLeafRnd()*256,refLeafRnd()*256,rr,rr);
+}
+const refLeafTexture=new THREE.CanvasTexture(refLeafCanvas);
+refLeafTexture.colorSpace=THREE.SRGBColorSpace;
+refLeafTexture.wrapS=refLeafTexture.wrapT=THREE.RepeatWrapping;
+refLeafTexture.repeat.set(1.8,1.8);
+refLeafTexture.anisotropy=8;
+
 function createReferenceTree(x,z,scale=1){
   const tree=new THREE.Group();
   const trunkMat=new THREE.MeshStandardMaterial({
@@ -6638,22 +6702,25 @@ function createReferenceTree(x,z,scale=1){
   // was another source of the stylised / asset-pack look.
   const leafMats=[
     new THREE.MeshStandardMaterial({
-      color:0x758970,
-      roughness:.96,
+      color:0x87917e,
+      map:refLeafTexture,
+      roughness:.98,
       metalness:0,
-      envMapIntensity:.025
+      envMapIntensity:.012
     }),
     new THREE.MeshStandardMaterial({
-      color:0x87977b,
-      roughness:.95,
+      color:0x939a86,
+      map:refLeafTexture,
+      roughness:.98,
       metalness:0,
-      envMapIntensity:.025
+      envMapIntensity:.012
     }),
     new THREE.MeshStandardMaterial({
-      color:0x687d65,
-      roughness:.97,
+      color:0x74806f,
+      map:refLeafTexture,
+      roughness:.99,
       metalness:0,
-      envMapIntensity:.020
+      envMapIntensity:.010
     })
   ];
   [[0,0,0,.98],[.38,.08,-.05,.66],[-.38,.05,.03,.70],[.05,.54,0,.72]].forEach((v,i)=>{
@@ -8656,7 +8723,7 @@ function tunePedestrianAsset(root,index=0){
         if('roughness' in material){
           material.roughness=THREE.MathUtils.clamp(material.roughness ?? .74,.70,.82);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.12;
+        if('envMapIntensity' in material) material.envMapIntensity=.085;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=skinOilRoughness;
         }
@@ -8668,7 +8735,7 @@ function tunePedestrianAsset(root,index=0){
         if('roughness' in material){
           material.roughness=THREE.MathUtils.clamp(material.roughness ?? .78,.72,.86);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.16;
+        if('envMapIntensity' in material) material.envMapIntensity=.12;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=hairRoughnessTexture;
         }
@@ -8676,7 +8743,7 @@ function tunePedestrianAsset(root,index=0){
         if('roughness' in material){
           material.roughness=THREE.MathUtils.clamp(material.roughness ?? .84,.80,.96);
         }
-        if('envMapIntensity' in material) material.envMapIntensity=.10;
+        if('envMapIntensity' in material) material.envMapIntensity=.070;
         if(hasUv && 'roughnessMap' in material && !material.roughnessMap){
           material.roughnessMap=clothRoughnessTexture;
         }
@@ -8870,7 +8937,7 @@ function attachCarAsset(entry,source,index=0,targetLength=3.85){
 
 function attachWalkerAsset(entry,source,animations,index){
   const root=cloneAssetScene(source);
-  prepareImportedModel(root,.28);
+  prepareImportedModel(root,.20);
   normalizeHumanAsset(root,[1.66,1.62,1.60,1.68,1.58][index%5]);
   tunePedestrianAsset(root,index);
   root.rotation.y=(entry.direction>0?0:Math.PI)+entry.headingBias+(entry.modelYawOffset||0);
@@ -8940,7 +9007,7 @@ function setWalkerMotionState(walker,nextState){
 
 function attachMiraAsset(source,animations){
   const root=cloneAssetScene(source);
-  prepareImportedModel(root,.36);
+  prepareImportedModel(root,.28);
   normalizeHumanAsset(root,1.68);
   tuneMiraAsset(root);
   root.rotation.y=Math.PI-.12;
