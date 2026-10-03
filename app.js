@@ -9283,28 +9283,112 @@ function createReferenceTree(x,z,scale=1){
   }
 
   const trunkMat=new THREE.MeshStandardMaterial({
-    color:0x7a6858,
-    roughness:.94,
+    color:0x766452,
+    roughness:.95,
     map:barkSurface.map,
+    roughnessMap:barkSurface.roughness,
     bumpMap:barkSurface.bump,
-    bumpScale:.020
+    bumpScale:.024,
+    envMapIntensity:.018
   });
-  const trunk=new THREE.Mesh(
-    new THREE.CylinderGeometry(.10*scale,.15*scale,3.7*scale,10),
+
+  // Root flare and two subtly offset trunk sections remove the perfectly
+  // lathed-cylinder silhouette that is especially obvious at walking distance.
+  const rootFlare=new THREE.Mesh(
+    new THREE.CylinderGeometry(.17*scale,.235*scale,.30*scale,11),
     trunkMat
   );
-  trunk.position.y=1.85*scale;
-  trunk.castShadow=true;
-  tree.add(trunk);
+  rootFlare.position.y=.15*scale;
+  rootFlare.rotation.z=.018;
+  rootFlare.castShadow=true;
+  tree.add(rootFlare);
+
+  const lowerTrunk=new THREE.Mesh(
+    new THREE.CylinderGeometry(.105*scale,.17*scale,2.18*scale,11),
+    trunkMat
+  );
+  lowerTrunk.position.set(-.025*scale,1.30*scale,.018*scale);
+  lowerTrunk.rotation.z=.022+(z>0?.010:-.008);
+  lowerTrunk.rotation.x=z>0?-.010:.014;
+  lowerTrunk.castShadow=true;
+  tree.add(lowerTrunk);
+
+  const upperTrunk=new THREE.Mesh(
+    new THREE.CylinderGeometry(.075*scale,.115*scale,1.48*scale,10),
+    trunkMat
+  );
+  upperTrunk.position.set(.015*scale,3.03*scale,-.018*scale);
+  upperTrunk.rotation.z=-.032+(z>0?.012:-.006);
+  upperTrunk.rotation.x=z>0?.018:-.012;
+  upperTrunk.castShadow=true;
+  tree.add(upperTrunk);
+
+  const branchMat=trunkMat.clone();
+  branchMat.color=new THREE.Color(0x705f4f);
+  function addReferenceBranch(start,end,r0,r1){
+    const dir=end.clone().sub(start);
+    const branch=new THREE.Mesh(
+      new THREE.CylinderGeometry(r1*scale,r0*scale,dir.length(),9),
+      branchMat
+    );
+    branch.position.copy(start).add(end).multiplyScalar(.5);
+    branch.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0,1,0),
+      dir.clone().normalize()
+    );
+    branch.castShadow=true;
+    tree.add(branch);
+  }
+
+  const forkBase=new THREE.Vector3(.015*scale,3.30*scale,-.015*scale);
+  const branchBias=z>0?1:-1;
+  addReferenceBranch(
+    forkBase,
+    new THREE.Vector3(-.42*scale,3.96*scale,.16*scale*branchBias),
+    .070,.040
+  );
+  addReferenceBranch(
+    forkBase,
+    new THREE.Vector3(.38*scale,3.88*scale,-.20*scale*branchBias),
+    .066,.038
+  );
+  addReferenceBranch(
+    new THREE.Vector3(.02*scale,3.55*scale,0),
+    new THREE.Vector3(.12*scale,4.20*scale,.34*scale*branchBias),
+    .052,.028
+  );
 
   const crown=new THREE.Group();
-  crown.position.set(0,2.92*scale,0);
+  crown.position.set(
+    (z>0?.12:-.10)*scale,
+    3.08*scale,
+    (z>0?-.07:.09)*scale
+  );
+  crown.rotation.set(z>0?.025:-.018,z*.013,z>0?-.035:.028);
+  crown.scale.set(z>0?.94:1.04,1.08,z>0?1.03:.91);
   addLeafCardCloud(
     crown,
-    .96*scale,
+    .94*scale,
     Math.floor((z+80)*317+(x+20)*109),
     22
   );
+
+  // One smaller offset cluster breaks the spherical crown silhouette without
+  // multiplying the main leaf density.
+  const crownLobe=new THREE.Group();
+  crownLobe.position.set(
+    (z>0?-.48:.44)*scale,
+    .48*scale,
+    (z>0?.24:-.20)*scale
+  );
+  crownLobe.scale.set(.72,.78,.66);
+  addLeafCardCloud(
+    crownLobe,
+    .72*scale,
+    Math.floor((z+120)*193+(x+30)*277),
+    9
+  );
+  crown.add(crownLobe);
   tree.add(crown);
   tree.position.set(x,0,z);
   refStreet.add(tree);
