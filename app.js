@@ -7457,39 +7457,39 @@ refHeroFacade.name='reference-hero-facade';
 refStreet.add(refHeroFacade);
 
 const refHeroStone=refStone.clone();
-refHeroStone.color=new THREE.Color(0xd2cec4);
-refHeroStone.roughness=.82;
-refHeroStone.envMapIntensity=.12;
-refHeroStone.normalScale=new THREE.Vector2(.095,.095);
-refHeroStone.bumpScale=.009;
+refHeroStone.color=new THREE.Color(0xd9d5cc);
+refHeroStone.roughness=.87;
+refHeroStone.envMapIntensity=.09;
+refHeroStone.normalScale=new THREE.Vector2(.045,.045);
+refHeroStone.bumpScale=.0038;
 
 // Near-camera stone needs a different texel scale from the seventy-metre wall.
 // Clone every map so changing repeat/offset here cannot alter the distant facade.
 if(refHeroStone.map){
   refHeroStone.map=refHeroStone.map.clone();
   refHeroStone.map.wrapS=refHeroStone.map.wrapT=THREE.RepeatWrapping;
-  refHeroStone.map.repeat.set(.72,1.46);
+  refHeroStone.map.repeat.set(.56,1.12);
   refHeroStone.map.offset.set(.17,.08);
   refHeroStone.map.needsUpdate=true;
 }
 if(refHeroStone.roughnessMap){
   refHeroStone.roughnessMap=refHeroStone.roughnessMap.clone();
   refHeroStone.roughnessMap.wrapS=refHeroStone.roughnessMap.wrapT=THREE.RepeatWrapping;
-  refHeroStone.roughnessMap.repeat.set(.72,1.46);
+  refHeroStone.roughnessMap.repeat.set(.56,1.12);
   refHeroStone.roughnessMap.offset.set(.17,.08);
   refHeroStone.roughnessMap.needsUpdate=true;
 }
 if(refHeroStone.normalMap){
   refHeroStone.normalMap=refHeroStone.normalMap.clone();
   refHeroStone.normalMap.wrapS=refHeroStone.normalMap.wrapT=THREE.RepeatWrapping;
-  refHeroStone.normalMap.repeat.set(.72,1.46);
+  refHeroStone.normalMap.repeat.set(.56,1.12);
   refHeroStone.normalMap.offset.set(.17,.08);
   refHeroStone.normalMap.needsUpdate=true;
 }
 if(refHeroStone.bumpMap){
   refHeroStone.bumpMap=refHeroStone.bumpMap.clone();
   refHeroStone.bumpMap.wrapS=refHeroStone.bumpMap.wrapT=THREE.RepeatWrapping;
-  refHeroStone.bumpMap.repeat.set(.72,1.46);
+  refHeroStone.bumpMap.repeat.set(.56,1.12);
   refHeroStone.bumpMap.offset.set(.17,.08);
   refHeroStone.bumpMap.needsUpdate=true;
 }
@@ -8463,8 +8463,8 @@ const refNeighborMasonry=refStone.clone();
 refNeighborMasonry.color=new THREE.Color(0xc5b39e);
 refNeighborMasonry.roughness=.90;
 refNeighborMasonry.envMapIntensity=.07;
-refNeighborMasonry.normalScale=new THREE.Vector2(.075,.075);
-refNeighborMasonry.bumpScale=.007;
+refNeighborMasonry.normalScale=new THREE.Vector2(.050,.050);
+refNeighborMasonry.bumpScale=.0042;
 
 if(refNeighborMasonry.map){
   refNeighborMasonry.map=refNeighborMasonry.map.clone();
