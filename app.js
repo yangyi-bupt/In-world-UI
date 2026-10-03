@@ -11,7 +11,7 @@ renderer.physicallyCorrectLights = true;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xc9dde3);
-scene.fog = new THREE.Fog(0xdfe7e5, 58, 150);
+scene.fog = new THREE.Fog(0xdfe7e5, 52, 138);
 
 const skyCanvas=document.createElement('canvas');
 skyCanvas.width=256;
@@ -149,12 +149,12 @@ camera.rotation.order = 'YXZ';
 let cameraFovTarget = 44.0;
 
 // ---------- daylight ----------
-renderer.toneMappingExposure = 1.04;
+renderer.toneMappingExposure = 1.02;
 
-const skyLight = new THREE.HemisphereLight(0xf0f5f2, 0x8d8a82, 1.18);
+const skyLight = new THREE.HemisphereLight(0xf0f5f2, 0x8d8a82, 1.22);
 scene.add(skyLight);
 
-const sun = new THREE.DirectionalLight(0xfff0d7, 3.06);
+const sun = new THREE.DirectionalLight(0xfff0d7, 2.92);
 // Match the actual key light to the visible sun in the sky. The previous
 // opposite-Z setup made highlights and cast shadows disagree with the sun disc.
 sun.position.set(-17.5, 19.0, -23.5);
@@ -171,7 +171,7 @@ sun.shadow.normalBias = .022;
 sun.shadow.radius = 1.15;
 scene.add(sun);
 
-const daylightFill = new THREE.DirectionalLight(0xdce8ea, .145);
+const daylightFill = new THREE.DirectionalLight(0xdce8ea, .160);
 daylightFill.position.set(10, 8, -12);
 scene.add(daylightFill);
 
@@ -6524,9 +6524,9 @@ function installPhotographicSetExtensions(){
       map:texture,
       alphaMap:photographicSetMask,
       transparent:true,
-      opacity:.90,
+      opacity:.82,
       depthWrite:false,
-      fog:false,
+      fog:true,
       toneMapped:true,
       side:THREE.DoubleSide
     });
@@ -12943,8 +12943,10 @@ function animate(){
       const sin=Math.sin(yaw),cos=Math.cos(yaw);
       const x=dir.x*cos-dir.z*sin;
       const z=dir.x*sin+dir.z*cos;
-      velocity.x=THREE.MathUtils.lerp(velocity.x,x*2.25,1-Math.pow(.008,dt));
-      velocity.z=THREE.MathUtils.lerp(velocity.z,z*2.25,1-Math.pow(.008,dt));
+      // Human-scale walking speed keeps cars, storefronts and Mira from
+      // feeling miniature. The older FPS pace made the block pass too quickly.
+      velocity.x=THREE.MathUtils.lerp(velocity.x,x*1.72,1-Math.pow(.010,dt));
+      velocity.z=THREE.MathUtils.lerp(velocity.z,z*1.72,1-Math.pow(.010,dt));
     }else{
       velocity.x*=Math.pow(.001,dt);
       velocity.z*=Math.pow(.001,dt);
@@ -12956,15 +12958,17 @@ function animate(){
     velocity.multiplyScalar(Math.pow(.003,dt));
   }
 
-  const speed=Math.min(1,Math.hypot(velocity.x,velocity.z)/2.25);
-  walkPhase += dt*(4.2+speed*6.2);
-  const walkBob = tabletOpen ? 0 : Math.sin(walkPhase*2)*.010*speed;
-  const walkSway = tabletOpen ? 0 : Math.sin(walkPhase)*.0030*speed;
-  const breath = Math.sin(t*1.38)*.0032;
+  const speed=Math.min(1,Math.hypot(velocity.x,velocity.z)/1.72);
+  walkPhase += dt*(3.7+speed*4.8);
+  // Real head motion is much smaller than common FPS camera bob. Keep enough
+  // movement to feel embodied, but let the architecture stay visually stable.
+  const walkBob = tabletOpen ? 0 : Math.sin(walkPhase*2)*.0062*speed;
+  const walkSway = tabletOpen ? 0 : Math.sin(walkPhase)*.00145*speed;
+  const breath = Math.sin(t*1.22)*.0021;
 
   camera.rotation.y=yaw;
-  camera.rotation.x=pitch + Math.sin(walkPhase)*.003*speed;
-  camera.rotation.z=THREE.MathUtils.lerp(camera.rotation.z,-turnImpulse*.00042 + walkSway,.12);
+  camera.rotation.x=pitch + Math.sin(walkPhase)*.00165*speed;
+  camera.rotation.z=THREE.MathUtils.lerp(camera.rotation.z,-turnImpulse*.00022 + walkSway,.10);
   camera.position.y=baseEyeHeight + walkBob + breath;
 
   // Smooth field-of-view shift when focusing on the near tablet.
@@ -12981,7 +12985,7 @@ function animate(){
   dappleTexture.offset.x=Math.sin(t*.052)*.0022;
   dappleTexture.offset.y=Math.cos(t*.044)*.0015;
   sunHaze.material.opacity=.34+Math.sin(t*.11)*.008;
-  sun.intensity=3.06;
+  sun.intensity=2.92;
 
   skyClouds.forEach((cloud,index)=>{
     cloud.position.x+=dt*(.055+index*.018);
