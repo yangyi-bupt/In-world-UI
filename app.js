@@ -2863,6 +2863,108 @@ curb.material.bumpMap=concreteSurface.bump;
 curb.material.bumpScale=.012;
 curb.material.needsUpdate=true;
 
+
+const curbGrimeCanvas=document.createElement('canvas');
+curbGrimeCanvas.width=96;
+curbGrimeCanvas.height=1024;
+const curbGrimeCtx=curbGrimeCanvas.getContext('2d');
+const curbGrimeRnd=makeSeededRandom(0x8bca4d17);
+curbGrimeCtx.clearRect(0,0,96,1024);
+
+// Dust-darkened lower edge.
+const curbDustGrad=curbGrimeCtx.createLinearGradient(0,0,96,0);
+curbDustGrad.addColorStop(0,'rgba(74,74,69,.15)');
+curbDustGrad.addColorStop(.34,'rgba(92,91,84,.075)');
+curbDustGrad.addColorStop(1,'rgba(92,91,84,0)');
+curbGrimeCtx.fillStyle=curbDustGrad;
+curbGrimeCtx.fillRect(0,0,96,1024);
+
+// Vertical drain streaks and localized splash staining.
+for(let i=0;i<34;i++){
+  const y=curbGrimeRnd()*1024;
+  const x=4+curbGrimeRnd()*34;
+  const len=18+curbGrimeRnd()*95;
+  const a=.025+curbGrimeRnd()*.050;
+  const grad=curbGrimeCtx.createLinearGradient(x,y,x,y+len);
+  grad.addColorStop(0,'rgba(58,65,61,'+a.toFixed(3)+')');
+  grad.addColorStop(1,'rgba(58,65,61,0)');
+  curbGrimeCtx.strokeStyle=grad;
+  curbGrimeCtx.lineWidth=.6+curbGrimeRnd()*1.6;
+  curbGrimeCtx.beginPath();
+  curbGrimeCtx.moveTo(x,y);
+  curbGrimeCtx.lineTo(x+(curbGrimeRnd()-.5)*2,y+len);
+  curbGrimeCtx.stroke();
+}
+for(let i=0;i<16;i++){
+  const x=10+curbGrimeRnd()*55;
+  const y=curbGrimeRnd()*1024;
+  const rx=5+curbGrimeRnd()*20;
+  const ry=10+curbGrimeRnd()*38;
+  const grad=curbGrimeCtx.createRadialGradient(x,y,1,x,y,Math.max(rx,ry));
+  grad.addColorStop(0,'rgba(78,83,77,'+(.025+curbGrimeRnd()*.040).toFixed(3)+')');
+  grad.addColorStop(1,'rgba(78,83,77,0)');
+  curbGrimeCtx.fillStyle=grad;
+  curbGrimeCtx.fillRect(x-rx,y-ry,rx*2,ry*2);
+}
+
+const curbGrimeTexture=new THREE.CanvasTexture(curbGrimeCanvas);
+curbGrimeTexture.colorSpace=THREE.SRGBColorSpace;
+curbGrimeTexture.anisotropy=8;
+const curbGrimeLayer=new THREE.Mesh(
+  new THREE.PlaneGeometry(.165,91.4),
+  new THREE.MeshBasicMaterial({
+    map:curbGrimeTexture,
+    transparent:true,
+    opacity:.72,
+    depthWrite:false,
+    toneMapped:true
+  })
+);
+curbGrimeLayer.position.set(-.104,.091,-4);
+curbGrimeLayer.rotation.y=Math.PI/2;
+curbGrimeLayer.renderOrder=3;
+scene.add(curbGrimeLayer);
+
+// Fine accumulated gutter dirt where asphalt meets the curb.
+const gutterDirtCanvas=document.createElement('canvas');
+gutterDirtCanvas.width=256;
+gutterDirtCanvas.height=1024;
+const gutterDirtCtx=gutterDirtCanvas.getContext('2d');
+const gutterDirtRnd=makeSeededRandom(0x44ac19e3);
+gutterDirtCtx.clearRect(0,0,256,1024);
+const gutterEdgeGrad=gutterDirtCtx.createLinearGradient(0,0,256,0);
+gutterEdgeGrad.addColorStop(0,'rgba(42,45,42,.19)');
+gutterEdgeGrad.addColorStop(.22,'rgba(55,58,54,.095)');
+gutterEdgeGrad.addColorStop(.62,'rgba(63,64,59,.025)');
+gutterEdgeGrad.addColorStop(1,'rgba(63,64,59,0)');
+gutterDirtCtx.fillStyle=gutterEdgeGrad;
+gutterDirtCtx.fillRect(0,0,256,1024);
+for(let i=0;i<120;i++){
+  const y=gutterDirtRnd()*1024;
+  const x=gutterDirtRnd()*120;
+  const rr=.4+gutterDirtRnd()*2.8;
+  gutterDirtCtx.fillStyle='rgba(61,59,51,'+(.025+gutterDirtRnd()*.060).toFixed(3)+')';
+  gutterDirtCtx.beginPath();
+  gutterDirtCtx.arc(x,y,rr,0,Math.PI*2);
+  gutterDirtCtx.fill();
+}
+const gutterDirtTexture=new THREE.CanvasTexture(gutterDirtCanvas);
+gutterDirtTexture.colorSpace=THREE.SRGBColorSpace;
+const gutterDirt=new THREE.Mesh(
+  new THREE.PlaneGeometry(.72,89.8),
+  new THREE.MeshBasicMaterial({
+    map:gutterDirtTexture,
+    transparent:true,
+    opacity:.65,
+    depthWrite:false,
+    toneMapped:true
+  })
+);
+gutterDirt.rotation.x=-Math.PI/2;
+gutterDirt.position.set(-.38,.028,-4);
+gutterDirt.renderOrder=2;
+scene.add(gutterDirt);
+
 // Soft curb scuffs collect near wheel height and break the otherwise perfectly
 // even ninety-metre concrete edge.
 const curbScuffMat=new THREE.MeshBasicMaterial({
@@ -6353,6 +6455,10 @@ for(let bay=0;bay<15;bay++){
     pane.position.set(7.745,floor.y,z);
     pane.rotation.y=-Math.PI/2;
     pane.renderOrder=1;
+    pane.userData.baseMapOffset=map.offset.clone();
+    pane.userData.baseRoughOffset=roughMap.offset.clone();
+    pane.userData.parallaxStrength=.0025+refPaneRnd()*.0045;
+    pane.userData.phase=refPaneRnd()*Math.PI*2;
     refStreet.add(pane);
     refGlassCells.push(pane);
   });
@@ -8194,6 +8300,20 @@ function createAttachedContactShadow(parent,w,d,opacity=.08){
   shadow.position.y=.031;
   shadow.renderOrder=1;
   parent.add(shadow);
+
+  // A faint secondary lobe gives feet/tires a daylight direction rather than a
+  // perfectly centered radial blob. Kept very subtle so authored cast shadows
+  // remain the primary cue.
+  if(d<1.0){
+    const sunLobe=shadow.clone();
+    sunLobe.material=shadow.material.clone();
+    sunLobe.material.opacity=.32;
+    sunLobe.scale.set(.78,1.55,1);
+    sunLobe.position.set(.07,.002,.10);
+    sunLobe.rotation.z=-.10;
+    sunLobe.renderOrder=0;
+    parent.add(sunLobe);
+  }
   return shadow;
 }
 
@@ -9491,8 +9611,17 @@ function animate(){
   camera.updateProjectionMatrix();
 
   streetTreeCrowns.forEach((crown,i)=>{
-    crown.rotation.z=Math.sin(t*.34+i*.9)*.006;
-    crown.rotation.x=Math.sin(t*.27+i*1.4)*.004;
+    crown.rotation.z=Math.sin(t*.34+i*.9)*.0045;
+    crown.rotation.x=Math.sin(t*.27+i*1.4)*.0035;
+    crown.children.forEach((leaf,j)=>{
+      if(!leaf.isMesh) return;
+      leaf.rotation.z+=Math.sin(t*.62+i*.7+j*.41)*.00016;
+      leaf.rotation.x+=Math.cos(t*.53+i*.8+j*.29)*.00010;
+      if(leaf.material && 'envMapIntensity' in leaf.material){
+        leaf.material.envMapIntensity=
+          .010+Math.max(0,Math.sin(t*.13+i*.7+j*.19))*.006;
+      }
+    });
   });
   dappleTexture.offset.x=Math.sin(t*.052)*.0022;
   dappleTexture.offset.y=Math.cos(t*.044)*.0015;
@@ -9505,6 +9634,35 @@ function animate(){
   });
 
   glassReflectionTexture.offset.x=(Math.sin(t*.034)*.013+.013)%1;
+
+
+  // Curtain-wall reflections shift only a few texels with camera position and
+  // heading. The movement is intentionally sub-perceptual; it breaks the
+  // wallpaper effect without making the facade look animated.
+  const glassViewShiftX=camera.position.z*.00032+Math.sin(yaw)*.0018;
+  const glassViewShiftY=camera.position.x*.00020+Math.sin(pitch)*.0011;
+  refGlassCells.forEach((pane,index)=>{
+    const phase=pane.userData.phase || 0;
+    const strength=pane.userData.parallaxStrength || .003;
+    const map=pane.material.map;
+    const roughMap=pane.material.roughnessMap;
+    if(map && pane.userData.baseMapOffset){
+      map.offset.x=
+        pane.userData.baseMapOffset.x+
+        glassViewShiftX*strength*90+
+        Math.sin(t*.045+phase)*.0007;
+      map.offset.y=
+        pane.userData.baseMapOffset.y+
+        glassViewShiftY*strength*90+
+        Math.cos(t*.031+phase)*.00045;
+    }
+    if(roughMap && pane.userData.baseRoughOffset){
+      roughMap.offset.x=map?.offset.x ?? pane.userData.baseRoughOffset.x;
+      roughMap.offset.y=map?.offset.y ?? pane.userData.baseRoughOffset.y;
+    }
+    pane.material.envMapIntensity=
+      .98+Math.sin(yaw*.72+index*.31)*.08;
+  });
 
   worldAssetMixers.forEach(mixer=>mixer.update(dt));
 
