@@ -8721,8 +8721,8 @@ refNeighbor.add(refNeighborContact);
 const refWalk=new THREE.Mesh(
   new THREE.PlaneGeometry(7.35,78),
   new THREE.MeshStandardMaterial({
-    color:0xf1f0ea,
-    roughness:.96,
+    color:0xe8e6df,
+    roughness:.94,
     map:refPavingMaps.map,
     roughnessMap:refPavingMaps.roughness,
     normalMap:refPavingMaps.normal,
@@ -8737,6 +8737,189 @@ refWalk.position.set(4.05,.058,-6);
 refWalk.receiveShadow=true;
 refStreet.add(refWalk);
 
+/* ---------- integrated pedestrian realm ----------
+   The sidewalk is no longer treated as one decorative plane.  Three very
+   subtle bands establish a frontage zone, a clear walking path and a curbside
+   furnishing strip.  The tonal change is restrained enough to read as paving
+   specification rather than colored game tiles. */
+const refFrontagePavingMat=new THREE.MeshStandardMaterial({
+  color:0xdedbd2,
+  roughness:.95,
+  map:refPavingMaps.map,
+  roughnessMap:refPavingMaps.roughness,
+  normalMap:refPavingMaps.normal,
+  normalScale:new THREE.Vector2(.042,.042),
+  bumpMap:refPavingMaps.bump,
+  bumpScale:.0035,
+  envMapIntensity:.025
+});
+const refFurnishingPavingMat=new THREE.MeshStandardMaterial({
+  color:0xd2d1ca,
+  roughness:.97,
+  map:refPavingMaps.map,
+  roughnessMap:refPavingMaps.roughness,
+  normalMap:refPavingMaps.normal,
+  normalScale:new THREE.Vector2(.048,.048),
+  bumpMap:refPavingMaps.bump,
+  bumpScale:.0040,
+  envMapIntensity:.018
+});
+
+const refFrontageZone=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.34,44.0),
+  refFrontagePavingMat
+);
+refFrontageZone.rotation.x=-Math.PI/2;
+refFrontageZone.position.set(6.97,.064,3.0);
+refFrontageZone.receiveShadow=true;
+refStreet.add(refFrontageZone);
+
+const refFurnishingZone=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.44,44.0),
+  refFurnishingPavingMat
+);
+refFurnishingZone.rotation.x=-Math.PI/2;
+refFurnishingZone.position.set(1.14,.063,3.0);
+refFurnishingZone.receiveShadow=true;
+refStreet.add(refFurnishingZone);
+
+// Longitudinal saw-cut joints explain the banding as real paving construction.
+const refLongJointMat=new THREE.MeshBasicMaterial({
+  color:0x959792,
+  transparent:true,
+  opacity:.17,
+  depthWrite:false,
+  toneMapped:true
+});
+[1.86,6.28].forEach(x=>{
+  const joint=new THREE.Mesh(
+    new THREE.PlaneGeometry(.018,43.4),
+    refLongJointMat
+  );
+  joint.rotation.x=-Math.PI/2;
+  joint.position.set(x,.069,3.0);
+  refStreet.add(joint);
+});
+
+// Small utility covers sit in the furnishing zone rather than randomly in the
+// walking path.
+const refUtilityCoverMat=new THREE.MeshStandardMaterial({
+  color:0x6f7572,
+  roughness:.66,
+  metalness:.34,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
+  normalMap:metalSurface.normal,
+  normalScale:new THREE.Vector2(.05,.05),
+  envMapIntensity:.48
+});
+[
+  {z:-1.05,w:.48,d:.66,r:.04},
+  {z:12.35,w:.56,d:.56,r:-.02}
+].forEach(spec=>{
+  const cover=new THREE.Mesh(
+    new THREE.BoxGeometry(spec.w,.018,spec.d),
+    refUtilityCoverMat
+  );
+  cover.position.set(1.48,.074,spec.z);
+  cover.rotation.y=spec.r;
+  cover.receiveShadow=true;
+  refStreet.add(cover);
+});
+
+// A narrow concrete apron immediately in front of the hero entry visually ties
+// the threshold to the public sidewalk.
+const refEntryApron=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.36,3.58),
+  new THREE.MeshStandardMaterial({
+    color:0xd7d4cc,
+    roughness:.92,
+    map:refPavingMaps.map,
+    roughnessMap:refPavingMaps.roughness,
+    normalMap:refPavingMaps.normal,
+    normalScale:new THREE.Vector2(.034,.034),
+    bumpMap:refPavingMaps.bump,
+    bumpScale:.0028,
+    envMapIntensity:.030
+  })
+);
+refEntryApron.rotation.x=-Math.PI/2;
+refEntryApron.position.set(6.43,.071,2.77);
+refEntryApron.receiveShadow=true;
+refStreet.add(refEntryApron);
+
+// A continuous but very subtle gutter band connects curb, drainage and parked
+// vehicles into one street section.
+const refGutterMat=new THREE.MeshStandardMaterial({
+  color:0x4f5553,
+  roughness:.94,
+  metalness:0,
+  map:asphaltSurface.map,
+  roughnessMap:asphaltSurface.roughness,
+  normalMap:asphaltSurface.normal,
+  normalScale:new THREE.Vector2(.075,.075),
+  bumpMap:asphaltSurface.bump,
+  bumpScale:.006,
+  envMapIntensity:.025
+});
+const refGutterBand=new THREE.Mesh(
+  new THREE.PlaneGeometry(.62,43.8),
+  refGutterMat
+);
+refGutterBand.rotation.x=-Math.PI/2;
+refGutterBand.position.set(-.43,.031,3.0);
+refGutterBand.receiveShadow=true;
+refStreet.add(refGutterBand);
+
+// Two storm drains sit at believable low points near the parked cars / trees.
+const refStormDrainMat=new THREE.MeshStandardMaterial({
+  color:0x4d5653,
+  roughness:.52,
+  metalness:.52,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
+  envMapIntensity:.62
+});
+[-5.55,8.75].forEach((z,drainIndex)=>{
+  const frame=new THREE.Mesh(
+    new THREE.BoxGeometry(.36,.032,.88),
+    refStormDrainMat
+  );
+  frame.position.set(-.38,.050,z);
+  refStreet.add(frame);
+
+  for(let i=0;i<6;i++){
+    const slit=new THREE.Mesh(
+      new THREE.BoxGeometry(.22,.013,.052),
+      new THREE.MeshBasicMaterial({
+        color:0x1d2221,
+        transparent:true,
+        opacity:.78,
+        toneMapped:true
+      })
+    );
+    slit.position.set(-.38,.070,z-.31+i*.124);
+    refStreet.add(slit);
+  }
+});
+
+// Minor curb wear where tires repeatedly approach the parking lane.
+const refCurbTireMarkMat=new THREE.MeshBasicMaterial({
+  color:0x676964,
+  transparent:true,
+  opacity:.095,
+  depthWrite:false,
+  toneMapped:true
+});
+[-8.5,8.1].forEach((z,index)=>{
+  const mark=new THREE.Mesh(
+    new THREE.PlaneGeometry(.18,1.55),
+    refCurbTireMarkMat
+  );
+  mark.rotation.x=-Math.PI/2;
+  mark.position.set(.055,.103,z+(index?.12:-.08));
+  refStreet.add(mark);
+});
 
 // Soft contact shading along the building foot removes the "model placed on a
 // floor plane" look. A canvas alpha gradient keeps it broad and photographic.
@@ -9036,6 +9219,69 @@ function addLeafCardCloud(parent,scale=1,seed=1,count=18){
 
 function createReferenceTree(x,z,scale=1){
   const tree=new THREE.Group();
+
+  const pit=new THREE.Mesh(
+    new THREE.PlaneGeometry(1.18*scale,1.18*scale),
+    new THREE.MeshStandardMaterial({
+      color:0x655c4d,
+      roughness:1,
+      metalness:0,
+      map:concreteSurface.map,
+      roughnessMap:concreteSurface.roughness,
+      bumpMap:concreteSurface.bump,
+      bumpScale:.006,
+      envMapIntensity:.015
+    })
+  );
+  pit.rotation.x=-Math.PI/2;
+  pit.position.y=.010;
+  pit.receiveShadow=true;
+  tree.add(pit);
+
+  const grateMat=new THREE.MeshStandardMaterial({
+    color:0x5f6864,
+    roughness:.58,
+    metalness:.44,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
+    envMapIntensity:.55
+  });
+  const grateFrame=new THREE.Mesh(
+    new THREE.BoxGeometry(1.12*scale,.025,1.12*scale),
+    grateMat
+  );
+  grateFrame.position.y=.025;
+  tree.add(grateFrame);
+
+  const soil=new THREE.Mesh(
+    new THREE.PlaneGeometry(.64*scale,.64*scale),
+    new THREE.MeshStandardMaterial({
+      color:0x4c4438,
+      roughness:1,
+      metalness:0,
+      envMapIntensity:0
+    })
+  );
+  soil.rotation.x=-Math.PI/2;
+  soil.position.y=.042;
+  tree.add(soil);
+
+  // Slender grate openings create depth without expensive geometry.
+  const grateCutMat=new THREE.MeshBasicMaterial({
+    color:0x252b29,
+    transparent:true,
+    opacity:.72,
+    toneMapped:true
+  });
+  for(let i=-3;i<=3;i++){
+    const slotA=new THREE.Mesh(
+      new THREE.BoxGeometry(.055,.012,.92*scale),
+      grateCutMat
+    );
+    slotA.position.set(i*.12*scale,.041,0);
+    tree.add(slotA);
+  }
+
   const trunkMat=new THREE.MeshStandardMaterial({
     color:0x7a6858,
     roughness:.94,
