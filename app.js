@@ -1,6 +1,6 @@
 const canvas = document.querySelector('#game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.20));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
@@ -157,7 +157,7 @@ scene.add(skyLight);
 const sun = new THREE.DirectionalLight(0xfff0d7, 3.18);
 sun.position.set(-11, 15, 10);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(1024, 1024);
 sun.shadow.camera.left = -18;
 sun.shadow.camera.right = 18;
 sun.shadow.camera.top = 22;
@@ -166,7 +166,7 @@ sun.shadow.camera.near = 1;
 sun.shadow.camera.far = 52;
 sun.shadow.bias = -0.00028;
 sun.shadow.normalBias = .022;
-sun.shadow.radius = 1.7;
+sun.shadow.radius = 1.15;
 scene.add(sun);
 
 const daylightFill = new THREE.DirectionalLight(0xdce8ea, .18);
@@ -2264,7 +2264,7 @@ function box(w, h, d, color, x, y, z, roughness=.72, metalness=.02) {
     new THREE.MeshStandardMaterial({ color, roughness, metalness })
   );
   mesh.position.set(x,y,z);
-  mesh.castShadow = true;
+  mesh.castShadow = false;
   mesh.receiveShadow = true;
   scene.add(mesh);
   return mesh;
@@ -7745,7 +7745,7 @@ function addLeafCardCloud(parent,scale=1,seed=1,count=18){
     );
     matrices.forEach((matrix,instanceIndex)=>leaves.setMatrixAt(instanceIndex,matrix));
     leaves.instanceMatrix.needsUpdate=true;
-    leaves.castShadow=true;
+    leaves.castShadow=false;
     leaves.receiveShadow=false;
     leaves.userData.foliageInstanced=true;
     parent.add(leaves);
@@ -9278,8 +9278,11 @@ createAmbientWalker(6.38,24.6,-1,0x7e8982,.48,'quinary');
 
 // The reference image is a photographic street with one focal character, not a
 // game plaza full of equally readable NPCs. Keep only two distant walkers.
-ambientWalkers.forEach((walker,index)=>{
-  walker.group.visible=index===0 || index===3;
+ambientWalkers.forEach(walker=>{
+  // Keep the street composition focused on Mira. These legacy pedestrians are
+  // intentionally disabled instead of streamed because their low-detail meshes
+  // hurt both realism and frame time.
+  walker.group.visible=false;
 });
 
 const movingTraffic=[];
@@ -10662,29 +10665,8 @@ function initWorldGLBAssets(){
     }
   },180);
 
-  // Priority 3: two pedestrians are enough for a believable street and cut the
-  // previous five-character startup burst by more than half. Both are cloned.
-  scheduleWorldStream(async()=>{
-    const sources=[];
-    const pedestrianUrls=[
-      WORLD_GLB_ASSETS.pedestrianPrimary,
-      WORLD_GLB_ASSETS.pedestrianTertiary
-    ];
-    const settled=await Promise.allSettled(
-      pedestrianUrls.map(url=>loadGLB(loader,url))
-    );
-    settled.forEach(result=>{
-      if(result.status==='fulfilled') sources.push(result.value);
-    });
-
-    if(!sources.length) return;
-    ambientWalkers.forEach((entry,index)=>{
-      if(entry.assetRoot || !entry.group.visible) return;
-      const source=sources[index%sources.length];
-      attachWalkerAsset(entry,source.scene,source.animations,index);
-    });
-    window.dispatchEvent(new Event('world-assets-ready'));
-  },1650);
+  // Background pedestrians are deliberately not streamed. The focal character
+  // carries the scene, while distant photographic detail supplies human scale.
 
   // CPU-side PMREM and the HDR download are pushed behind the focal assets so
   // they cannot delay the first interaction. Reflections upgrade seamlessly.
@@ -10698,15 +10680,14 @@ function initWorldGLBAssets(){
     loadPhotographicLeafCards();
   },1050);
   scheduleWorldStream(()=>{
-    const targetPixelRatio=Math.min(window.devicePixelRatio,1.75);
+    const targetPixelRatio=Math.min(window.devicePixelRatio,1.30);
     if(Math.abs(renderer.getPixelRatio()-targetPixelRatio)>.05){
       renderer.setPixelRatio(targetPixelRatio);
       renderer.setSize(window.innerWidth,window.innerHeight);
     }
-  },2100);
-  scheduleWorldStream(()=>{
-    loadPhotographicEnvironment();
-  },2800);
+  },2600);
+  // Avoid the runtime HDR/PMREM upgrade. The smaller procedural environment is
+  // visually sufficient and removes a large decode + GPU preprocessing hitch.
 }
 
 if(window.GLTFLoader){
