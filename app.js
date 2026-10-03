@@ -140,7 +140,7 @@ const shopBounce = new THREE.DirectionalLight(0xffe5c9, .18);
 shopBounce.position.set(9,5,6);
 scene.add(shopBounce);
 
-const faceLight = new THREE.SpotLight(0xffe7d2, 5.8, 9, Math.PI * .22, .78, 1.5);
+const faceLight = new THREE.SpotLight(0xffeadb, 3.5, 8.5, Math.PI * .24, .84, 1.6);
 faceLight.position.set(1.1, 3.8, 3.2);
 faceLight.target.position.set(2.0, 1.45, -1.6);
 scene.add(faceLight, faceLight.target);
@@ -148,16 +148,16 @@ scene.add(faceLight, faceLight.target);
 // A broad, very soft bounce near Mira separates her from the storefront
 // without reading like a game spotlight. Its strength is modulated by player
 // distance later so she remains integrated with the street at long range.
-const miraPresenceLight=new THREE.PointLight(0xffe3cb,.34,5.4,2.0);
+const miraPresenceLight=new THREE.PointLight(0xffeadb,.18,4.8,2.1);
 miraPresenceLight.position.set(2.75,2.05,-.85);
 scene.add(miraPresenceLight);
 
-const miraWarmBounce=new THREE.DirectionalLight(0xffe3c8,.16);
+const miraWarmBounce=new THREE.DirectionalLight(0xffead8,.09);
 miraWarmBounce.position.set(7.2,5.4,3.4);
 miraWarmBounce.target.position.set(2.0,1.15,-1.6);
 scene.add(miraWarmBounce,miraWarmBounce.target);
 
-const miraCoolRim=new THREE.DirectionalLight(0xd8edf2,.10);
+const miraCoolRim=new THREE.DirectionalLight(0xd9edf2,.065);
 miraCoolRim.position.set(-5.0,4.0,-7.5);
 miraCoolRim.target.position.set(2.0,1.25,-1.6);
 scene.add(miraCoolRim,miraCoolRim.target);
@@ -3420,11 +3420,11 @@ const lobbyGlassMat=new THREE.MeshPhysicalMaterial({
   color:0xa9bec1,
   map:glassReflectionTexture,
   roughnessMap:glassRoughnessTexture,
-  roughness:.20,
-  metalness:.01,
+  roughness:.16,
+  metalness:.015,
   transparent:true,
-  opacity:.48,
-  transmission:.10,
+  opacity:.44,
+  transmission:.14,
   ior:1.50,
   thickness:.012,
   clearcoat:.04,
@@ -3449,6 +3449,47 @@ lobbyGlass.position.set(7.56,1.93,-3.0);
 lobbyGlass.rotation.y=-Math.PI/2;
 lobbyGlass.receiveShadow=true;
 scene.add(lobbyGlass);
+
+// A second, very faint pane sits behind the street-facing glass to create
+// believable layered reflections and interior depth instead of one flat sheet.
+const lobbyInnerGlass=new THREE.Mesh(
+  new THREE.PlaneGeometry(55.1,3.54),
+  new THREE.MeshPhysicalMaterial({
+    color:0xb8cbcd,
+    map:glassReflectionTexture,
+    roughnessMap:glassRoughnessTexture,
+    roughness:.24,
+    metalness:0,
+    transparent:true,
+    opacity:.14,
+    transmission:.05,
+    envMapIntensity:.54,
+    depthWrite:false,
+    side:THREE.DoubleSide
+  })
+);
+lobbyInnerGlass.position.set(7.78,1.91,-3.0);
+lobbyInnerGlass.rotation.y=-Math.PI/2;
+scene.add(lobbyInnerGlass);
+
+// Alternating low-opacity floor shadows make the long facade read as occupied
+// office space rather than a single empty showroom.
+for(let z=-28.5,bandIndex=0;z<=22.5;z+=5.3,bandIndex++){
+  const interiorBand=new THREE.Mesh(
+    new THREE.PlaneGeometry(4.45,2.85),
+    new THREE.MeshBasicMaterial({
+      color:bandIndex%2?0x7f9396:0x9aa9aa,
+      transparent:true,
+      opacity:bandIndex%2?.055:.035,
+      depthWrite:false,
+      toneMapped:false
+    })
+  );
+  interiorBand.position.set(7.92,1.92,z);
+  interiorBand.rotation.y=-Math.PI/2;
+  scene.add(interiorBand);
+}
+
 for(let z=-29.5;z<=23.5;z+=2.65){
   const mullion=new THREE.Mesh(new THREE.BoxGeometry(.055,3.78,.050),lobbyFrameMat);
   mullion.position.set(7.52,1.93,z);
@@ -5236,6 +5277,24 @@ function createModernOfficeSlab(z,h,d,tint){
   body.receiveShadow=true;
   scene.add(body);
 
+  const facadeHighlightMat=new THREE.MeshBasicMaterial({
+    color:0xe5f0f1,
+    transparent:true,
+    opacity:.035,
+    depthWrite:false,
+    toneMapped:false
+  });
+  [-1.22,-.40,.42,1.24].forEach((ox,panelIndex)=>{
+    const highlight=new THREE.Mesh(
+      new THREE.PlaneGeometry(d*.86,h*.94),
+      facadeHighlightMat.clone()
+    );
+    highlight.material.opacity=.022+(panelIndex%3)*.010;
+    highlight.position.set(x-2.081,7.55+h*.51,z+ox*.12);
+    highlight.rotation.y=Math.PI/2;
+    scene.add(highlight);
+  });
+
   const frameMat=new THREE.MeshStandardMaterial({
     color:0x535d60,
     roughness:.40,
@@ -5342,6 +5401,42 @@ const distantBlockPalette=[0xc6cdca,0xd1d0c8,0xbfc8c6,0xd5d2ca];
     band.position.set(x-(w/2+.008),y,z);
     band.rotation.y=Math.PI/2;
     scene.add(band);
+  }
+});
+
+// Secondary skyline rows deepen the vanishing point without adding foreground
+// clutter. These stay pale and low-contrast so they read through atmospheric fog.
+[
+  [-16.8,-91,5.4,8.0,13.2],
+  [-14.9,-103,5.8,7.4,15.8],
+  [10.2,-91,5.1,7.6,12.6],
+  [11.0,-103,5.5,7.0,16.4]
+].forEach(([x,z,w,d,h],index)=>{
+  const block=new THREE.Mesh(
+    new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshStandardMaterial({
+      color:index%2?0xc7d0cf:0xbfc9c9,
+      roughness:.88,
+      metalness:.01,
+      envMapIntensity:.04
+    })
+  );
+  block.position.set(x,h*.5,z);
+  scene.add(block);
+
+  for(let y=1.8;y<h-1.0;y+=1.7){
+    const windows=new THREE.Mesh(
+      new THREE.PlaneGeometry(d*.68,.26),
+      new THREE.MeshBasicMaterial({
+        color:0xa9bec1,
+        transparent:true,
+        opacity:.20,
+        toneMapped:false
+      })
+    );
+    windows.position.set(x-(w*.5+.006),y,z);
+    windows.rotation.y=Math.PI/2;
+    scene.add(windows);
   }
 });
 
@@ -5705,7 +5800,9 @@ const curbGroundcoverMat=makeFoliageMaterial(0x8ea27a,.93,.009,.018);
 [
   [-12.35,-18.4,.88],
   [-11.95,.35,.92],
-  [-12.25,18.5,.89]
+  [-12.25,18.5,.89],
+  [-12.05,-32.0,.80],
+  [-12.10,-43.5,.74]
 ].forEach(([x,z,scale])=>createStreetTree(x,z,scale));
 
 function createPlanter(x,z,w=1.8){
@@ -7201,7 +7298,7 @@ const rFore=capsule(.074,.39,skinMat);rFore.position.set(.40,.94,.08);rFore.rota
 const lHand=new THREE.Mesh(new THREE.SphereGeometry(.09,16,12),skinMat);lHand.scale.set(.72,1.08,.55);lHand.position.set(-.42,.71,.10);miraRig.add(lHand);
 const rHand=lHand.clone();rHand.position.x=.42;miraRig.add(rHand);
 
-mira.position.set(2.0,0,-1.6);
+mira.position.set(2.28,0,-1.72);
 const miraBaseYaw=-.16;
 mira.rotation.y=miraBaseYaw;
 mira.scale.setScalar(1.02);
