@@ -11,7 +11,7 @@ renderer.physicallyCorrectLights = true;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xd4e7ef);
-scene.fog = new THREE.Fog(0xe2e9e4, 27, 80);
+scene.fog = new THREE.Fog(0xe5eceb, 38, 112);
 
 const skyCanvas=document.createElement('canvas');
 skyCanvas.width=32;
@@ -103,16 +103,16 @@ const skyClouds=[];
   skyClouds.push(cloud);
 });
 
-const camera = new THREE.PerspectiveCamera(69.5, window.innerWidth / window.innerHeight, 0.08, 120);
-camera.position.set(1.15, 1.68, 7.05);
+const camera = new THREE.PerspectiveCamera(61.5, window.innerWidth / window.innerHeight, 0.08, 140);
+camera.position.set(1.32, 1.68, 7.05);
 camera.rotation.order = 'YXZ';
 
-// A slightly wider field of view + subtle camera inertia makes the flat-screen
-// prototype feel closer to looking through a headset without requiring WebXR.
-let cameraFovTarget = 69.5;
+// A narrower architectural FOV is much closer to the supplied street reference
+// than an FPS-like wide lens. Tablet focus tightens it only slightly.
+let cameraFovTarget = 61.5;
 
 // ---------- daylight ----------
-renderer.toneMappingExposure = 1.02;
+renderer.toneMappingExposure = 1.06;
 
 const skyLight = new THREE.HemisphereLight(0xecf7fa, 0xb9b7ae, 1.76);
 scene.add(skyLight);
@@ -179,7 +179,7 @@ function makeSurfaceTexture(kind){
   const rnd=makeSeededRandom(kind==='asphalt'?0x6d2b79f5:0x1b873593);
 
   if(kind==='asphalt'){
-    g.fillStyle='#61696a';
+    g.fillStyle='#50585a';
     g.fillRect(0,0,size,size);
 
     // Low-frequency variation stops the road reading as one flat grey slab.
@@ -238,7 +238,7 @@ function makeSurfaceTexture(kind){
       g.stroke();
     }
   }else{
-    g.fillStyle='#dedbd0';
+    g.fillStyle='#e1e1dc';
     g.fillRect(0,0,size,size);
 
     for(let i=0;i<34;i++){
@@ -2638,7 +2638,7 @@ cityGround.material.bumpMap=pavementMicroBump;
 cityGround.material.bumpScale=.010;
 cityGround.material.roughness=.98;
 cityGround.material.envMapIntensity=.035;
-cityGround.material.color.set(0xc9c6bb);
+cityGround.material.color.set(0xd1d1cc);
 cityGround.material.needsUpdate=true;
 
 const road=plane(15,92,0xffffff,-6.7,.004,-4);
@@ -2723,7 +2723,7 @@ sidewalk.material.needsUpdate=true;
 const curbsidePaving=new THREE.Mesh(
   new THREE.PlaneGeometry(1.35,88),
   new THREE.MeshStandardMaterial({
-    color:0xd5d1c6,
+    color:0xd9dad5,
     roughness:.97,
     map:concreteSurface.map,
     bumpMap:pavementMicroBump,
@@ -4262,7 +4262,7 @@ createWindowDisplay(13.8,'atelier');
 
 
 // Ground-floor cafe corner.
-const cafeFrame=box(.48,3.0,8.5,0xb58e70,8.33,1.55,4.8,.86);
+const cafeFrame=box(.48,3.0,8.5,0x9ea5a3,8.33,1.55,4.8,.86);
 cafeFrame.castShadow=false;
 cafeFrame.material.map=cloneTextureVariant(sandstoneSurface.map,.36,.18,.92,1.02);
 cafeFrame.material.roughnessMap=sandstoneEdgeRoughness;
@@ -4279,7 +4279,7 @@ cafeGlass.material.roughness=.31;
 addGlassEdgeDirt(7.75,2.55,8.044,1.62,4.8,-Math.PI/2,.36);
 
 const cafeMullionMat=new THREE.MeshStandardMaterial({
-  color:0x9c8e80,
+  color:0x596365,
   roughness:.42,
   metalness:.72,
   metalnessMap:coatedMetalSurface.metalness,
@@ -4299,7 +4299,7 @@ const cafeMullionMat=new THREE.MeshStandardMaterial({
 });
 
 const cafeDoorFrame=new THREE.MeshStandardMaterial({
-  color:0x8e8378,
+  color:0x555f61,
   roughness:.46,
   metalness:.72,
   metalnessMap:coatedMetalSurface.metalness,
@@ -4387,7 +4387,7 @@ scene.add(cafeDoorHandle);
 const cafeInteriorGlow=new THREE.Mesh(
   new THREE.PlaneGeometry(7.25,2.18),
   new THREE.MeshBasicMaterial({
-    color:0xf2ddc4,
+    color:0xdfe8e7,
     transparent:true,
     opacity:.10,
     depthWrite:false,
@@ -4399,7 +4399,7 @@ cafeInteriorGlow.rotation.y=-Math.PI/2;
 scene.add(cafeInteriorGlow);
 
 const cafeInteriorShellMat=new THREE.MeshStandardMaterial({
-  color:0xe7d8c7,
+  color:0xd8ddda,
   roughness:.94,
   map:concreteSurface.map,
   roughnessMap:concreteSurface.roughness,
@@ -5199,9 +5199,30 @@ function createModernOfficeSlab(z,h,d,tint){
   scene.add(cap);
 }
 
-createModernOfficeSlab(-22.5,8.8,11.0,0x9ebcc4);
-createModernOfficeSlab(-4.0,11.6,10.6,0xa8c5ca);
-createModernOfficeSlab(16.8,9.8,10.8,0xadc5c8);
+createModernOfficeSlab(-22.5,11.8,13.5,0x93b5bd);
+createModernOfficeSlab(-5.0,15.2,14.0,0x9abcc3);
+createModernOfficeSlab(14.8,13.6,14.5,0xa0bdc1);
+
+// A continuous dark spandrel ribbon visually ties the three masses together,
+// reading as one contemporary office complex rather than separate game props.
+const officeSpandrelMat=new THREE.MeshStandardMaterial({
+  color:0x596365,
+  roughness:.43,
+  metalness:.34,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
+  normalMap:metalSurface.normal,
+  normalScale:new THREE.Vector2(.08,.08),
+  bumpMap:metalSurface.bump,
+  bumpScale:.002,
+  envMapIntensity:.82
+});
+for(let z=-31;z<=24;z+=3.4){
+  const ribbon=new THREE.Mesh(new THREE.BoxGeometry(.10,.19,3.18),officeSpandrelMat);
+  ribbon.position.set(8.18,6.62,z);
+  ribbon.castShadow=true;
+  scene.add(ribbon);
+}
 
 // Low-detail buildings continue beyond the playable road. Their desaturated
 // palette and reduced contrast keep them atmospheric while giving the street a
@@ -5614,7 +5635,8 @@ function createStreetTree(x,z,scale=1){
     crown.add(highlight);
   });
 
-  crown.position.set(x,3.10*scale,z);
+  crown.position.set(x,3.18*scale,z);
+  crown.scale.set(.80,1.08,.80);
   scene.add(crown);
   streetTreeCrowns.push(crown);
 }
@@ -5727,7 +5749,7 @@ for(let i=0;i<18;i++){
 const miraPocket=new THREE.Mesh(
   new THREE.PlaneGeometry(5.35,5.15),
   new THREE.MeshStandardMaterial({
-    color:0xe6ddce,
+    color:0xd9dad5,
     roughness:.96,
     map:pavementTexture,
     bumpMap:pavementMicroBump,
@@ -5797,7 +5819,7 @@ const pocketAccentMat=new THREE.MeshBasicMaterial({
 });
 
 const pocketBorderMat=new THREE.MeshStandardMaterial({
-  color:0xb8ad9d,
+  color:0xb8bcb8,
   roughness:.93,
   map:concreteSurface.map,
   roughnessMap:concreteSurface.roughness,
@@ -5821,7 +5843,7 @@ const pocketBorderMat=new THREE.MeshStandardMaterial({
 const ramp=new THREE.Mesh(
   new THREE.PlaneGeometry(1.35,1.55),
   new THREE.MeshStandardMaterial({
-    color:0xcec8bb,
+    color:0xd0d2cd,
     roughness:.96,
     map:pavementTexture,
     bumpMap:pavementMicroBump,
@@ -5842,7 +5864,7 @@ for(let dz=-.48;dz<=.48;dz+=.24){
 }
 
 const seatStone=new THREE.MeshStandardMaterial({
-  color:0xc0b6a6,
+  color:0xbec2bf,
   roughness:.95,
   map:concreteSurface.map,
   roughnessMap:concreteSurface.roughness,
@@ -6069,9 +6091,9 @@ function createLampPost(x,z,withBanner=true){
     scene.add(banner);
   }
 }
-createLampPost(.45,-11,true);
+createLampPost(.45,-11,false);
 createLampPost(.45,2,false);
-createLampPost(.45,15,true);
+createLampPost(.45,15,false);
 
 const wayfindingPole=new THREE.Mesh(
   new THREE.CylinderGeometry(.045,.055,2.25,10),
@@ -7925,7 +7947,7 @@ function openTablet(){
   }
 
   tabletOpen=true; keys.clear(); document.exitPointerLock?.();
-  cameraFovTarget=67.5;
+  cameraFovTarget=59.5;
   document.body.classList.add('device-open');
   tabletLayer?.classList.remove('closing');
   tabletLayer?.classList.add('open');
@@ -7939,7 +7961,7 @@ function openTablet(){
 function closeTablet(){
   if(!tabletOpen) return;
 
-  tabletOpen=false; cameraFovTarget=69.5;
+  tabletOpen=false; cameraFovTarget=61.5;
   tabletLayer?.classList.add('closing');
   tabletLayer?.setAttribute('aria-hidden','true');
   window.dispatchEvent(new CustomEvent('tablet-close'));
@@ -8029,8 +8051,8 @@ function animate(){
 
   const speed=Math.min(1,Math.hypot(velocity.x,velocity.z)/2.25);
   walkPhase += dt*(4.2+speed*6.2);
-  const walkBob = tabletOpen ? 0 : Math.sin(walkPhase*2)*.018*speed;
-  const walkSway = tabletOpen ? 0 : Math.sin(walkPhase)*.0055*speed;
+  const walkBob = tabletOpen ? 0 : Math.sin(walkPhase*2)*.010*speed;
+  const walkSway = tabletOpen ? 0 : Math.sin(walkPhase)*.0030*speed;
   const breath = Math.sin(t*1.38)*.0032;
 
   camera.rotation.y=yaw;
