@@ -503,3 +503,18 @@ body:after{
   border-color:rgba(255,255,255,.16);
   backdrop-filter:blur(14px) saturate(.95);
 }
+
+
+/* ---------- photographic world presentation v7 ---------- */
+body.world-entered .world-chip,
+body.world-entered .mode-label,
+body.world-entered .crosshair,
+body.world-entered .hint{
+  opacity:0;
+  pointer-events:none;
+  transform:translateY(-4px);
+  transition:opacity .55s ease,transform .55s ease;
+}
+body.world-entered.device-open .mode-label{
+  opacity:0;
+}
