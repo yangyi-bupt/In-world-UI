@@ -10801,8 +10801,10 @@ function createParkedCar(x,z,color,assetVariant='primary'){
   });
 
   const parkedIndex=parkedCars.length;
-  group.position.set(x+(parkedIndex===0?-.05:.06),0,z);
-  group.rotation.y=parkedIndex===0?-.018:.024;
+  const curbOffsets=[-.09,.035,-.055,.070];
+  const parkingYaws=[-.026,.018,-.012,.031];
+  group.position.set(x+curbOffsets[parkedIndex%curbOffsets.length],0,z);
+  group.rotation.y=parkingYaws[parkedIndex%parkingYaws.length];
   scene.add(group);
   const placeholderChildren=[...group.children];
   // Keep the legacy procedural car out of the first painted frame. It is only
@@ -11177,7 +11179,16 @@ let worldCoreAssetsReady=true;
 let miraGLBRoot=null;
 let miraGLBBasePosition=null;
 let miraIdleAction=null;
-const miraBones={head:null,neck:null,chest:null,rightArm:null,rightForeArm:null};
+const miraBones={
+  head:null,
+  neck:null,
+  chest:null,
+  hips:null,
+  leftUpperLeg:null,
+  rightUpperLeg:null,
+  rightArm:null,
+  rightForeArm:null
+};
 const miraBoneRestQuaternions=new Map();
 let miraGreetingUntil=0;
 let miraGreetingCooldownUntil=0;
@@ -12099,6 +12110,27 @@ function captureMiraBones(root){
     }
 
     if(
+      !miraBones.hips &&
+      /(^|_|mixamorig)?hips$|pelvis|root_hips/.test(key)
+    ){
+      miraBones.hips=object;
+    }
+
+    if(
+      !miraBones.leftUpperLeg &&
+      /leftupleg|leftthigh|upleg_l|upperleg_l|thigh_l|l_thigh/.test(key)
+    ){
+      miraBones.leftUpperLeg=object;
+    }
+
+    if(
+      !miraBones.rightUpperLeg &&
+      /rightupleg|rightthigh|upleg_r|upperleg_r|thigh_r|r_thigh/.test(key)
+    ){
+      miraBones.rightUpperLeg=object;
+    }
+
+    if(
       !miraBones.rightForeArm &&
       /rightforearm|rightlowerarm|forearm_r|lowerarm_r|r_forearm/.test(key)
     ){
@@ -12144,31 +12176,33 @@ function loadGLB(loader,url){
   return new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
 }
 
-const vehiclePlateCanvas=document.createElement('canvas');
-vehiclePlateCanvas.width=320;
-vehiclePlateCanvas.height=96;
-const vehiclePlateCtx=vehiclePlateCanvas.getContext('2d');
-vehiclePlateCtx.fillStyle='#e9e8e1';
-vehiclePlateCtx.fillRect(0,0,320,96);
-vehiclePlateCtx.strokeStyle='rgba(54,58,58,.42)';
-vehiclePlateCtx.lineWidth=5;
-vehiclePlateCtx.strokeRect(5,5,310,86);
-vehiclePlateCtx.fillStyle='#34393a';
-vehiclePlateCtx.font='600 45px system-ui, -apple-system, sans-serif';
-vehiclePlateCtx.textAlign='center';
-vehiclePlateCtx.textBaseline='middle';
-vehiclePlateCtx.fillText('NOVA 418',160,50);
-const vehiclePlateTexture=new THREE.CanvasTexture(vehiclePlateCanvas);
-vehiclePlateTexture.colorSpace=THREE.SRGBColorSpace;
-vehiclePlateTexture.anisotropy=8;
+function makeVehiclePlateMaterial(code){
+  const canvas=document.createElement('canvas');
+  canvas.width=320;
+  canvas.height=96;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#e9e8e1';
+  ctx.fillRect(0,0,320,96);
+  ctx.strokeStyle='rgba(54,58,58,.42)';
+  ctx.lineWidth=5;
+  ctx.strokeRect(5,5,310,86);
+  ctx.fillStyle='#34393a';
+  ctx.font='600 45px system-ui, -apple-system, sans-serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText(code,160,50);
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.anisotropy=8;
+  return new THREE.MeshStandardMaterial({
+    color:0xffffff,
+    map:texture,
+    roughness:.55,
+    metalness:.04,
+    envMapIntensity:.14
+  });
+}
 
-const vehiclePlateMat=new THREE.MeshStandardMaterial({
-  color:0xffffff,
-  map:vehiclePlateTexture,
-  roughness:.55,
-  metalness:.04,
-  envMapIntensity:.14
-});
 const vehiclePlateFrameMat=new THREE.MeshStandardMaterial({
   color:0x393e3e,
   roughness:.48,
@@ -12176,12 +12210,14 @@ const vehiclePlateFrameMat=new THREE.MeshStandardMaterial({
   envMapIntensity:.52
 });
 
-function addVehicleStreetDetails(entry,root,targetLength){
+function addVehicleStreetDetails(entry,root,targetLength,index=0){
   root.updateMatrixWorld(true);
   const localBox=new THREE.Box3().setFromObject(root);
   const size=localBox.getSize(new THREE.Vector3());
   const width=Math.max(1.48,Math.min(1.95,size.x));
   const height=Math.max(1.20,Math.min(1.70,size.y));
+  const plateNumbers=['NOVA 418','NOVA 263','NOVA 705','NOVA 932','NOVA 154','NOVA 681'];
+  const plateMat=makeVehiclePlateMaterial(plateNumbers[index%plateNumbers.length]);
 
   // Plates sit on both ends because source assets do not expose a reliable
   // semantic "front" axis after normalization. One will naturally read as rear.
@@ -12199,7 +12235,7 @@ function addVehicleStreetDetails(entry,root,targetLength){
 
     const plate=new THREE.Mesh(
       new THREE.PlaneGeometry(width*.27,.145),
-      vehiclePlateMat
+      plateMat
     );
     plate.position.set(
       0,
@@ -12247,7 +12283,7 @@ function attachCarAsset(entry,source,index=0,targetLength=3.85){
   entry.group.add(root);
   entry.assetRoot=root;
   entry.assetBaseY=root.position.y;
-  addVehicleStreetDetails(entry,root,targetLength);
+  addVehicleStreetDetails(entry,root,targetLength,index);
   if(entry.baseSpeed!==undefined && !entry.contactShadow && !entry.userGroundShadow){
     entry.contactShadow=createAttachedContactShadow(entry.group,1.82,targetLength*.96,.075);
   }
@@ -12901,13 +12937,16 @@ function animate(){
   miraCoolRim.intensity=.005+presence*.002;
 
   if(miraGLBRoot && miraGLBBasePosition){
-    const weightShift=Math.sin(t*.37+.6);
+    const weightShift=
+      Math.sin(t*.31+.6)*.72+
+      Math.sin(t*.083+1.7)*.28;
     const slowBreath=Math.sin(t*.73);
-    miraGLBRoot.position.x=miraGLBBasePosition.x+weightShift*.0045;
-    miraGLBRoot.position.y=miraGLBBasePosition.y+slowBreath*.0016;
-    miraGLBRoot.position.z=miraGLBBasePosition.z+Math.sin(t*.29+1.1)*.0018;
-    miraGLBRoot.rotation.z=weightShift*.0024;
-    miraGLBRoot.rotation.x=Math.sin(t*.31)*.0014;
+    const stanceBias=Math.sin(t*.145+2.2);
+    miraGLBRoot.position.x=miraGLBBasePosition.x+weightShift*.0058;
+    miraGLBRoot.position.y=miraGLBBasePosition.y+slowBreath*.0013-Math.abs(weightShift)*.00045;
+    miraGLBRoot.position.z=miraGLBBasePosition.z+stanceBias*.0021;
+    miraGLBRoot.rotation.z=weightShift*.0018;
+    miraGLBRoot.rotation.x=Math.sin(t*.27)*.0011;
 
     // One restrained acknowledgement per approach. It only re-arms after the
     // player has stepped away, so standing nearby never loops a greeting.
@@ -12947,9 +12986,19 @@ function animate(){
       replyAttention*.018;
     const neckYaw=headYaw*.34;
     const chestYaw=headYaw*.12;
-    const chestRoll=weightShift*.0035-greetingEnvelope*.006;
+    const chestRoll=weightShift*.0030-greetingEnvelope*.006;
 
-    applyMiraBoneOffset(miraBones.chest,0,chestYaw,chestRoll);
+    // Hips and upper legs carry most of the idle weight transfer. The values
+    // stay tiny so authored animation remains dominant, but the silhouette no
+    // longer feels like a rigid model rotating from the root.
+    const hipRoll=weightShift*.0075;
+    const hipYaw=stanceBias*.0028;
+    const legCounter=weightShift*.0048;
+    applyMiraBoneOffset(miraBones.hips,0,hipYaw,hipRoll);
+    applyMiraBoneOffset(miraBones.leftUpperLeg,legCounter*.32,0,-legCounter);
+    applyMiraBoneOffset(miraBones.rightUpperLeg,-legCounter*.18,0,legCounter*.82);
+
+    applyMiraBoneOffset(miraBones.chest,slowBreath*.0018,chestYaw,chestRoll);
     applyMiraBoneOffset(miraBones.neck,headPitch*.24,neckYaw,0);
     applyMiraBoneOffset(miraBones.head,headPitch,headYaw,Math.sin(t*.21)*.003);
 
