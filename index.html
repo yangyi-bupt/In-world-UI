@@ -50,9 +50,11 @@
 </script>
 <script type="module">
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 window.GLTFLoader = GLTFLoader;
+window.RGBELoader = RGBELoader;
 window.cloneGLTFScene = cloneSkeleton;
 window.RoomEnvironment = RoomEnvironment;
 window.dispatchEvent(new Event('gltf-loader-ready'));
