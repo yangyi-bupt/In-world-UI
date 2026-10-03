@@ -9055,11 +9055,11 @@ const refWalkPatinaRnd=makeSeededRandom(0x71ce09b4);
 const refWalkPatinaMat=new THREE.MeshBasicMaterial({
   color:0x716f68,
   transparent:true,
-  opacity:.025,
+  opacity:.018,
   depthWrite:false,
   toneMapped:true
 });
-for(let i=0;i<11;i++){
+for(let i=0;i<5;i++){
   const radius=.12+refWalkPatinaRnd()*.28;
   const stain=new THREE.Mesh(
     new THREE.CircleGeometry(radius,18),
