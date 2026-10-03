@@ -186,38 +186,38 @@
     fingerRoughness.repeat.set(3.2,3.2);
 
     const aluminum=new THREE.MeshPhysicalMaterial({
-      color:0x6f7478,
-      metalness:.88,
-      roughness:.31,
+      color:0x343638,
+      metalness:.74,
+      roughness:.39,
       roughnessMap:scannedMetalRough,
       normalMap:scannedMetalNormal,
       normalScale:new THREE.Vector2(.055,.055),
-      clearcoat:.055,
-      clearcoatRoughness:.48,
-      envMapIntensity:.82
+      clearcoat:.025,
+      clearcoatRoughness:.62,
+      envMapIntensity:.58
     });
     const edgeMetal=new THREE.MeshPhysicalMaterial({
-      color:0x858a8e,
-      metalness:.92,
-      roughness:.24,
+      color:0x4a4c4d,
+      metalness:.78,
+      roughness:.34,
       roughnessMap:scannedMetalRough,
       normalMap:scannedMetalNormal,
       normalScale:new THREE.Vector2(.040,.040),
-      clearcoat:.08,
-      clearcoatRoughness:.34,
-      envMapIntensity:.96
+      clearcoat:.04,
+      clearcoatRoughness:.52,
+      envMapIntensity:.68
     });
     const blackGlass=new THREE.MeshPhysicalMaterial({
-      color:0x030405,
+      color:0x080808,
       metalness:.02,
-      roughness:.055,
+      roughness:.085,
       roughnessMap:glassRoughness,
-      clearcoat:1,
-      clearcoatRoughness:.035,
+      clearcoat:.72,
+      clearcoatRoughness:.08,
       transmission:.025,
       ior:1.5,
       thickness:.006,
-      envMapIntensity:1.02
+      envMapIntensity:.78
     });
     const lensMat=new THREE.MeshPhysicalMaterial({
       color:0x06101c,
@@ -239,15 +239,15 @@
     const rearShell=new THREE.Mesh(
       extrudedRounded(2.77,1.95,.042,.162,.010),
       new THREE.MeshPhysicalMaterial({
-        color:0x5f6468,
-        metalness:.86,
-        roughness:.36,
+        color:0x2c2e30,
+        metalness:.70,
+        roughness:.44,
         roughnessMap:scannedMetalRough,
         normalMap:scannedMetalNormal,
         normalScale:new THREE.Vector2(.050,.050),
-        clearcoat:.035,
-        clearcoatRoughness:.54,
-        envMapIntensity:.68
+        clearcoat:.02,
+        clearcoatRoughness:.66,
+        envMapIntensity:.50
       })
     );
     rearShell.position.z=-.088;
@@ -278,7 +278,7 @@
 
     // Tiny moving specular glint keeps the camera glass alive as the device tilts.
     const lensGlintMat=new THREE.MeshBasicMaterial({
-      color:0xeaf7ff,
+      color:0xf0ece4,
       transparent:true,
       opacity:.0,
       depthWrite:false,
@@ -295,7 +295,7 @@
     // moves with view angle and creates a separate optical layer from the HTML
     // display content underneath.
     const glassSheenMat=new THREE.MeshBasicMaterial({
-      color:0xe8f4ff,
+      color:0xeee8df,
       transparent:true,
       opacity:0,
       depthWrite:false,
@@ -371,7 +371,7 @@
     // the front face. As the tablet tilts they reveal the near/far rail and
     // make the body read as a solid object instead of a flat card.
     const railMaterial=()=>new THREE.MeshBasicMaterial({
-      color:0xcfe9ff,
+      color:0xddd5cb,
       transparent:true,
       opacity:0,
       depthWrite:false,
@@ -435,7 +435,7 @@
       specularColor:new THREE.Color(0xffeee8),
       envMapIntensity:.30
     });
-    const sleeveMat=new THREE.MeshStandardMaterial({color:0x242a31,roughness:.9,metalness:.02});
+    const sleeveMat=new THREE.MeshStandardMaterial({color:0x1f2021,roughness:.94,metalness:.01});
 
     function createHoldingHand(side){
       const hand=new THREE.Group();
