@@ -333,7 +333,8 @@ body:after{
   background:radial-gradient(circle at 50% 48%,rgba(218,209,197,.018),rgba(28,26,23,.11) 58%,rgba(16,15,13,.20) 100%);
 }
 body.device-open #game{
-  filter:blur(.65px) brightness(.88) saturate(.88) contrast(.99);
+  filter:none;
+  opacity:.92;
 }
 .screen{
   border-radius:24px;
@@ -517,4 +518,17 @@ body.world-entered .hint{
 }
 body.world-entered.device-open .mode-label{
   opacity:0;
+}
+
+
+/* ---------- runtime performance cleanup v8 ---------- */
+body.world-entered:before,
+body.world-entered:after{
+  display:none;
+}
+body.world-entered .tablet-layer{
+  backdrop-filter:none;
+}
+body.world-entered .tablet-layer.open .tablet3d{
+  filter:drop-shadow(0 12px 18px rgba(20,18,16,.12));
 }
