@@ -7427,6 +7427,37 @@ refHeroStone.envMapIntensity=.12;
 refHeroStone.normalScale=new THREE.Vector2(.095,.095);
 refHeroStone.bumpScale=.009;
 
+// Near-camera stone needs a different texel scale from the seventy-metre wall.
+// Clone every map so changing repeat/offset here cannot alter the distant facade.
+if(refHeroStone.map){
+  refHeroStone.map=refHeroStone.map.clone();
+  refHeroStone.map.wrapS=refHeroStone.map.wrapT=THREE.RepeatWrapping;
+  refHeroStone.map.repeat.set(.72,1.46);
+  refHeroStone.map.offset.set(.17,.08);
+  refHeroStone.map.needsUpdate=true;
+}
+if(refHeroStone.roughnessMap){
+  refHeroStone.roughnessMap=refHeroStone.roughnessMap.clone();
+  refHeroStone.roughnessMap.wrapS=refHeroStone.roughnessMap.wrapT=THREE.RepeatWrapping;
+  refHeroStone.roughnessMap.repeat.set(.72,1.46);
+  refHeroStone.roughnessMap.offset.set(.17,.08);
+  refHeroStone.roughnessMap.needsUpdate=true;
+}
+if(refHeroStone.normalMap){
+  refHeroStone.normalMap=refHeroStone.normalMap.clone();
+  refHeroStone.normalMap.wrapS=refHeroStone.normalMap.wrapT=THREE.RepeatWrapping;
+  refHeroStone.normalMap.repeat.set(.72,1.46);
+  refHeroStone.normalMap.offset.set(.17,.08);
+  refHeroStone.normalMap.needsUpdate=true;
+}
+if(refHeroStone.bumpMap){
+  refHeroStone.bumpMap=refHeroStone.bumpMap.clone();
+  refHeroStone.bumpMap.wrapS=refHeroStone.bumpMap.wrapT=THREE.RepeatWrapping;
+  refHeroStone.bumpMap.repeat.set(.72,1.46);
+  refHeroStone.bumpMap.offset.set(.17,.08);
+  refHeroStone.bumpMap.needsUpdate=true;
+}
+
 const refHeroMetal=refMetal.clone();
 refHeroMetal.color=new THREE.Color(0x454b4b);
 refHeroMetal.roughness=.34;
@@ -7888,6 +7919,188 @@ refHeroFacade.add(refHeroRoofMass);
   fin.rotation.x=index%2?.010:-.008;
   refHeroFacade.add(fin);
 });
+
+/* ---------- near-building use + construction detail ----------
+   These are deliberately small, sparse cues. Real storefronts reveal how
+   assemblies meet the pavement and a few objects behind the glass; perfectly
+   empty interiors and mathematically clean wall feet are stronger CG tells than
+   slightly simplified geometry. */
+const refHeroThresholdMat=new THREE.MeshStandardMaterial({
+  color:0x878984,
+  roughness:.38,
+  metalness:.56,
+  map:metalSurface.map,
+  roughnessMap:metalSurface.roughness,
+  envMapIntensity:.72
+});
+const refHeroRubberMat=new THREE.MeshStandardMaterial({
+  color:0x303333,
+  roughness:.98,
+  metalness:0,
+  envMapIntensity:.015
+});
+
+// Entry threshold and a slightly recessed walk-off mat.
+const refHeroThreshold=new THREE.Mesh(
+  new THREE.BoxGeometry(.56,.032,3.10),
+  refHeroThresholdMat
+);
+refHeroThreshold.position.set(7.18,.086,2.77);
+refHeroThreshold.castShadow=false;
+refHeroThreshold.receiveShadow=true;
+refHeroFacade.add(refHeroThreshold);
+
+const refHeroEntryMat=new THREE.Mesh(
+  new THREE.BoxGeometry(.86,.022,1.82),
+  refHeroRubberMat
+);
+refHeroEntryMat.position.set(6.77,.074,2.77);
+refHeroEntryMat.receiveShadow=true;
+refHeroFacade.add(refHeroEntryMat);
+
+// Linear trench drain where the architectural paving meets the storefront zone.
+const refHeroDrainBody=new THREE.Mesh(
+  new THREE.BoxGeometry(.26,.028,9.55),
+  new THREE.MeshStandardMaterial({
+    color:0x5a605e,
+    roughness:.58,
+    metalness:.42,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
+    envMapIntensity:.54
+  })
+);
+refHeroDrainBody.position.set(6.74,.070,7.55);
+refHeroFacade.add(refHeroDrainBody);
+
+const refHeroDrainSlotMat=new THREE.MeshBasicMaterial({
+  color:0x242929,
+  transparent:true,
+  opacity:.74,
+  toneMapped:true
+});
+for(let i=0;i<27;i++){
+  const slot=new THREE.Mesh(
+    new THREE.BoxGeometry(.105,.012,.095),
+    refHeroDrainSlotMat
+  );
+  slot.position.set(6.735,.088,3.05+i*.345);
+  refHeroFacade.add(slot);
+}
+
+// Subtle splash/dirt band at the base of the closest stone, strongest near the
+// door zone and fading upward. This breaks the "freshly extruded box" read.
+const refHeroBaseWearCanvas=document.createElement('canvas');
+refHeroBaseWearCanvas.width=64;
+refHeroBaseWearCanvas.height=256;
+const refHeroBaseWearCtx=refHeroBaseWearCanvas.getContext('2d');
+const refHeroBaseWearGrad=refHeroBaseWearCtx.createLinearGradient(0,0,64,0);
+refHeroBaseWearGrad.addColorStop(0,'rgba(86,88,82,.18)');
+refHeroBaseWearGrad.addColorStop(.30,'rgba(97,96,88,.095)');
+refHeroBaseWearGrad.addColorStop(1,'rgba(97,96,88,0)');
+refHeroBaseWearCtx.fillStyle=refHeroBaseWearGrad;
+refHeroBaseWearCtx.fillRect(0,0,64,256);
+const refHeroBaseWearTexture=new THREE.CanvasTexture(refHeroBaseWearCanvas);
+refHeroBaseWearTexture.colorSpace=THREE.SRGBColorSpace;
+const refHeroBaseWear=new THREE.Mesh(
+  new THREE.PlaneGeometry(.58,23.1),
+  new THREE.MeshBasicMaterial({
+    map:refHeroBaseWearTexture,
+    transparent:true,
+    opacity:.68,
+    depthWrite:false,
+    toneMapped:true
+  })
+);
+refHeroBaseWear.position.set(7.225,.36,2.75);
+refHeroBaseWear.rotation.y=-Math.PI/2;
+refHeroBaseWear.renderOrder=5;
+refHeroFacade.add(refHeroBaseWear);
+
+// A few restrained interior objects create scale and occlusion behind the glass.
+const refHeroInteriorWoodMat=new THREE.MeshStandardMaterial({
+  color:0x76685a,
+  roughness:.79,
+  metalness:.01,
+  envMapIntensity:.04
+});
+const refHeroInteriorDarkMat=new THREE.MeshStandardMaterial({
+  color:0x444846,
+  roughness:.84,
+  metalness:.03,
+  envMapIntensity:.05
+});
+const refHeroInteriorWarmMat=new THREE.MeshBasicMaterial({
+  color:0xd3bea0,
+  transparent:true,
+  opacity:.12,
+  toneMapped:true
+});
+
+[
+  {z:5.35,x:8.02,w:1.42},
+  {z:9.45,x:8.06,w:1.18}
+].forEach((spec,index)=>{
+  const display=new THREE.Mesh(
+    new THREE.BoxGeometry(.54,.055,spec.w),
+    refHeroInteriorWoodMat
+  );
+  display.position.set(spec.x,.86,spec.z);
+  refHeroFacade.add(display);
+
+  const legA=new THREE.Mesh(
+    new THREE.BoxGeometry(.045,.72,.045),
+    refHeroInteriorDarkMat
+  );
+  legA.position.set(spec.x,.49,spec.z-spec.w*.35);
+  refHeroFacade.add(legA);
+  const legB=legA.clone();
+  legB.position.z=spec.z+spec.w*.35;
+  refHeroFacade.add(legB);
+
+  const objectA=new THREE.Mesh(
+    new THREE.BoxGeometry(.24,.30,.30),
+    new THREE.MeshStandardMaterial({
+      color:index?0xa29a8c:0x858b82,
+      roughness:.74,
+      metalness:.02,
+      envMapIntensity:.05
+    })
+  );
+  objectA.position.set(spec.x-.12,1.04,spec.z+.22);
+  refHeroFacade.add(objectA);
+
+  const backWash=new THREE.Mesh(
+    new THREE.PlaneGeometry(spec.w*.88,1.45),
+    refHeroInteriorWarmMat
+  );
+  backWash.position.set(8.61,1.50,spec.z);
+  backWash.rotation.y=-Math.PI/2;
+  refHeroFacade.add(backWash);
+});
+
+// One shelving rhythm in the deeper shop adds parallax without filling every
+// bay with props.
+for(let shelf=0;shelf<3;shelf++){
+  const board=new THREE.Mesh(
+    new THREE.BoxGeometry(.42,.045,2.05),
+    refHeroInteriorWoodMat
+  );
+  board.position.set(8.42,.70+shelf*.62,9.90);
+  refHeroFacade.add(board);
+}
+
+// Sparse stone panel joints on the solid return wall. They are recessed-looking
+// shadow lines, not dark decorative stripes.
+for(let y=2.05;y<14.6;y+=2.72){
+  const joint=new THREE.Mesh(
+    new THREE.PlaneGeometry(2.42,.018),
+    refHeroMassingShadowMat
+  );
+  joint.position.set(8.72,y,14.535);
+  joint.renderOrder=5;
+  refHeroFacade.add(joint);
+}
 
 // A narrow stone base and sparse panel joints make the scale legible at walking
 // distance without drawing a noisy checkerboard over the whole building.
