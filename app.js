@@ -6173,6 +6173,90 @@ refGlassWall.receiveShadow=true;
 refStreet.add(refGlassWall);
 
 
+// Replace the single synchronized curtain-wall read with individually varied
+// glass cells. The original wall remains as a subtle backing/reflection layer,
+// while each cell gets its own sample window, tint and micro-roughness.
+refGlassWall.material.opacity=.30;
+refGlassWall.material.envMapIntensity=.70;
+
+const refPaneRnd=makeSeededRandom(0x2d7f91c3);
+const refGlassCells=[];
+const refFloorBands=[
+  {y:2.16,h:2.06},
+  {y:4.88,h:2.84},
+  {y:8.03,h:2.84},
+  {y:11.18,h:2.84},
+  {y:14.02,h:1.72}
+];
+
+for(let bay=0;bay<15;bay++){
+  const z=-37.6+bay*4.75+2.37;
+  refFloorBands.forEach((floor,floorIndex)=>{
+    const map=refGlassMaps.map.clone();
+    map.wrapS=map.wrapT=THREE.RepeatWrapping;
+    map.repeat.set(.16,.58);
+    map.offset.set(
+      (bay*.137+floorIndex*.071+refPaneRnd()*.08)%1,
+      (floorIndex*.19+refPaneRnd()*.13)%1
+    );
+    map.needsUpdate=true;
+
+    const roughMap=refGlassMaps.roughness.clone();
+    roughMap.wrapS=roughMap.wrapT=THREE.RepeatWrapping;
+    roughMap.repeat.copy(map.repeat);
+    roughMap.offset.copy(map.offset);
+    roughMap.needsUpdate=true;
+
+    const tintPalette=[0xd4e3e5,0xc9d9dc,0xdce5e3,0xbfcfd1,0xd9dfdc];
+    const material=new THREE.MeshPhysicalMaterial({
+      color:tintPalette[(bay+floorIndex*2)%tintPalette.length],
+      map,
+      roughnessMap:roughMap,
+      roughness:.095+refPaneRnd()*.060,
+      metalness:.012,
+      transparent:true,
+      opacity:.52+refPaneRnd()*.10,
+      transmission:.018,
+      clearcoat:.46,
+      clearcoatRoughness:.095+refPaneRnd()*.045,
+      envMapIntensity:.92+refPaneRnd()*.24,
+      ior:1.46,
+      reflectivity:.62,
+      depthWrite:true
+    });
+
+    const pane=new THREE.Mesh(
+      new THREE.PlaneGeometry(4.34,floor.h),
+      material
+    );
+    pane.position.set(7.745,floor.y,z);
+    pane.rotation.y=-Math.PI/2;
+    pane.renderOrder=1;
+    refStreet.add(pane);
+    refGlassCells.push(pane);
+  });
+}
+
+// Extremely thin highlights on selected pane edges mimic grazing-angle Fresnel
+// without a custom shader. They are sparse enough to avoid a neon outline.
+const refGlassEdgeMat=new THREE.MeshBasicMaterial({
+  color:0xe7f2f2,
+  transparent:true,
+  opacity:.075,
+  depthWrite:false,
+  toneMapped:true
+});
+for(let bay=0;bay<=15;bay++){
+  if(bay%2!==0 && bay!==15) continue;
+  const z=-37.6+bay*4.75;
+  const edge=new THREE.Mesh(new THREE.PlaneGeometry(.018,13.55),refGlassEdgeMat);
+  edge.position.set(7.735,8.02,z);
+  edge.rotation.y=-Math.PI/2;
+  edge.renderOrder=2;
+  refStreet.add(edge);
+}
+
+
 const refInteriorGroup=new THREE.Group();
 refInteriorGroup.name='reference-office-interior';
 refStreet.add(refInteriorGroup);
@@ -6453,6 +6537,69 @@ refWalk.rotation.x=-Math.PI/2;
 refWalk.position.set(4.05,.058,-6);
 refWalk.receiveShadow=true;
 refStreet.add(refWalk);
+
+
+// Soft contact shading along the building foot removes the "model placed on a
+// floor plane" look. A canvas alpha gradient keeps it broad and photographic.
+const refContactCanvas=document.createElement('canvas');
+refContactCanvas.width=256;
+refContactCanvas.height=32;
+const refContactCtx=refContactCanvas.getContext('2d');
+const refContactGrad=refContactCtx.createLinearGradient(0,0,256,0);
+refContactGrad.addColorStop(0,'rgba(22,27,27,.34)');
+refContactGrad.addColorStop(.18,'rgba(30,34,34,.18)');
+refContactGrad.addColorStop(.52,'rgba(38,41,40,.065)');
+refContactGrad.addColorStop(1,'rgba(38,41,40,0)');
+refContactCtx.fillStyle=refContactGrad;
+refContactCtx.fillRect(0,0,256,32);
+const refContactTexture=new THREE.CanvasTexture(refContactCanvas);
+refContactTexture.colorSpace=THREE.SRGBColorSpace;
+refContactTexture.wrapS=THREE.ClampToEdgeWrapping;
+refContactTexture.wrapT=THREE.RepeatWrapping;
+refContactTexture.repeat.set(1,12);
+
+const refBuildingContact=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.72,73.0),
+  new THREE.MeshBasicMaterial({
+    map:refContactTexture,
+    transparent:true,
+    opacity:.62,
+    depthWrite:false,
+    toneMapped:true
+  })
+);
+refBuildingContact.rotation.x=-Math.PI/2;
+refBuildingContact.position.set(7.05,.066,-7);
+refBuildingContact.renderOrder=3;
+refStreet.add(refBuildingContact);
+
+// A second, much softer curb-side shadow ties paving and road together.
+const refCurbContactCanvas=document.createElement('canvas');
+refCurbContactCanvas.width=128;
+refCurbContactCanvas.height=16;
+const refCurbCtx=refCurbContactCanvas.getContext('2d');
+const refCurbGrad=refCurbCtx.createLinearGradient(0,0,128,0);
+refCurbGrad.addColorStop(0,'rgba(40,43,42,0)');
+refCurbGrad.addColorStop(.55,'rgba(36,39,39,.055)');
+refCurbGrad.addColorStop(1,'rgba(28,31,31,.14)');
+refCurbCtx.fillStyle=refCurbGrad;
+refCurbCtx.fillRect(0,0,128,16);
+const refCurbTexture=new THREE.CanvasTexture(refCurbContactCanvas);
+refCurbTexture.colorSpace=THREE.SRGBColorSpace;
+const refCurbContact=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.1,73),
+  new THREE.MeshBasicMaterial({
+    map:refCurbTexture,
+    transparent:true,
+    opacity:.52,
+    depthWrite:false,
+    toneMapped:true
+  })
+);
+refCurbContact.rotation.x=-Math.PI/2;
+refCurbContact.position.set(.58,.064,-7);
+refCurbContact.renderOrder=3;
+refStreet.add(refCurbContact);
 
 // Restrained expansion joints restore scale after the clean-up slab.
 const refJointMat=new THREE.MeshBasicMaterial({
