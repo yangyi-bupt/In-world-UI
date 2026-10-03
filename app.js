@@ -151,10 +151,10 @@ let cameraFovTarget = 49.5;
 // ---------- daylight ----------
 renderer.toneMappingExposure = .92;
 
-const skyLight = new THREE.HemisphereLight(0xe7ece9, 0x817d75, 1.18);
+const skyLight = new THREE.HemisphereLight(0xe7ece9, 0x817d75, .96);
 scene.add(skyLight);
 
-const sun = new THREE.DirectionalLight(0xffefd8, 2.56);
+const sun = new THREE.DirectionalLight(0xffefd8, 2.72);
 sun.position.set(-11, 15, 10);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -169,11 +169,11 @@ sun.shadow.normalBias = .022;
 sun.shadow.radius = 2.6;
 scene.add(sun);
 
-const daylightFill = new THREE.DirectionalLight(0xd8dfdd, .20);
+const daylightFill = new THREE.DirectionalLight(0xd8dfdd, .12);
 daylightFill.position.set(10, 8, -12);
 scene.add(daylightFill);
 
-const shopBounce = new THREE.DirectionalLight(0xffd8b6, .055);
+const shopBounce = new THREE.DirectionalLight(0xffd8b6, .030);
 shopBounce.position.set(9,5,6);
 scene.add(shopBounce);
 
@@ -9578,11 +9578,11 @@ function installScannedBuildingSkins(){
       .88+((index+1)%3)*.060,
       ((index%5)-2)*.006
     );
-    material.normalScale?.set(.26,.26);
+    material.normalScale?.set(.18,.18);
     material.bumpMap=null;
-    material.roughness=.76+(index%3)*.035;
+    material.roughness=.90+(index%3)*.018;
     material.metalness=0;
-    material.envMapIntensity=Math.min(material.envMapIntensity??.08,.10);
+    material.envMapIntensity=Math.min(material.envMapIntensity??.025,.035);
     material.needsUpdate=true;
   });
 }
@@ -9610,17 +9610,17 @@ function tuneVehicleAsset(root,bodyColor){
         const glass=new THREE.MeshPhysicalMaterial({
           ...common,
           color:0x899493,
-          roughness:.11,
+          roughness:.19,
           metalness:0,
           transparent:true,
           opacity:.54,
           transmission:.18,
           ior:1.50,
           thickness:.010,
-          clearcoat:.05,
-          clearcoatRoughness:.22,
+          clearcoat:.015,
+          clearcoatRoughness:.38,
           envMap:worldEnvironmentTexture,
-          envMapIntensity:1.08,
+          envMapIntensity:.82,
           depthWrite:false
         });
         if(hasUv) glass.roughnessMap=glassRoughnessTexture;
@@ -9645,13 +9645,13 @@ function tuneVehicleAsset(root,bodyColor){
         const paint=new THREE.MeshPhysicalMaterial({
           ...common,
           color:paintColor,
-          roughness:THREE.MathUtils.clamp(.315+panelVariation*.022,.292,.338),
+          roughness:THREE.MathUtils.clamp(.39+panelVariation*.028,.36,.42),
           metalness:.015,
-          clearcoat:.72,
-          clearcoatRoughness:THREE.MathUtils.clamp(.18+panelVariation*.020,.155,.205),
-          specularIntensity:.64,
+          clearcoat:.42,
+          clearcoatRoughness:THREE.MathUtils.clamp(.27+panelVariation*.025,.24,.30),
+          specularIntensity:.42,
           envMap:worldEnvironmentTexture,
-          envMapIntensity:.88
+          envMapIntensity:.62
         });
         if(hasUv){
           paint.normalMap=realVehicleNormal;
@@ -9728,7 +9728,7 @@ function tuneVehicleAsset(root,bodyColor){
         }
         if('roughness' in material) material.roughness=THREE.MathUtils.clamp(material.roughness??.66,.52,.90);
         if('metalness' in material) material.metalness=Math.min(material.metalness??0,.12);
-        if('envMapIntensity' in material) material.envMapIntensity=.16;
+        if('envMapIntensity' in material) material.envMapIntensity=.055;
       }
       material.needsUpdate=true;
       return material;
@@ -9909,17 +9909,17 @@ function tuneMiraAsset(root){
       }
 
       if(/eye|cornea|iris/.test(key)){
-        if('roughness' in material) material.roughness=.20;
-        if('envMapIntensity' in material) material.envMapIntensity=.34;
+        if('roughness' in material) material.roughness=.28;
+        if('envMapIntensity' in material) material.envMapIntensity=.22;
         if(material.color) material.color.lerp(new THREE.Color(0xdce8e7),.035);
         if(material.isMeshPhysicalMaterial){
-          material.clearcoat=.10;
-          material.clearcoatRoughness=.26;
-          if('specularIntensity' in material) material.specularIntensity=.58;
+          material.clearcoat=.035;
+          material.clearcoatRoughness=.38;
+          if('specularIntensity' in material) material.specularIntensity=.38;
         }
       }else if(/skin|face|head|body/.test(key)){
         if('roughness' in material){
-          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .68,.62,.76);
+          material.roughness=THREE.MathUtils.clamp(material.roughness ?? .80,.76,.88);
         }
         if(material.color){
           material.color.lerp(new THREE.Color(0xd5a28e),.028);
@@ -9933,11 +9933,11 @@ function tuneMiraAsset(root){
         }
         if(hasUv && 'bumpMap' in material && !material.bumpMap){
           material.bumpMap=skinMicroBump;
-          material.bumpScale=.00052;
+          material.bumpScale=.00038;
         }
         if(material.isMeshPhysicalMaterial){
           material.clearcoat=0;
-          if('specularIntensity' in material) material.specularIntensity=.48;
+          if('specularIntensity' in material) material.specularIntensity=.26;
           if(hasUv && 'specularIntensityMap' in material){
             material.specularIntensityMap=skinSpecularTexture;
           }
@@ -10506,8 +10506,8 @@ function animate(){
   });
   dappleTexture.offset.x=Math.sin(t*.052)*.0022;
   dappleTexture.offset.y=Math.cos(t*.044)*.0015;
-  sunHaze.material.opacity=.80+Math.sin(t*.11)*.018;
-  sun.intensity=2.18+Math.sin(t*.045)*.014;
+  sunHaze.material.opacity=.46+Math.sin(t*.11)*.010;
+  sun.intensity=2.72+Math.sin(t*.045)*.018;
 
   skyClouds.forEach((cloud,index)=>{
     cloud.position.x+=dt*(.055+index*.018);
@@ -10542,7 +10542,7 @@ function animate(){
       roughMap.offset.y=map?.offset.y ?? pane.userData.baseRoughOffset.y;
     }
     pane.material.envMapIntensity=
-      .98+Math.sin(yaw*.72+index*.31)*.08;
+      .74+Math.sin(yaw*.72+index*.31)*.045;
   });
 
   worldAssetMixers.forEach(mixer=>mixer.update(dt));
@@ -10706,10 +10706,10 @@ function animate(){
   // Focal lighting is distance-aware: enough facial separation up close, but
   // almost indistinguishable from ordinary daylight from across the block.
   const presence=1-THREE.MathUtils.smoothstep(miraDistance,2.4,10.5);
-  faceLight.intensity=.36+presence*.18;
-  miraPresenceLight.intensity=.038+presence*.035;
-  miraWarmBounce.intensity=.030+presence*.015;
-  miraCoolRim.intensity=.022+presence*.010;
+  faceLight.intensity=.09+presence*.045;
+  miraPresenceLight.intensity=.010+presence*.008;
+  miraWarmBounce.intensity=.010+presence*.006;
+  miraCoolRim.intensity=.008+presence*.004;
 
   if(miraGLBRoot && miraGLBBasePosition){
     const weightShift=Math.sin(t*.37+.6);
