@@ -18,10 +18,10 @@ skyCanvas.width=32;
 skyCanvas.height=512;
 const skyCtx=skyCanvas.getContext('2d');
 const skyGradient=skyCtx.createLinearGradient(0,0,0,512);
-skyGradient.addColorStop(0,'#98cbe5');
-skyGradient.addColorStop(.38,'#c5dfeb');
-skyGradient.addColorStop(.72,'#eef0e8');
-skyGradient.addColorStop(1,'#f6ecdc');
+skyGradient.addColorStop(0,'#8fc7e4');
+skyGradient.addColorStop(.38,'#c5dfea');
+skyGradient.addColorStop(.72,'#edf1ef');
+skyGradient.addColorStop(1,'#f3f1e9');
 skyCtx.fillStyle=skyGradient;
 skyCtx.fillRect(0,0,32,512);
 const skyTexture=new THREE.CanvasTexture(skyCanvas);
@@ -114,10 +114,10 @@ let cameraFovTarget = 69.5;
 // ---------- daylight ----------
 renderer.toneMappingExposure = 1.02;
 
-const skyLight = new THREE.HemisphereLight(0xeaf5f7, 0xb9ad98, 1.70);
+const skyLight = new THREE.HemisphereLight(0xecf7fa, 0xb9b7ae, 1.76);
 scene.add(skyLight);
 
-const sun = new THREE.DirectionalLight(0xfff2dc, 2.82);
+const sun = new THREE.DirectionalLight(0xfff4e3, 2.70);
 sun.position.set(-11, 15, 10);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -132,7 +132,7 @@ sun.shadow.normalBias = .022;
 sun.shadow.radius = 3.8;
 scene.add(sun);
 
-const daylightFill = new THREE.DirectionalLight(0xd4e3ed, .54);
+const daylightFill = new THREE.DirectionalLight(0xd9e9f0, .62);
 daylightFill.position.set(10, 8, -12);
 scene.add(daylightFill);
 
@@ -3192,7 +3192,7 @@ for(let i=0;i<4;i++){
 }
 
 // Street-facing buildings: warm stone + glass + shaded shopfronts.
-const rightFacade=box(3.4,7.6,66,0xddd5c7,10.15,3.75,-5,.82);
+const rightFacade=box(3.4,7.6,66,0xcfd1cc,10.15,3.75,-5,.82);
 rightFacade.castShadow=false;
 rightFacade.material.map=facadeSurface.map;
 rightFacade.material.roughnessMap=facadeSurface.roughness;
@@ -3407,13 +3407,13 @@ function createFacadeZone(z,width,color,opacity=.34){
   scene.add(zone);
   return zone;
 }
-createFacadeZone(-20.4,24.0,0xc9d0c8,.30);
-createFacadeZone(-2.7,12.4,0xddd5c7,.34);
-createFacadeZone(5.1,9.6,0xb58e70,.22);
-createFacadeZone(18.1,15.0,0xd2d4cb,.28);
+createFacadeZone(-20.4,24.0,0xbfc8c6,.28);
+createFacadeZone(-2.7,12.4,0xd2d2cd,.30);
+createFacadeZone(5.1,9.6,0xc5c4be,.24);
+createFacadeZone(18.1,15.0,0xc5cdcb,.28);
 
 const facadeRibMat=new THREE.MeshStandardMaterial({
-  color:0xd6cec1,
+  color:0xb9c0be,
   roughness:.87,
   map:facadeSurface.map,
   roughnessMap:facadeSurface.roughness,
@@ -3547,7 +3547,7 @@ const facadeBayCenters=[-31.0,-23.6,-16.0,-8.6,-1.1,6.5,14.5,22.7];
 const facadeBayDepths=[5.00,5.55,5.12,5.62,5.08,5.82,5.18,5.52];
 facadeBayCenters.forEach((z,bayIndex)=>{
   const bayDepth=facadeBayDepths[bayIndex];
-  const bayTone=z<-7?0xc2c9c2:(z>10?0xd8cabc:0xc9c1b5);
+  const bayTone=z<-7?0xbec7c5:(z>10?0xc8cdca:0xc7c8c3);
   const bay=box(.42,5.6,bayDepth,bayTone,8.64,3.22,z,.82);
   bay.castShadow=false;
   bay.material.map=cloneTextureVariant(
@@ -3569,7 +3569,7 @@ facadeBayCenters.forEach((z,bayIndex)=>{
   bay.material.bumpScale=.010;
   bay.material.needsUpdate=true;
 
-  const glassTint=z<-7?0xc6dad8:(z>10?0xd2d5cd:0xc2d9da);
+  const glassTint=z<-7?0xaecbd0:(z>10?0xb9ced0:0xa9c8cf);
   const glass=glassPanel(bayDepth-.34,4.65,8.41,3.35,z,-Math.PI/2,glassTint);
   glass.material.opacity=z<-7?.39:(z>10?.37:.42);
   glass.material.roughness=z>10?.33:.29;
@@ -3588,7 +3588,7 @@ facadeBayCenters.forEach((z,bayIndex)=>{
   // Perimeter frame + projecting sill gives the glazing actual construction
   // depth, so reflections sit inside an opening rather than on a flat wall.
   const frameMat=new THREE.MeshStandardMaterial({
-    color:z<-7?0x929e9b:(z>10?0xa69688:0x9b948b),
+    color:z<-7?0x6f7a7b:(z>10?0x778181:0x727b7c),
     roughness:.44,
     metalness:.30,
     map:metalSurface.map,
@@ -3638,7 +3638,7 @@ facadeBayCenters.forEach((z,bayIndex)=>{
 
   // dark sill + pale canopy creates the cafe / mixed-use street rhythm.
   box(.38,.16,bayDepth-.18,0x666965,8.34,.62,z,.62,.10);
-  const canopyTone=z<-7?0xe2e8df:(z>10?0xe6d8cb:0xeee6d8);
+  const canopyTone=z<-7?0xe1e6e3:(z>10?0xd9ddda:0xe6e6e1);
   const canopyProjection=bayIndex===3||bayIndex===4?1.28:(bayIndex===5?1.46:1.02);
   const canopy=box(canopyProjection,.12,bayDepth+.04,canopyTone,8.12-canopyProjection*.15,3.02,z,.74);
   canopy.castShadow=true;
@@ -5143,6 +5143,66 @@ function createGlassTower(x,z,w,d,h,tint){
 createGlassTower(-17.8,-4.8,4.4,7.0,12.4,0xa8c8d2);
 createGlassTower(-19.2,16.2,4.8,6.4,10.6,0xb7ccd2);
 
+// Reference-style office crowns: slim blue-grey glass volumes with charcoal
+// mullions rise behind the lower retail frontage. This gives the first-person
+// view the clean business-district silhouette from the reference without
+// changing the playable footprint.
+function createModernOfficeSlab(z,h,d,tint){
+  const x=12.25;
+  const glassMat=new THREE.MeshPhysicalMaterial({
+    color:tint,
+    map:glassReflectionTexture,
+    roughnessMap:glassRoughnessTexture,
+    roughness:.20,
+    metalness:.025,
+    transparent:true,
+    opacity:.54,
+    transmission:.10,
+    ior:1.48,
+    clearcoat:.24,
+    clearcoatRoughness:.22,
+    envMapIntensity:.88
+  });
+  const body=new THREE.Mesh(new THREE.BoxGeometry(4.15,h,d),glassMat);
+  body.position.set(x,7.55+h*.5,z);
+  body.receiveShadow=true;
+  scene.add(body);
+
+  const frameMat=new THREE.MeshStandardMaterial({
+    color:0x535d60,
+    roughness:.40,
+    metalness:.38,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
+    normalMap:metalSurface.normal,
+    normalScale:new THREE.Vector2(.08,.08),
+    bumpMap:metalSurface.bump,
+    bumpScale:.0025,
+    envMapIntensity:.84
+  });
+
+  [-1.62,-.82,0,.82,1.62].forEach(ox=>{
+    const fin=new THREE.Mesh(new THREE.BoxGeometry(.055,h-.12,d+.05),frameMat);
+    fin.position.set(x+ox,7.55+h*.5,z);
+    fin.castShadow=true;
+    scene.add(fin);
+  });
+  for(let y=8.45;y<7.55+h-.35;y+=1.42){
+    const band=new THREE.Mesh(new THREE.BoxGeometry(4.24,.045,d+.06),frameMat);
+    band.position.set(x,y,z);
+    scene.add(band);
+  }
+
+  const cap=new THREE.Mesh(new THREE.BoxGeometry(4.34,.18,d+.18),frameMat);
+  cap.position.set(x,7.55+h+.09,z);
+  cap.castShadow=true;
+  scene.add(cap);
+}
+
+createModernOfficeSlab(-22.5,8.8,11.0,0x9ebcc4);
+createModernOfficeSlab(-4.0,11.6,10.6,0xa8c5ca);
+createModernOfficeSlab(16.8,9.8,10.8,0xadc5c8);
+
 // Low-detail buildings continue beyond the playable road. Their desaturated
 // palette and reduced contrast keep them atmospheric while giving the street a
 // real vanishing corridor rather than a visible world boundary.
@@ -5562,6 +5622,7 @@ function createStreetTree(x,z,scale=1){
 [
   [1.08,-13.4,1.02],
   [.94,-6.55,.95],
+  [1.00,4.45,.92],
   [1.06,10.55,1.00],
   [.92,16.65,.93]
 ].forEach(([x,z,scale])=>createStreetTree(x,z,scale));
