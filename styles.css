@@ -532,3 +532,27 @@ body.world-entered .tablet-layer{
 body.world-entered .tablet-layer.open .tablet3d{
   filter:drop-shadow(0 12px 18px rgba(20,18,16,.12));
 }
+
+
+/* ---------- white NOVA Pad daylight integration v1 ---------- */
+.tablet3d{
+  filter:drop-shadow(0 10px 18px rgba(42,37,31,.17));
+}
+.tablet-layer.open .tablet3d{
+  filter:drop-shadow(0 16px 26px rgba(39,34,29,.24));
+}
+.tablet-shell{
+  box-shadow:
+    0 46px 82px rgba(38,31,26,.34),
+    0 14px 28px rgba(35,30,26,.22);
+}
+body.device-open #game{
+  filter:blur(1.35px) brightness(.82) saturate(.94);
+  transform:scale(1.010);
+}
+body.device-open:after{
+  background:radial-gradient(circle at 50% 47%,rgba(255,249,238,.025),rgba(15,18,18,.27) 82%);
+}
+.tablet-layer{
+  background:radial-gradient(circle at 50% 48%,rgba(255,248,235,.018),rgba(10,12,12,.075));
+}
