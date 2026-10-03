@@ -7548,6 +7548,55 @@ const refLeafCardMaterials=[
   })
 ];
 
+let photographicLeafLoadStarted=false;
+function loadPhotographicLeafCards(){
+  if(photographicLeafLoadStarted) return;
+  photographicLeafLoadStarted=true;
+
+  const loader=new THREE.TextureLoader();
+  loader.setCrossOrigin('anonymous');
+  const load=url=>new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
+
+  Promise.all([
+    load('https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_leaves_diff_1k.jpg'),
+    load('https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_leaves_alpha_1k.jpg')
+  ]).then(([diffuse,alpha])=>{
+    diffuse.colorSpace=THREE.SRGBColorSpace;
+    [diffuse,alpha].forEach(texture=>{
+      texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+      texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy?.()||1,6);
+    });
+
+    const colorTints=[0xffffff,0xe7efdf,0xf1f0dd];
+    refLeafCardMaterials.forEach((material,index)=>{
+      const map=diffuse.clone();
+      const alphaMap=alpha.clone();
+      const cropX=[0,.055,.11][index];
+      const cropW=[.70,.67,.64][index];
+      map.offset.set(cropX,.01);
+      alphaMap.offset.copy(map.offset);
+      map.repeat.set(cropW,.98);
+      alphaMap.repeat.copy(map.repeat);
+      map.needsUpdate=true;
+      alphaMap.needsUpdate=true;
+
+      material.map=map;
+      material.alphaMap=alphaMap;
+      material.color.setHex(colorTints[index]);
+      material.alphaTest=.22;
+      material.roughness=.92;
+      material.envMapIntensity=.025;
+      material.needsUpdate=true;
+    });
+
+    diffuse.dispose();
+    alpha.dispose();
+  }).catch(error=>{
+    photographicLeafLoadStarted=false;
+    console.warn('Photographic leaf atlas failed; keeping procedural foliage.',error);
+  });
+}
+
 const refLeafCardGeometry=new THREE.PlaneGeometry(1,.72);
 function addLeafCardCloud(parent,scale=1,seed=1,count=18){
   const rnd=makeSeededRandom(seed);
@@ -9379,9 +9428,23 @@ const miraBoneOffsetEuler=new THREE.Euler(0,0,0,'YXZ');
 let worldEnvironmentTexture=null;
 let photographicEnvironmentLoadStarted=false;
 
-function loadPhotographicEnvironment(){
-  if(photographicEnvironmentLoadStarted || !window.RGBELoader) return;
+async function loadPhotographicEnvironment(){
+  if(photographicEnvironmentLoadStarted) return;
   photographicEnvironmentLoadStarted=true;
+
+  if(!window.RGBELoader && window.ensureRGBELoader){
+    try{
+      await window.ensureRGBELoader();
+    }catch(error){
+      photographicEnvironmentLoadStarted=false;
+      console.warn('HDR loader import failed; keeping procedural environment.',error);
+      return;
+    }
+  }
+  if(!window.RGBELoader){
+    photographicEnvironmentLoadStarted=false;
+    return;
+  }
 
   const hdrLoader=new window.RGBELoader();
   hdrLoader.load(
@@ -10500,6 +10563,9 @@ function initWorldGLBAssets(){
   scheduleWorldStream(()=>{
     ensureWorldAssetEnvironment();
   },650);
+  scheduleWorldStream(()=>{
+    loadPhotographicLeafCards();
+  },1050);
   scheduleWorldStream(()=>{
     loadPhotographicEnvironment();
   },2800);
