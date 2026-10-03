@@ -8413,6 +8413,309 @@ for(let z=-37.6;z<=24.6;z+=4.75){
   refStreet.add(mullion);
 }
 
+/* ---------- adjacent warm masonry building ----------
+   A believable street edge needs more than one facade system. The hero office
+   now terminates into a shorter, warmer punched-window building with its own
+   floor rhythm and entrance. It deliberately overlaps the distant curtain wall,
+   so the close camera reads two separate buildings instead of one procedural
+   elevation stretching down the block. */
+const refNeighbor=new THREE.Group();
+refNeighbor.name='reference-neighbor-masonry';
+refStreet.add(refNeighbor);
+
+const refNeighborMasonry=refStone.clone();
+refNeighborMasonry.color=new THREE.Color(0xc5b39e);
+refNeighborMasonry.roughness=.90;
+refNeighborMasonry.envMapIntensity=.07;
+refNeighborMasonry.normalScale=new THREE.Vector2(.075,.075);
+refNeighborMasonry.bumpScale=.007;
+
+if(refNeighborMasonry.map){
+  refNeighborMasonry.map=refNeighborMasonry.map.clone();
+  refNeighborMasonry.map.wrapS=refNeighborMasonry.map.wrapT=THREE.RepeatWrapping;
+  refNeighborMasonry.map.repeat.set(.86,1.62);
+  refNeighborMasonry.map.offset.set(.41,.13);
+  refNeighborMasonry.map.needsUpdate=true;
+}
+if(refNeighborMasonry.roughnessMap){
+  refNeighborMasonry.roughnessMap=refNeighborMasonry.roughnessMap.clone();
+  refNeighborMasonry.roughnessMap.wrapS=refNeighborMasonry.roughnessMap.wrapT=THREE.RepeatWrapping;
+  refNeighborMasonry.roughnessMap.repeat.set(.86,1.62);
+  refNeighborMasonry.roughnessMap.offset.set(.41,.13);
+  refNeighborMasonry.roughnessMap.needsUpdate=true;
+}
+if(refNeighborMasonry.normalMap){
+  refNeighborMasonry.normalMap=refNeighborMasonry.normalMap.clone();
+  refNeighborMasonry.normalMap.wrapS=refNeighborMasonry.normalMap.wrapT=THREE.RepeatWrapping;
+  refNeighborMasonry.normalMap.repeat.set(.86,1.62);
+  refNeighborMasonry.normalMap.offset.set(.41,.13);
+  refNeighborMasonry.normalMap.needsUpdate=true;
+}
+if(refNeighborMasonry.bumpMap){
+  refNeighborMasonry.bumpMap=refNeighborMasonry.bumpMap.clone();
+  refNeighborMasonry.bumpMap.wrapS=refNeighborMasonry.bumpMap.wrapT=THREE.RepeatWrapping;
+  refNeighborMasonry.bumpMap.repeat.set(.86,1.62);
+  refNeighborMasonry.bumpMap.offset.set(.41,.13);
+  refNeighborMasonry.bumpMap.needsUpdate=true;
+}
+
+const refNeighborTrim=refStoneDark.clone();
+refNeighborTrim.color=new THREE.Color(0xa89a89);
+refNeighborTrim.roughness=.88;
+refNeighborTrim.envMapIntensity=.06;
+
+const refNeighborGlass=refLobbyGlass.clone();
+refNeighborGlass.color=new THREE.Color(0x9facaa);
+refNeighborGlass.opacity=.72;
+refNeighborGlass.roughness=.22;
+refNeighborGlass.transmission=.018;
+refNeighborGlass.clearcoat=.10;
+refNeighborGlass.clearcoatRoughness=.30;
+refNeighborGlass.envMapIntensity=.82;
+
+const refNeighborMass=new THREE.Mesh(
+  new THREE.BoxGeometry(3.35,10.65,11.30),
+  refNeighborMasonry
+);
+refNeighborMass.position.set(8.93,5.32,21.05);
+refNeighborMass.castShadow=true;
+refNeighborMass.receiveShadow=true;
+refNeighbor.add(refNeighborMass);
+
+// Narrow construction joint separates the two buildings and helps their masses
+// read independently at a glance.
+const refNeighborPartyJoint=new THREE.Mesh(
+  new THREE.BoxGeometry(.055,10.35,.14),
+  new THREE.MeshBasicMaterial({
+    color:0x353633,
+    transparent:true,
+    opacity:.38,
+    depthWrite:false,
+    toneMapped:true
+  })
+);
+refNeighborPartyJoint.position.set(7.23,5.18,15.33);
+refNeighbor.add(refNeighborPartyJoint);
+
+// Punched windows: dark recess first, glazing behind, then a projected sill.
+// Three irregular columns prevent another perfect curtain-wall cadence.
+const refNeighborWindowRecessMat=new THREE.MeshBasicMaterial({
+  color:0x303534,
+  transparent:true,
+  opacity:.86,
+  toneMapped:true
+});
+const refNeighborWindowCenters=[17.20,20.82,24.20];
+const refNeighborWindowFloors=[
+  {y:5.28,h:1.78},
+  {y:8.02,h:1.70}
+];
+refNeighborWindowCenters.forEach((z,columnIndex)=>{
+  refNeighborWindowFloors.forEach((floor,floorIndex)=>{
+    const width=[1.72,1.46,1.68][columnIndex];
+
+    const recess=new THREE.Mesh(
+      new THREE.PlaneGeometry(width+.30,floor.h+.28),
+      refNeighborWindowRecessMat
+    );
+    recess.position.set(7.235,floor.y,z);
+    recess.rotation.y=-Math.PI/2;
+    refNeighbor.add(recess);
+
+    const glass=new THREE.Mesh(
+      new THREE.PlaneGeometry(width,floor.h),
+      refNeighborGlass
+    );
+    glass.position.set(7.39,floor.y,z);
+    glass.rotation.y=-Math.PI/2;
+    refNeighbor.add(glass);
+
+    const sill=new THREE.Mesh(
+      new THREE.BoxGeometry(.46,.10,width+.24),
+      refNeighborTrim
+    );
+    sill.position.set(7.17,floor.y-floor.h*.5-.11,z);
+    sill.castShadow=true;
+    sill.receiveShadow=true;
+    refNeighbor.add(sill);
+
+    const head=sill.clone();
+    head.scale.y=.72;
+    head.position.y=floor.y+floor.h*.5+.10;
+    refNeighbor.add(head);
+
+    // A few curtains / blinds sit well behind the glazing to sell depth.
+    if((columnIndex+floorIndex)%2===0){
+      const blind=new THREE.Mesh(
+        new THREE.PlaneGeometry(width*.72,floor.h*.72),
+        new THREE.MeshStandardMaterial({
+          color:columnIndex===1?0xb2aaa0:0xc3c0b6,
+          roughness:.96,
+          metalness:0,
+          transparent:true,
+          opacity:.42,
+          side:THREE.DoubleSide,
+          depthWrite:false,
+          envMapIntensity:.015
+        })
+      );
+      blind.position.set(7.72,floor.y-.04,z+(columnIndex===2?-.16:.12));
+      blind.rotation.y=-Math.PI/2;
+      refNeighbor.add(blind);
+    }
+  });
+});
+
+// Ground floor is heavier and more opaque than the office next door.
+const refNeighborGroundBand=new THREE.Mesh(
+  new THREE.BoxGeometry(.72,3.14,10.64),
+  refNeighborTrim
+);
+refNeighborGroundBand.position.set(7.42,1.62,21.05);
+refNeighborGroundBand.castShadow=true;
+refNeighbor.add(refNeighborGroundBand);
+
+const refNeighborShopGlass=refNeighborGlass.clone();
+refNeighborShopGlass.opacity=.78;
+refNeighborShopGlass.roughness=.18;
+refNeighborShopGlass.envMapIntensity=.90;
+
+[
+  {z:18.15,w:3.05},
+  {z:23.12,w:3.35}
+].forEach((spec,index)=>{
+  const glass=new THREE.Mesh(
+    new THREE.PlaneGeometry(spec.w,2.46),
+    refNeighborShopGlass
+  );
+  glass.position.set(7.025,1.55,spec.z);
+  glass.rotation.y=-Math.PI/2;
+  refNeighbor.add(glass);
+
+  const rear=new THREE.Mesh(
+    new THREE.BoxGeometry(.84,2.30,spec.w-.28),
+    new THREE.MeshStandardMaterial({
+      color:index?0x5a544d:0x4f514e,
+      roughness:.92,
+      metalness:0,
+      envMapIntensity:.02
+    })
+  );
+  rear.position.set(7.72,1.48,spec.z);
+  refNeighbor.add(rear);
+});
+
+// Solid entrance interrupts the shopfront and gives the second building its own
+// address / access pattern.
+const refNeighborDoorFrame=new THREE.Mesh(
+  new THREE.BoxGeometry(.82,2.88,1.36),
+  new THREE.MeshStandardMaterial({
+    color:0x5b554d,
+    roughness:.46,
+    metalness:.32,
+    map:metalSurface.map,
+    roughnessMap:metalSurface.roughness,
+    envMapIntensity:.46
+  })
+);
+refNeighborDoorFrame.position.set(7.19,1.48,20.72);
+refNeighborDoorFrame.castShadow=true;
+refNeighbor.add(refNeighborDoorFrame);
+
+const refNeighborDoorGlass=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.08,2.42),
+  refNeighborGlass
+);
+refNeighborDoorGlass.position.set(6.765,1.47,20.72);
+refNeighborDoorGlass.rotation.y=-Math.PI/2;
+refNeighbor.add(refNeighborDoorGlass);
+
+const refNeighborDoorHandle=new THREE.Mesh(
+  new THREE.BoxGeometry(.04,.52,.028),
+  refHeroEntryHandleMat
+);
+refNeighborDoorHandle.position.set(6.70,1.42,20.49);
+refNeighbor.add(refNeighborDoorHandle);
+
+// Strong cornice and small setback make the height change intentional.
+const refNeighborCornice=new THREE.Mesh(
+  new THREE.BoxGeometry(.66,.30,11.58),
+  refNeighborTrim
+);
+refNeighborCornice.position.set(7.34,10.42,21.05);
+refNeighborCornice.castShadow=true;
+refNeighbor.add(refNeighborCornice);
+
+const refNeighborCoping=new THREE.Mesh(
+  new THREE.BoxGeometry(.84,.075,11.72),
+  refHeroMetal
+);
+refNeighborCoping.position.set(7.33,10.62,21.05);
+refNeighborCoping.castShadow=true;
+refNeighbor.add(refNeighborCoping);
+
+// Two vertical rain streak zones and a darker foot band keep the warm masonry
+// from reading as a pristine color block.
+const refNeighborWeatherCanvas=document.createElement('canvas');
+refNeighborWeatherCanvas.width=128;
+refNeighborWeatherCanvas.height=512;
+const refNeighborWeatherCtx=refNeighborWeatherCanvas.getContext('2d');
+refNeighborWeatherCtx.clearRect(0,0,128,512);
+const refNeighborWeatherRnd=makeSeededRandom(0x2cb84a31);
+for(let i=0;i<20;i++){
+  const x=8+refNeighborWeatherRnd()*112;
+  const y=60+refNeighborWeatherRnd()*380;
+  const len=20+refNeighborWeatherRnd()*90;
+  const grad=refNeighborWeatherCtx.createLinearGradient(x,y,x,y+len);
+  grad.addColorStop(0,'rgba(82,78,69,'+(.020+refNeighborWeatherRnd()*.035).toFixed(3)+')');
+  grad.addColorStop(1,'rgba(82,78,69,0)');
+  refNeighborWeatherCtx.strokeStyle=grad;
+  refNeighborWeatherCtx.lineWidth=.5+refNeighborWeatherRnd()*1.2;
+  refNeighborWeatherCtx.beginPath();
+  refNeighborWeatherCtx.moveTo(x,y);
+  refNeighborWeatherCtx.lineTo(x+(refNeighborWeatherRnd()-.5)*2,y+len);
+  refNeighborWeatherCtx.stroke();
+}
+const refNeighborFootGrad=refNeighborWeatherCtx.createLinearGradient(0,0,128,0);
+refNeighborFootGrad.addColorStop(0,'rgba(76,72,65,.15)');
+refNeighborFootGrad.addColorStop(.28,'rgba(84,78,70,.07)');
+refNeighborFootGrad.addColorStop(1,'rgba(84,78,70,0)');
+refNeighborWeatherCtx.fillStyle=refNeighborFootGrad;
+refNeighborWeatherCtx.fillRect(0,0,128,512);
+const refNeighborWeatherTexture=new THREE.CanvasTexture(refNeighborWeatherCanvas);
+refNeighborWeatherTexture.colorSpace=THREE.SRGBColorSpace;
+const refNeighborWeather=new THREE.Mesh(
+  new THREE.PlaneGeometry(.58,10.58),
+  new THREE.MeshBasicMaterial({
+    map:refNeighborWeatherTexture,
+    transparent:true,
+    opacity:.55,
+    depthWrite:false,
+    toneMapped:true
+  })
+);
+refNeighborWeather.position.set(7.205,5.30,21.05);
+refNeighborWeather.rotation.y=-Math.PI/2;
+refNeighborWeather.renderOrder=6;
+refNeighbor.add(refNeighborWeather);
+
+// Slight building-foot contact shade anchors the second facade to the shared
+// sidewalk without requiring another shadow-casting light.
+const refNeighborContact=new THREE.Mesh(
+  new THREE.PlaneGeometry(.82,10.90),
+  new THREE.MeshBasicMaterial({
+    map:refContactTexture,
+    transparent:true,
+    opacity:.56,
+    depthWrite:false,
+    toneMapped:true
+  })
+);
+refNeighborContact.rotation.x=-Math.PI/2;
+refNeighborContact.position.set(6.93,.067,21.05);
+refNeighborContact.renderOrder=4;
+refNeighbor.add(refNeighborContact);
+
 // Clean the foreground sidewalk visually with a dedicated architectural paving
 // map rather than reusing the noisier legacy sidewalk texture.
 const refWalk=new THREE.Mesh(
