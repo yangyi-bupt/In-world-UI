@@ -479,3 +479,27 @@ body.device-open #game{
   filter:saturate(.62) contrast(.92);
   box-shadow:none;
 }
+
+
+/* ---------- bright boulevard photographic presentation v6 ---------- */
+body:before{
+  box-shadow:inset 0 0 34px 5px rgba(25,28,27,.055),inset 0 -48px 90px rgba(46,45,40,.035);
+  opacity:.16;
+}
+body:after{
+  background:
+    linear-gradient(180deg,rgba(35,45,47,.018),transparent 30%,transparent 78%,rgba(40,37,32,.025)),
+    radial-gradient(ellipse at center,transparent 72%,rgba(24,28,28,.035) 108%);
+  mix-blend-mode:normal;
+}
+.start-overlay{
+  background:
+    linear-gradient(90deg,rgba(22,27,27,.28),rgba(22,27,27,.06) 44%,transparent 70%),
+    linear-gradient(180deg,rgba(255,255,255,.01),rgba(18,21,20,.055));
+  backdrop-filter:blur(1.2px) saturate(.98);
+}
+.world-chip,.mode-label,.hint{
+  background:rgba(24,28,28,.25);
+  border-color:rgba(255,255,255,.16);
+  backdrop-filter:blur(14px) saturate(.95);
+}
