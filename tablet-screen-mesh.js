@@ -11,7 +11,9 @@
     // meshes so readability is never sacrificed.
     const material = new THREE.MeshBasicMaterial({
       map: tabletTexture.texture || tabletTexture,
-      color:0xffffff,
+      // Slightly warm display white avoids an emissive paper-white rectangle
+      // against the daylight scene while preserving UI contrast.
+      color:0xf7f5ef,
       toneMapped:false
     });
 
