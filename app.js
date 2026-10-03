@@ -2707,6 +2707,21 @@ distantSidewalk.position.set(4.2,.010,-67);
 distantSidewalk.receiveShadow=true;
 scene.add(distantSidewalk);
 
+const visualCurbExtension=new THREE.Mesh(
+  new THREE.PlaneGeometry(.72,84),
+  new THREE.MeshStandardMaterial({
+    color:0xd6d7d2,
+    roughness:.98,
+    map:pavementTexture,
+    bumpMap:pavementMicroBump,
+    bumpScale:.008
+  })
+);
+visualCurbExtension.rotation.x=-Math.PI/2;
+visualCurbExtension.position.set(.36,.020,-4);
+visualCurbExtension.receiveShadow=true;
+scene.add(visualCurbExtension);
+
 const sidewalk=plane(10.8,92,0xffffff,4.2,.014,-4);
 sidewalk.material.map=pavementTexture;
 sidewalk.material.roughnessMap=pavementRoughness;
@@ -2879,7 +2894,7 @@ const curbDrainMat=new THREE.MeshStandardMaterial({
 });
 
 // Fine sidewalk seams add scale without relying on image textures.
-const seamMat=new THREE.MeshBasicMaterial({color:0xbab6ad,transparent:true,opacity:.23,depthWrite:false});
+const seamMat=new THREE.MeshBasicMaterial({color:0xbab6ad,transparent:true,opacity:.12,depthWrite:false});
 for(let z=-44;z<=40;z+=2.35){
   const seam=new THREE.Mesh(new THREE.PlaneGeometry(9.9,.018),seamMat);
   seam.rotation.x=-Math.PI/2;
@@ -3568,10 +3583,29 @@ const heroFrameMat=new THREE.MeshStandardMaterial({
 [-23.5,-11.5,.8,13.1].forEach((z,bayIndex)=>{
   const glass=new THREE.Mesh(new THREE.PlaneGeometry(10.6,6.55),heroGlassMat.clone());
   glass.material.color.offsetHSL(0,0,(bayIndex-1.5)*.012);
+  glass.material.opacity=.40+(bayIndex%3)*.025;
+  glass.material.roughness=.13+(bayIndex%2)*.035;
+  glass.material.envMapIntensity=.94+(bayIndex%2)*.11;
   glass.position.set(7.34,4.85,z);
   glass.rotation.y=-Math.PI/2;
   glass.receiveShadow=true;
   scene.add(glass);
+
+  [2.82,5.62].forEach((y,shadowIndex)=>{
+    const shadowBand=new THREE.Mesh(
+      new THREE.PlaneGeometry(10.15,.58),
+      new THREE.MeshBasicMaterial({
+        color:shadowIndex%2?0x71878a:0x85999b,
+        transparent:true,
+        opacity:.035+(bayIndex%2)*.010,
+        depthWrite:false,
+        toneMapped:false
+      })
+    );
+    shadowBand.position.set(7.325,y,z);
+    shadowBand.rotation.y=-Math.PI/2;
+    scene.add(shadowBand);
+  });
 
   for(let dz=-4.0;dz<=4.0;dz+=2.0){
     const mullion=new THREE.Mesh(new THREE.BoxGeometry(.055,6.55,.05),heroFrameMat);
@@ -5481,6 +5515,31 @@ const distantBlockPalette=[0xc6cdca,0xd1d0c8,0xbfc8c6,0xd5d2ca];
   crown.position.set(x+(index%2?.24:-.16),h+.15,z);
   scene.add(crown);
 
+  if(index%2===0){
+    const setback=new THREE.Mesh(
+      new THREE.BoxGeometry(w*.72,1.25,d*.68),
+      new THREE.MeshStandardMaterial({
+        color:0xbcc6c4,
+        roughness:.86,
+        envMapIntensity:.04
+      })
+    );
+    setback.position.set(x+(index%3-.8)*.18,h+.78,z+(index%2?.15:-.10));
+    scene.add(setback);
+  }else{
+    const roofScreen=new THREE.Mesh(
+      new THREE.BoxGeometry(w*.46,.52,d*.44),
+      new THREE.MeshStandardMaterial({
+        color:0xaeb9b8,
+        roughness:.72,
+        metalness:.08,
+        envMapIntensity:.12
+      })
+    );
+    roofScreen.position.set(x-.14,h+.41,z+.08);
+    scene.add(roofScreen);
+  }
+
   const distantWindowMat=new THREE.MeshBasicMaterial({
     color:index%2?0xaebfbe:0xb7c2bd,
     transparent:true,
@@ -5821,54 +5880,54 @@ function createStreetTree(x,z,scale=1){
 
   const crown=new THREE.Group();
   const leafMats=[
-    makeFoliageMaterial(0x719568,.93,.010,.014),
-    makeFoliageMaterial(0x82a475,.91,.009,.018),
-    makeFoliageMaterial(0x62865f,.95,.011,.010),
-    makeFoliageMaterial(0x93ad84,.90,.008,.020)
+    makeFoliageMaterial(0x6d9166,.94,.010,.012),
+    makeFoliageMaterial(0x7d9f70,.92,.009,.016),
+    makeFoliageMaterial(0x5f825b,.95,.011,.009),
+    makeFoliageMaterial(0x8cab7c,.91,.008,.019)
   ];
-  const crownRnd=makeSeededRandom(Math.floor((z+48)*911+(x+20)*173));
-  for(let i=0;i<24;i++){
+  const crownRnd=makeSeededRandom(Math.floor((z+50)*977+(x+24)*191));
+  for(let i=0;i<34;i++){
     const angle=crownRnd()*Math.PI*2;
-    const radius=Math.sqrt(crownRnd())*(.64+.12*crownRnd());
+    const radius=Math.pow(crownRnd(),.62)*(.72+.16*crownRnd());
     const ox=Math.cos(angle)*radius;
-    const oz=Math.sin(angle)*radius*.72;
-    const oy=-.10+crownRnd()*1.25;
-    const r=.18+crownRnd()*.28;
+    const oz=Math.sin(angle)*radius*.62;
+    const oy=-.06+crownRnd()*1.42;
+    const r=.12+crownRnd()*.20;
     const cluster=new THREE.Mesh(
       new THREE.IcosahedronGeometry(r*scale,1),
       leafMats[i%leafMats.length]
     );
     cluster.position.set(ox*scale,oy*scale,oz*scale);
     cluster.scale.set(
-      .72+crownRnd()*.34,
-      .82+crownRnd()*.58,
-      .70+crownRnd()*.34
+      .58+crownRnd()*.44,
+      .76+crownRnd()*.72,
+      .56+crownRnd()*.40
     );
     cluster.rotation.set(
-      (crownRnd()-.5)*.24,
+      (crownRnd()-.5)*.36,
       crownRnd()*Math.PI,
-      (crownRnd()-.5)*.28
+      (crownRnd()-.5)*.38
     );
     cluster.castShadow=true;
     cluster.receiveShadow=true;
     crown.add(cluster);
   }
-  for(let i=0;i<7;i++){
+  for(let i=0;i<5;i++){
     const inner=new THREE.Mesh(
-      new THREE.IcosahedronGeometry((.20+crownRnd()*.17)*scale,1),
+      new THREE.IcosahedronGeometry((.17+crownRnd()*.12)*scale,1),
       leafMats[2]
     );
     inner.position.set(
-      (crownRnd()-.5)*.55*scale,
-      (.08+crownRnd()*.72)*scale,
-      (crownRnd()-.5)*.42*scale
+      (crownRnd()-.5)*.38*scale,
+      (.15+crownRnd()*.80)*scale,
+      (crownRnd()-.5)*.30*scale
     );
-    inner.scale.set(.88,1.08,.86);
+    inner.scale.set(.72,1.12,.70);
     inner.castShadow=true;
     crown.add(inner);
   }
-  crown.position.set(x,3.28*scale,z);
-  crown.scale.set(.84,1.10,.84);
+  crown.position.set(x,3.34*scale,z);
+  crown.scale.set(.78,1.13,.78);
   scene.add(crown);
   streetTreeCrowns.push(crown);
 }
@@ -5888,6 +5947,7 @@ const curbGroundcoverMat=makeFoliageMaterial(0x8ea27a,.93,.009,.018);
     tuft.position.set(1.0+dx,.145,z+(i%2?.27:-.25));
     tuft.rotation.z=(i-1.5)*.18;
     tuft.castShadow=true;
+    tuft.visible=false;
     scene.add(tuft);
   });
 });
