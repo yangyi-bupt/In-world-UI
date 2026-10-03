@@ -3945,6 +3945,10 @@ for(let i=0;i<4;i++){
   scene.add(slot);
 }
 
+// Legacy right-side facade pass. We keep the code for fallback/reference, but
+// everything created until the modern skyline section is collected and hidden;
+// the later referenceStreet is now the only visible foreground architecture.
+const legacyStreetStartIndex=scene.children.length;
 // Street-facing buildings: warm stone + glass + shaded shopfronts.
 const rightFacade=box(3.4,7.6,66,0xb9aea0,10.15,3.75,-5,.82);
 rightFacade.castShadow=false;
@@ -6057,6 +6061,13 @@ for(let i=0;i<10;i++){
     scene.add(spandrel);
   }
 }
+
+const legacyStreet=new THREE.Group();
+legacyStreet.name='legacy-right-street-hidden';
+const legacyStreetChildren=scene.children.slice(legacyStreetStartIndex);
+legacyStreetChildren.forEach(child=>legacyStreet.add(child));
+legacyStreet.visible=false;
+scene.add(legacyStreet);
 
 // Glass office volumes sit behind the lower street wall so the boulevard reads
 // as a real modern city rather than one strip of boxes.
