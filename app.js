@@ -181,7 +181,7 @@ scene.add(shopBounce);
 
 const faceLight = new THREE.SpotLight(0xffeadb, .062, 6.5, Math.PI * .36, .97, 1.9);
 faceLight.position.set(1.1, 3.8, 3.2);
-faceLight.target.position.set(2.0, 1.45, 2.0);
+faceLight.target.position.set(2.28, 1.47, 2.0);
 scene.add(faceLight, faceLight.target);
 
 // A broad, very soft bounce near Mira separates her from the storefront
@@ -193,12 +193,12 @@ scene.add(miraPresenceLight);
 
 const miraWarmBounce=new THREE.DirectionalLight(0xffead8,.012);
 miraWarmBounce.position.set(7.2,5.4,3.4);
-miraWarmBounce.target.position.set(2.0,1.15,2.0);
+miraWarmBounce.target.position.set(2.28,1.18,2.0);
 scene.add(miraWarmBounce,miraWarmBounce.target);
 
 const miraCoolRim=new THREE.DirectionalLight(0xd9edf2,.010);
 miraCoolRim.position.set(-5.0,4.0,-7.5);
-miraCoolRim.target.position.set(2.0,1.25,2.0);
+miraCoolRim.target.position.set(2.28,1.28,2.0);
 scene.add(miraCoolRim,miraCoolRim.target);
 
 function makeSeededRandom(seed){
@@ -7543,6 +7543,25 @@ const refHeroShopInteriorMat=new THREE.MeshStandardMaterial({
   metalness:0,
   envMapIntensity:.025
 });
+const refHeroInteriorWoodMat=new THREE.MeshStandardMaterial({
+  color:0x796b5b,
+  roughness:.82,
+  metalness:.01,
+  envMapIntensity:.045
+});
+const refHeroInteriorLightMat=new THREE.MeshBasicMaterial({
+  color:0xe9d9c1,
+  transparent:true,
+  opacity:.34,
+  depthWrite:false,
+  toneMapped:true
+});
+const refHeroInteriorDisplayMat=new THREE.MeshStandardMaterial({
+  color:0xb6aa98,
+  roughness:.84,
+  metalness:0,
+  envMapIntensity:.035
+});
 
 const refHeroBayCenters=[-6.73,-1.98,2.77,7.52,12.27];
 const refHeroUpperFloors=[
@@ -7704,6 +7723,35 @@ function addHeroStorefront(z,width,doorOffset,variant=0){
   );
   rear.position.set(8.28,1.56,z);
   refHeroFacade.add(rear);
+
+  // A few broad interior elements are more convincing through glass than
+  // texture noise: a rear display panel, two shelves and a soft ceiling strip.
+  const displayPanel=new THREE.Mesh(
+    new THREE.BoxGeometry(.055,1.36,width*.42),
+    refHeroInteriorDisplayMat
+  );
+  displayPanel.position.set(7.995,1.46,z-doorOffset*.30);
+  refHeroFacade.add(displayPanel);
+
+  [.82,1.34].forEach((shelfY,shelfIndex)=>{
+    const shelf=new THREE.Mesh(
+      new THREE.BoxGeometry(.30,.038,width*(shelfIndex?.25:.31)),
+      refHeroInteriorWoodMat
+    );
+    shelf.position.set(
+      8.06,
+      shelfY,
+      z-doorOffset*(shelfIndex?.46:.31)
+    );
+    refHeroFacade.add(shelf);
+  });
+
+  const interiorLightStrip=new THREE.Mesh(
+    new THREE.BoxGeometry(.035,.026,width*.48),
+    refHeroInteriorLightMat
+  );
+  interiorLightStrip.position.set(7.985,2.64,z+doorOffset*.18);
+  refHeroFacade.add(interiorLightStrip);
 
   const transom=new THREE.Mesh(
     new THREE.BoxGeometry(.24,.065,width-.24),
@@ -12591,14 +12639,14 @@ function attachMiraAsset(source,animations){
   miraGLBBasePosition=root.position.clone();
   captureMiraBones(root);
   if(!mira.userData.glbContactShadow){
-    mira.userData.glbContactShadow=createAttachedContactShadow(mira,.62,.46,.072);
+    mira.userData.glbContactShadow=createAttachedContactShadow(mira,.54,.36,.058);
   }
 
   if(!mira.userData.footContactShadows){
     const footShadowMat=new THREE.MeshBasicMaterial({
       color:0x1f2423,
       transparent:true,
-      opacity:.105,
+      opacity:.078,
       depthWrite:false,
       toneMapped:true
     });
@@ -12607,7 +12655,7 @@ function attachMiraAsset(source,animations){
         new THREE.CircleGeometry(.102,18),
         footShadowMat.clone()
       );
-      shadow.scale.set(.94,1.48,1);
+      shadow.scale.set(.88,1.28,1);
       shadow.rotation.x=-Math.PI/2;
       shadow.rotation.z=index?-.08:.08;
       shadow.position.set(x,.006,.016+(index?.010:-.006));
@@ -12622,7 +12670,7 @@ function attachMiraAsset(source,animations){
   if(idleClip){
     const mixer=new THREE.AnimationMixer(root);
     const idleAction=mixer.clipAction(idleClip);
-    idleAction.setEffectiveTimeScale(.72);
+    idleAction.setEffectiveTimeScale(.60);
     idleAction.play();
     miraIdleAction=idleAction;
     worldAssetMixers.push(mixer);
@@ -13019,9 +13067,9 @@ function animate(){
   // idle clip without overriding its actual pose work.
   if(miraIdleAction){
     miraIdleAction.setEffectiveTimeScale(
-      .705+
-      Math.sin(t*.061+.8)*.018+
-      Math.sin(t*.017+2.1)*.010
+      .590+
+      Math.sin(t*.061+.8)*.014+
+      Math.sin(t*.017+2.1)*.007
     );
   }
 
@@ -13173,8 +13221,9 @@ function animate(){
     Math.sin(t*.043+2.2)*.020+
     storefrontAttention*.048
   )*(1-miraAttention);
+  const bodyAttention=miraAttention*.34;
   const miraYawTarget=
-    THREE.MathUtils.lerp(miraBaseYaw,miraLookYaw,miraAttention)+ambientBodyLook;
+    THREE.MathUtils.lerp(miraBaseYaw,miraLookYaw,bodyAttention)+ambientBodyLook*.72;
   mira.rotation.y=THREE.MathUtils.lerp(
     mira.rotation.y,
     miraYawTarget,
@@ -13186,10 +13235,10 @@ function animate(){
   const presence=1-THREE.MathUtils.smoothstep(miraDistance,2.4,10.5);
   // Keep Mira inside the same daylight exposure as the street. Near-field
   // assistance is now only a faint facial lift, not a game-style hero light.
-  faceLight.intensity=.036+presence*.020;
-  miraPresenceLight.intensity=.0038+presence*.0022;
-  miraWarmBounce.intensity=.0040+presence*.0018;
-  miraCoolRim.intensity=.0032+presence*.0014;
+  faceLight.intensity=.028+presence*.014;
+  miraPresenceLight.intensity=.0028+presence*.0017;
+  miraWarmBounce.intensity=.0030+presence*.0014;
+  miraCoolRim.intensity=.0026+presence*.0011;
 
   if(miraGLBRoot && miraGLBBasePosition){
     const weightShift=
@@ -13228,19 +13277,19 @@ function animate(){
 
     // Bone offsets are applied after AnimationMixer.update(), so authored idle
     // motion remains intact. The head has more freedom than the torso.
-    const relativePlayerYaw=THREE.MathUtils.clamp(miraLookYaw-mira.rotation.y,-.15,.15);
+    const relativePlayerYaw=THREE.MathUtils.clamp(miraLookYaw-mira.rotation.y,-.30,.30);
     const ambientHeadYaw=(
       Math.sin(t*.19+1.8)*.055+
       Math.sin(t*.071+.2)*.030+
       storefrontAttention*.070
     )*(1-miraAttention);
-    const headYaw=relativePlayerYaw*miraAttention*.52+ambientHeadYaw;
+    const headYaw=relativePlayerYaw*miraAttention*.72+ambientHeadYaw;
     const headPitch=
       Math.sin(t*.16+.9)*.012*(1-miraAttention)-
       greetingEnvelope*.045+
       replyAttention*.018;
-    const neckYaw=headYaw*.22;
-    const chestYaw=headYaw*.05;
+    const neckYaw=headYaw*.28;
+    const chestYaw=headYaw*.025;
     const chestRoll=weightShift*.0030-greetingEnvelope*.006;
 
     // Hips and upper legs carry most of the idle weight transfer. The values
