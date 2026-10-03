@@ -6,24 +6,24 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = .94;
+renderer.toneMappingExposure = 1.04;
 renderer.physicallyCorrectLights = true;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xc6cecd);
-scene.fog = new THREE.Fog(0xd5d6d1, 44, 118);
+scene.background = new THREE.Color(0xc9dde3);
+scene.fog = new THREE.Fog(0xdfe7e5, 58, 150);
 
 const skyCanvas=document.createElement('canvas');
 skyCanvas.width=256;
 skyCanvas.height=1024;
 const skyCtx=skyCanvas.getContext('2d');
 const skyGradient=skyCtx.createLinearGradient(0,0,0,1024);
-skyGradient.addColorStop(0,'#7899a5');
-skyGradient.addColorStop(.22,'#9fb4ba');
-skyGradient.addColorStop(.48,'#c5cecc');
-skyGradient.addColorStop(.70,'#dddcd5');
-skyGradient.addColorStop(.86,'#e4d9cb');
-skyGradient.addColorStop(1,'#c4c0b7');
+skyGradient.addColorStop(0,'#6fa8c5');
+skyGradient.addColorStop(.22,'#9fc7d6');
+skyGradient.addColorStop(.48,'#c9dfe3');
+skyGradient.addColorStop(.70,'#e4e9e5');
+skyGradient.addColorStop(.86,'#efe8dc');
+skyGradient.addColorStop(1,'#d4d2c9');
 skyCtx.fillStyle=skyGradient;
 skyCtx.fillRect(0,0,256,1024);
 
@@ -89,10 +89,10 @@ const sunHaze=new THREE.Sprite(new THREE.SpriteMaterial({
   depthTest:true,
   depthWrite:false,
   toneMapped:false,
-  opacity:.48
+  opacity:.34
 }));
 sunHaze.position.set(-34,34,-46);
-sunHaze.scale.set(12.5,12.5,1);
+sunHaze.scale.set(10.5,10.5,1);
 scene.add(sunHaze);
 
 const cloudCanvas=document.createElement('canvas');
@@ -140,21 +140,21 @@ const skyClouds=[];
   skyClouds.push(cloud);
 });
 
-const camera = new THREE.PerspectiveCamera(49.5, window.innerWidth / window.innerHeight, 0.08, 180);
+const camera = new THREE.PerspectiveCamera(45.5, window.innerWidth / window.innerHeight, 0.08, 180);
 camera.position.set(2.62, 1.70, 9.35);
 camera.rotation.order = 'YXZ';
 
 // A narrower architectural FOV is much closer to the supplied street reference
 // than an FPS-like wide lens. Tablet focus tightens it only slightly.
-let cameraFovTarget = 49.5;
+let cameraFovTarget = 45.5;
 
 // ---------- daylight ----------
-renderer.toneMappingExposure = .92;
+renderer.toneMappingExposure = 1.04;
 
-const skyLight = new THREE.HemisphereLight(0xe7ece9, 0x817d75, .96);
+const skyLight = new THREE.HemisphereLight(0xf0f5f2, 0x8d8a82, 1.18);
 scene.add(skyLight);
 
-const sun = new THREE.DirectionalLight(0xffefd8, 2.72);
+const sun = new THREE.DirectionalLight(0xfff0d7, 3.18);
 sun.position.set(-11, 15, 10);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -166,37 +166,37 @@ sun.shadow.camera.near = 1;
 sun.shadow.camera.far = 52;
 sun.shadow.bias = -0.00028;
 sun.shadow.normalBias = .022;
-sun.shadow.radius = 2.6;
+sun.shadow.radius = 1.7;
 scene.add(sun);
 
-const daylightFill = new THREE.DirectionalLight(0xd8dfdd, .12);
+const daylightFill = new THREE.DirectionalLight(0xdce8ea, .18);
 daylightFill.position.set(10, 8, -12);
 scene.add(daylightFill);
 
-const shopBounce = new THREE.DirectionalLight(0xffd8b6, .030);
+const shopBounce = new THREE.DirectionalLight(0xffdfbf, .040);
 shopBounce.position.set(9,5,6);
 scene.add(shopBounce);
 
 const faceLight = new THREE.SpotLight(0xffeadb, .14, 7.0, Math.PI * .34, .96, 1.8);
 faceLight.position.set(1.1, 3.8, 3.2);
-faceLight.target.position.set(2.0, 1.45, -1.6);
+faceLight.target.position.set(2.0, 1.45, 2.0);
 scene.add(faceLight, faceLight.target);
 
 // A broad, very soft bounce near Mira separates her from the storefront
 // without reading like a game spotlight. Its strength is modulated by player
 // distance later so she remains integrated with the street at long range.
 const miraPresenceLight=new THREE.PointLight(0xffeadb,.012,4.2,2.2);
-miraPresenceLight.position.set(2.75,2.05,-.85);
+miraPresenceLight.position.set(2.75,2.05,2.55);
 scene.add(miraPresenceLight);
 
 const miraWarmBounce=new THREE.DirectionalLight(0xffead8,.012);
 miraWarmBounce.position.set(7.2,5.4,3.4);
-miraWarmBounce.target.position.set(2.0,1.15,-1.6);
+miraWarmBounce.target.position.set(2.0,1.15,2.0);
 scene.add(miraWarmBounce,miraWarmBounce.target);
 
 const miraCoolRim=new THREE.DirectionalLight(0xd9edf2,.010);
 miraCoolRim.position.set(-5.0,4.0,-7.5);
-miraCoolRim.target.position.set(2.0,1.25,-1.6);
+miraCoolRim.target.position.set(2.0,1.25,2.0);
 scene.add(miraCoolRim,miraCoolRim.target);
 
 function makeSeededRandom(seed){
@@ -3200,7 +3200,7 @@ const roadMacroWearOverlay=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     map:roadMacroWearTexture,
     transparent:true,
-    opacity:.92,
+    opacity:.42,
     depthWrite:false,
     toneMapped:true
   })
@@ -3382,7 +3382,7 @@ const curbGrimeLayer=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     map:curbGrimeTexture,
     transparent:true,
-    opacity:.72,
+    opacity:.30,
     depthWrite:false,
     toneMapped:true
   })
@@ -3422,7 +3422,7 @@ const gutterDirt=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     map:gutterDirtTexture,
     transparent:true,
-    opacity:.65,
+    opacity:.28,
     depthWrite:false,
     toneMapped:true
   })
@@ -3784,7 +3784,7 @@ const roadDustLayer=new THREE.Mesh(
   new THREE.MeshBasicMaterial({
     map:roadDustTexture,
     transparent:true,
-    opacity:.72,
+    opacity:.62,
     depthWrite:false,
     toneMapped:false
   })
@@ -4200,7 +4200,7 @@ const lobbyGlassMat=new THREE.MeshPhysicalMaterial({
   thickness:.012,
   clearcoat:.04,
   clearcoatRoughness:.34,
-  envMapIntensity:1.08,
+  envMapIntensity:.76,
   side:THREE.DoubleSide
 });
 const lobbyFrameMat=new THREE.MeshStandardMaterial({
@@ -6141,8 +6141,9 @@ function createGlassTower(x,z,w,d,h,tint){
   });
 }
 
-createGlassTower(-17.8,-4.8,4.4,7.0,12.4,0xa8c8d2);
-createGlassTower(-19.2,16.2,4.8,6.4,10.6,0xb7ccd2);
+createGlassTower(-17.8,-4.8,5.6,8.0,27.0,0xa7c6cf);
+createGlassTower(-19.4,16.2,5.8,7.4,23.5,0xb6ced4);
+createGlassTower(-18.6,-27.5,5.2,8.2,31.0,0xa2bfca);
 
 // Reference-style office crowns: slim blue-grey glass volumes with charcoal
 // mullions rise behind the lower retail frontage. This gives the first-person
@@ -6248,11 +6249,11 @@ for(let z=-31;z<=24;z+=3.4){
 // real vanishing corridor rather than a visible world boundary.
 const distantBlockPalette=[0xcfd6d3,0xd8d8d2,0xcbd4d1,0xdedbd4];
 [
-  [-15.2,-61,5.6,8.4,8.8],
-  [-14.8,-72,6.0,7.0,11.2],
-  [8.8,-61,4.8,7.6,9.4],
-  [9.6,-71,5.4,6.8,12.0],
-  [9.1,-80,5.0,6.2,10.4]
+  [-15.2,-61,6.2,8.8,17.8],
+  [-14.8,-72,6.4,7.6,22.0],
+  [8.8,-61,5.4,8.0,16.4],
+  [9.6,-71,5.8,7.2,20.0],
+  [9.1,-80,5.5,6.8,18.6]
 ].forEach(([x,z,w,d,h],index)=>{
   const block=new THREE.Mesh(
     new THREE.BoxGeometry(w,h,d),
@@ -6885,8 +6886,8 @@ const refGlassMaps=makeReferenceGlassMaps(0x93a7c151);
 const refPavingMaps=makeReferencePavingMaps(0x74b82d1e);
 
 const refStone=new THREE.MeshStandardMaterial({
-  color:0xc8bcae,
-  roughness:.72,
+  color:0xd8d4cb,
+  roughness:.86,
   metalness:.005,
   map:refStoneMaps.map,
   roughnessMap:refStoneMaps.roughness,
@@ -6897,8 +6898,8 @@ const refStone=new THREE.MeshStandardMaterial({
   envMapIntensity:.10
 });
 const refStoneDark=new THREE.MeshStandardMaterial({
-  color:0x9d958b,
-  roughness:.78,
+  color:0xb9b7b0,
+  roughness:.86,
   metalness:.012,
   map:refStoneMaps.map,
   roughnessMap:refStoneMaps.roughness,
@@ -6909,8 +6910,8 @@ const refStoneDark=new THREE.MeshStandardMaterial({
   envMapIntensity:.08
 });
 const refMetal=new THREE.MeshStandardMaterial({
-  color:0x313535,
-  roughness:.34,
+  color:0x343b3d,
+  roughness:.42,
   metalness:.48,
   map:metalSurface.map,
   roughnessMap:metalSurface.roughness,
@@ -6919,30 +6920,30 @@ const refMetal=new THREE.MeshStandardMaterial({
   envMapIntensity:.78
 });
 const refGlass=new THREE.MeshPhysicalMaterial({
-  color:0xaeb8b6,
+  color:0xc5d6d8,
   map:refGlassMaps.map,
   roughnessMap:refGlassMaps.roughness,
-  roughness:.12,
+  roughness:.18,
   metalness:.015,
   transparent:true,
   opacity:.72,
   transmission:.025,
-  clearcoat:.42,
-  clearcoatRoughness:.12,
-  envMapIntensity:1.10,
+  clearcoat:.14,
+  clearcoatRoughness:.28,
+  envMapIntensity:.78,
   depthWrite:true
 });
 const refLobbyGlass=new THREE.MeshPhysicalMaterial({
-  color:0x8e9b99,
+  color:0xaebfc0,
   map:refGlassMaps.map,
   roughnessMap:refGlassMaps.roughness,
-  roughness:.15,
+  roughness:.20,
   metalness:.025,
   transparent:true,
-  opacity:.87,
+  opacity:.76,
   transmission:.012,
-  clearcoat:.38,
-  clearcoatRoughness:.13,
+  clearcoat:.12,
+  clearcoatRoughness:.30,
   envMapIntensity:1.08
 });
 
@@ -7003,21 +7004,21 @@ for(let bay=0;bay<15;bay++){
     roughMap.offset.copy(map.offset);
     roughMap.needsUpdate=true;
 
-    const tintPalette=[0xd4e3e5,0xc9d9dc,0xdce5e3,0xbfcfd1,0xd9dfdc];
+    const tintPalette=[0xd8e6e8,0xcbdcdf,0xe0e9e7,0xc3d4d7,0xdde5e2];
     const material=new THREE.MeshPhysicalMaterial({
       color:tintPalette[(bay+floorIndex*2)%tintPalette.length],
       map,
       roughnessMap:roughMap,
-      roughness:.095+refPaneRnd()*.060,
+      roughness:.16+refPaneRnd()*.055,
       metalness:.012,
       transparent:true,
-      opacity:.52+refPaneRnd()*.10,
+      opacity:.44+refPaneRnd()*.07,
       transmission:.018,
-      clearcoat:.46,
-      clearcoatRoughness:.095+refPaneRnd()*.045,
-      envMapIntensity:.92+refPaneRnd()*.24,
+      clearcoat:.15,
+      clearcoatRoughness:.24+refPaneRnd()*.05,
+      envMapIntensity:.68+refPaneRnd()*.14,
       ior:1.46,
-      reflectivity:.62,
+      reflectivity:.38,
       depthWrite:true
     });
 
@@ -7590,8 +7591,8 @@ function createReferenceTree(x,z,scale=1){
   tree.position.set(x,0,z);
   refStreet.add(tree);
 }
-createReferenceTree(.92,-4.9,.95);
-createReferenceTree(.92,7.8,1.02);
+createReferenceTree(.92,-4.9,1.34);
+createReferenceTree(.92,7.8,1.42);
 
 // Trees, planters and street furniture make this feel like somewhere Mira
 // actually spends time instead of a sterile tech showcase.
@@ -7727,11 +7728,11 @@ function createStreetTree(x,z,scale=1){
 }
 
 [
-  [1.18,-16.4,.90],
-  [1.14,-8.2,.92],
-  [1.16,.2,.91],
-  [1.18,8.7,.93],
-  [1.15,17.1,.89]
+  [1.18,-16.4,1.22],
+  [1.14,-8.2,1.30],
+  [1.16,.2,1.38],
+  [1.18,8.7,1.32],
+  [1.15,17.1,1.24]
 ].forEach(([x,z,scale])=>createStreetTree(x,z,scale));
 
 const curbGroundcoverMat=makeFoliageMaterial(0x8ea27a,.93,.009,.018);
@@ -7775,6 +7776,12 @@ function createPlanter(x,z,w=1.8){
     [.19,.05,1.12,.12],
     [.35,-.02,.92,-.08]
   ];
+  const flowerMats=[
+    new THREE.MeshStandardMaterial({color:0xf4f0e6,roughness:.92}),
+    new THREE.MeshStandardMaterial({color:0xe8cfd3,roughness:.92}),
+    new THREE.MeshStandardMaterial({color:0xf1dfc8,roughness:.92})
+  ];
+
   offsets.forEach(([nx,nz,ss,tilt],i)=>{
     const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.25,1),greens[i%greens.length]);
     shrub.scale.set(1.18*ss,.78*ss,.92*ss);
@@ -7796,10 +7803,27 @@ function createPlanter(x,z,w=1.8){
     tip.rotation.z=-tilt;
     tip.castShadow=true;
     scene.add(tip);
+
+    for(let bloomIndex=0;bloomIndex<3;bloomIndex++){
+      const bloom=new THREE.Mesh(
+        new THREE.SphereGeometry(.030+(bloomIndex%2)*.008,8,6),
+        flowerMats[(i+bloomIndex)%flowerMats.length]
+      );
+      bloom.position.set(
+        x+w*nx+(bloomIndex-1)*.070,
+        .74+(i%2)*.035+bloomIndex*.016,
+        z+nz+(bloomIndex%2?.055:-.040)
+      );
+      bloom.castShadow=true;
+      scene.add(bloom);
+    }
   });
 }
+createPlanter(6.6,-15.8,2.0);
 createPlanter(6.6,-8.3,2.2);
+createPlanter(6.6,4.6,2.15);
 createPlanter(6.6,11.8,2.5);
+createPlanter(6.6,20.2,2.05);
 
 const lowHedgeMat=makeFoliageMaterial(0x78956e,.93,.009,.014);
 const hedgeBed=box(3.6,.22,.82,0xaa9d88,5.65,.11,-13.0,.95);
@@ -8057,7 +8081,7 @@ focalPlanterBase.position.set(4.95,.18,-4.72);
 focalPlanterBase.castShadow=true;
 focalPlanterBase.receiveShadow=true;
 scene.add(focalPlanterBase);
-focalPlanterBase.visible=false;
+focalPlanterBase.visible=true;
 
 const focalPlantMats=[
   makeFoliageMaterial(0x7d9f72,.92,.009,.016),
@@ -8076,7 +8100,7 @@ const focalPlantMats=[
   plant.position.set(4.95+ox,.48+(i%2)*.035,-4.72+oz);
   plant.rotation.set((i%2?.07:-.05),i*.35,(i%3-1)*.09);
   plant.castShadow=true;
-  plant.visible=false;
+  plant.visible=true;
   scene.add(plant);
 });
 
@@ -8090,7 +8114,7 @@ const focalBloomMats=[
   const bloom=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),focalBloomMats[i%2]);
   bloom.position.set(4.95+ox,.70,-4.72+oz);
   bloom.castShadow=true;
-  bloom.visible=false;
+  bloom.visible=true;
   scene.add(bloom);
 });
 
@@ -9272,7 +9296,7 @@ const rFore=capsule(.074,.39,skinMat);rFore.position.set(.40,.94,.08);rFore.rota
 const lHand=new THREE.Mesh(new THREE.SphereGeometry(.09,16,12),skinMat);lHand.scale.set(.72,1.08,.55);lHand.position.set(-.42,.71,.10);miraRig.add(lHand);
 const rHand=lHand.clone();rHand.position.x=.42;miraRig.add(rHand);
 
-mira.position.set(2.28,0,-1.72);
+mira.position.set(2.28,0,2.0);
 const miraBaseYaw=-.16;
 mira.rotation.y=miraBaseYaw;
 mira.scale.setScalar(1.02);
@@ -10374,7 +10398,7 @@ function openTablet(){
   }
 
   tabletOpen=true; keys.clear(); document.exitPointerLock?.();
-  cameraFovTarget=48.2;
+  cameraFovTarget=44.2;
   document.body.classList.add('device-open');
   tabletLayer?.classList.remove('closing');
   tabletLayer?.classList.add('open');
@@ -10388,7 +10412,7 @@ function openTablet(){
 function closeTablet(){
   if(!tabletOpen) return;
 
-  tabletOpen=false; cameraFovTarget=49.5;
+  tabletOpen=false; cameraFovTarget=45.5;
   tabletLayer?.classList.add('closing');
   tabletLayer?.setAttribute('aria-hidden','true');
   window.dispatchEvent(new CustomEvent('tablet-close'));
@@ -10506,8 +10530,8 @@ function animate(){
   });
   dappleTexture.offset.x=Math.sin(t*.052)*.0022;
   dappleTexture.offset.y=Math.cos(t*.044)*.0015;
-  sunHaze.material.opacity=.46+Math.sin(t*.11)*.010;
-  sun.intensity=2.72+Math.sin(t*.045)*.018;
+  sunHaze.material.opacity=.34+Math.sin(t*.11)*.008;
+  sun.intensity=3.18+Math.sin(t*.045)*.020;
 
   skyClouds.forEach((cloud,index)=>{
     cloud.position.x+=dt*(.055+index*.018);
